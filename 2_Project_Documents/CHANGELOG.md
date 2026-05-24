@@ -1,5 +1,64 @@
 # CHANGELOG — CodeTrip
 
+## 2026-05-24 - Firebase 인증 복원 대기 및 위시리스트 저장 데이터 정규화
+
+### 배경
+
+Firebase Realtime Database 전환 이후 새로고침 직후 또는 페이지 진입 직후에 인증 상태와 로컬 상태가 잠시 어긋날 수 있었습니다. `localStorage`에는 `trip_user`가 남아 있어 앱 화면상으로는 로그인된 것처럼 보이지만, Firebase Auth SDK가 아직 세션 복원을 끝내기 전이면 Realtime Database 요청이 `auth = null` 상태로 전송되어 권한 오류가 발생할 수 있었습니다.
+
+또한 위시리스트 추가 흐름에서는 `Explore`, `TravelDetail`, `WishlistModal`, `Festivals` 등 여러 화면에서 여행지 데이터를 넘기는 필드명이 서로 완전히 같지 않았습니다. 예를 들어 어떤 화면은 `contentid`, 어떤 화면은 `contentId` 또는 `content_id`를 사용할 수 있고, 이미지 필드도 `firstimage`, `imageUrl`, `image_url`, `firstImage`처럼 섞일 수 있었습니다. 이 상태에서 위시리스트 저장 로직이 특정 필드명만 기대하면 하트 클릭 시 저장 데이터가 비거나, 같은 여행지의 중복 판정이 실패하거나, 폴더 지정 저장이 의도대로 동작하지 않을 수 있었습니다.
+
+### 수정 내용
+
+- **`src/api/firebaseHelpers.js`**
+  - `onAuthStateChanged`를 사용해 Firebase Auth 초기 복원 상태를 기다리는 `waitForAuthUser()` 흐름을 추가했습니다.
+  - `getCurrentUser()`를 동기 함수에서 비동기 함수로 변경했습니다.
+  - 기존에는 `firebaseAuth.currentUser`가 없더라도 `localStorage`의 사용자 정보가 있으면 사용자 객체를 반환할 수 있었지만, Realtime Database Rules는 실제 Firebase Auth 세션을 기준으로 판단하므로 이제는 Firebase Auth 사용자가 없으면 명확히 로그인 필요 오류를 발생시킵니다.
+  - 반환 사용자 ID는 Realtime Database Rules와 일치하도록 `authUser.uid`를 기준으로 고정했습니다.
+
+- **`src/api/authApi.js`**
+  - 프로필 수정, 관심 지역 조회, 관심 지역 저장에서 `await getCurrentUser()`를 사용하도록 변경했습니다.
+  - Firebase Auth 복원 전 DB 요청이 먼저 나가는 상황을 줄였습니다.
+
+- **`src/api/wishlistApi.js`**
+  - 위시리스트 목록 조회, 추가/삭제 토글, 폴더 조회/생성/삭제, 아이템 이동, 폴더 노트 조회/생성에서 `await getCurrentUser()`를 사용하도록 변경했습니다.
+  - 인증이 준비된 뒤에만 `wishlists`, `wishlistFolders`, `wishlistNotes` 노드에 접근하도록 안정화했습니다.
+
+- **`src/api/boardApi.js`**
+  - 게시글 작성/수정/삭제, 댓글 작성/수정/삭제, 좋아요 토글, 내 활동 조회 관련 함수에서 `await getCurrentUser()`를 사용하도록 변경했습니다.
+  - 게시판 및 댓글 작업도 Firebase Auth 상태 복원 이후 실행되도록 통일했습니다.
+
+- **`src/api/notificationApi.js`**
+  - 알림 목록 조회 내부의 현재 사용자 조회를 비동기로 변경했습니다.
+  - 새로고침 직후 알림 조회가 인증 복원보다 먼저 실행될 때 생길 수 있는 권한 오류를 줄였습니다.
+
+- **`src/api/travelCommentApi.js`**
+  - 여행지 댓글 좋아요, 댓글 작성, 댓글 수정, 댓글 삭제에서 `await getCurrentUser()`를 사용하도록 변경했습니다.
+  - 댓글 작성 시 위시리스트 사용자에게 알림을 생성하는 흐름도 인증된 Firebase 사용자 기준으로 실행되도록 보완했습니다.
+
+- **`src/store/useWishlistStore.js`**
+  - `normalizeWishlistItem(itemData)` 유틸을 추가했습니다.
+  - 여행지 ID 필드는 `contentid`, `contentId`, `content_id`를 모두 허용하고 내부에서는 문자열 `contentid`로 정규화합니다.
+  - 제목 필드는 `title`, `facltNm`을 허용하고 값이 없으면 기본값 `여행지`를 사용합니다.
+  - 이미지 필드는 `firstimage`, `imageUrl`, `image_url`, `firstImage`를 모두 허용하고 내부에서는 `firstimage`로 정규화합니다.
+  - `folder_id`가 없을 때는 `null`로 맞춰 미분류 저장과 폴더 지정 저장을 명확히 구분합니다.
+  - `toggleWishlist()`는 정규화된 값을 사용해 `wishlistApi.toggleWishlist(contentid, title, firstimage, folder_id)`를 호출하도록 변경했습니다.
+  - 여행지 ID가 없는 잘못된 입력은 서버 요청 없이 `false`를 반환하여 깨진 데이터 저장을 방지합니다.
+
+### 기대 효과
+
+- 새로고침 직후 위시리스트, 알림, 게시판, 댓글, 관심 지역 API가 Firebase Auth 복원보다 먼저 실행되어 `auth=null`로 거부되는 문제를 완화했습니다.
+- 앱 내부 로그인 상태와 Firebase Realtime Database Rules가 보는 인증 상태의 기준을 맞췄습니다.
+- 화면별로 다른 여행지 데이터 필드명이 넘어와도 위시리스트 저장/삭제/중복 판정이 같은 기준으로 동작합니다.
+- 특정 폴더에서 `EXPLORE_ADD`로 이동해 하트를 누르는 흐름에서도 `folder_id`가 안정적으로 유지됩니다.
+
+### 검증
+
+- `src/api`와 `src/store` 하위 JavaScript 파일에 대해 `node --check` 문법 검사를 통과했습니다.
+- 현재 로컬 환경에는 일반 `npm` 명령과 `node_modules`가 없어 `npm run build`는 실행하지 못했습니다.
+
+---
+
 > 날짜별 작업 내역, 수정 사항, 트러블슈팅을 기록합니다.
 > 현재 구현 상태는 [Project_Specification.md](Project_Specification.md)를 참고하세요.
 
