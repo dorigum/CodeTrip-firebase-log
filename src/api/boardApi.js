@@ -67,7 +67,7 @@ export const getBoardPost = async (id) => {
 };
 
 export const createBoardPost = async ({ title, content, tags = [] }) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const created_at = nowIso();
   const postRef = push(ref(realtimeDb, 'boardPosts'));
   await set(postRef, {
@@ -85,7 +85,7 @@ export const createBoardPost = async ({ title, content, tags = [] }) => {
 };
 
 export const updateBoardPost = async (id, { title, content, tags = [] }) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const postRef = ref(realtimeDb, `boardPosts/${id}`);
   const snap = await get(postRef);
   if (!snap.exists()) throw { message: '게시글을 찾을 수 없습니다.' };
@@ -101,7 +101,7 @@ export const updateBoardPost = async (id, { title, content, tags = [] }) => {
 };
 
 export const deleteBoardPost = async (id) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const postSnap = await get(ref(realtimeDb, `boardPosts/${id}`));
   if (!postSnap.exists()) return;
   if (postSnap.val().user_id !== user.id) throw { message: '삭제 권한이 없습니다.' };
@@ -124,7 +124,7 @@ export const getBoardComments = async (postId) => {
 };
 
 export const createBoardComment = async (postId, body) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const postSnap = await get(ref(realtimeDb, `boardPosts/${postId}`));
   if (!postSnap.exists()) throw { message: '게시글을 찾을 수 없습니다.' };
 
@@ -157,7 +157,7 @@ export const createBoardComment = async (postId, body) => {
 };
 
 export const updateBoardComment = async (id, body) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const commentRef = ref(realtimeDb, `boardComments/${id}`);
   const snap = await get(commentRef);
   if (!snap.exists()) throw { message: '댓글을 찾을 수 없습니다.' };
@@ -168,7 +168,7 @@ export const updateBoardComment = async (id, body) => {
 };
 
 export const deleteBoardComment = async (id) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const commentRef = ref(realtimeDb, `boardComments/${id}`);
   const snap = await get(commentRef);
   if (!snap.exists()) return;
@@ -177,7 +177,7 @@ export const deleteBoardComment = async (id) => {
 };
 
 const toggleLike = async (path) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   let liked = false;
   let likes = 0;
   await runTransaction(ref(realtimeDb, `${path}/likeUserIds`), (current = {}) => {
@@ -199,7 +199,7 @@ export const toggleBoardPostLike = async (id) => toggleLike(`boardPosts/${id}`);
 export const toggleBoardCommentLike = async (id) => toggleLike(`boardComments/${id}`);
 
 export const getMyBoardPosts = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const [posts, comments] = await Promise.all([getAllPosts(), getAllComments()]);
   return sortPosts(posts
     .filter((post) => post.user_id === user.id)
@@ -210,7 +210,7 @@ export const getMyBoardPosts = async () => {
 };
 
 export const getMyLikedPosts = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const [posts, comments] = await Promise.all([getAllPosts(), getAllComments()]);
   return sortPosts(posts
     .filter((post) => !!post.likeUserIds?.[user.id])
@@ -221,7 +221,7 @@ export const getMyLikedPosts = async () => {
 };
 
 export const getMyBoardComments = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const [comments, posts] = await Promise.all([getAllComments(), getAllPosts()]);
   const postMap = Object.fromEntries(posts.map((post) => [post.id, post]));
   return comments
@@ -234,7 +234,7 @@ export const getMyBoardComments = async () => {
 };
 
 export const getMyTravelComments = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const snap = await get(ref(realtimeDb, 'travelComments'));
   return snapshotToArray(snap)
     .filter((comment) => comment.user_id === user.id)

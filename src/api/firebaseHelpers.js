@@ -1,3 +1,4 @@
+import { onAuthStateChanged } from 'firebase/auth';
 import { firebaseAuth } from '../firebase';
 
 export const nowIso = () => new Date().toISOString();
@@ -18,17 +19,25 @@ export const getStoredUser = () => {
   }
 };
 
-export const getCurrentUser = () => {
-  const authUser = firebaseAuth.currentUser;
+const waitForAuthUser = () =>
+  new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+
+export const getCurrentUser = async () => {
+  const authUser = firebaseAuth.currentUser || await waitForAuthUser();
   const storedUser = getStoredUser();
-  if (!authUser && !storedUser) {
+  if (!authUser) {
     throw { message: '로그인이 필요합니다.' };
   }
 
   return {
-    id: authUser?.uid || storedUser?.id,
-    email: authUser?.email || storedUser?.email,
-    name: authUser?.displayName || storedUser?.name || '익명',
+    id: authUser.uid,
+    email: authUser.email || storedUser?.email,
+    name: authUser.displayName || storedUser?.name || '익명',
     profileImg: storedUser?.profileImg || authUser?.photoURL || '',
   };
 };

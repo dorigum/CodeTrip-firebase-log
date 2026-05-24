@@ -87,7 +87,7 @@ const authApi = {
   },
 
   updateProfile: async ({ name, profileImg }) => {
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     await updateFirebaseProfile(firebaseAuth.currentUser, {
       displayName: name,
       photoURL: profileImg || '',
@@ -117,13 +117,13 @@ const authApi = {
   },
 
   getFavoriteRegions: async () => {
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     const profileSnap = await get(ref(realtimeDb, `users/${user.id}/favoriteRegions`));
     return profileSnap.exists() ? profileSnap.val() || [] : [];
   },
 
   updateFavoriteRegions: async (codes) => {
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     if (codes.length > 3) {
       throw { message: '관심 지역은 최대 3개까지 선택할 수 있습니다.' };
     }

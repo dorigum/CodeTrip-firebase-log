@@ -1,6 +1,20 @@
 import { create } from 'zustand';
 import * as wishlistApi from '../api/wishlistApi';
 
+const normalizeWishlistItem = (itemData = {}) => {
+  const contentid = itemData.contentid ?? itemData.contentId ?? itemData.content_id;
+  const title = itemData.title ?? itemData.facltNm ?? '여행지';
+  const firstimage = itemData.firstimage ?? itemData.imageUrl ?? itemData.image_url ?? itemData.firstImage ?? '';
+
+  return {
+    ...itemData,
+    contentid: contentid != null ? String(contentid) : '',
+    title,
+    firstimage,
+    folder_id: itemData.folder_id ?? null,
+  };
+};
+
 const useWishlistStore = create((set, get) => ({
   wishlistItems: [],
   folders: [],
@@ -40,10 +54,11 @@ const useWishlistStore = create((set, get) => ({
   },
 
   toggleWishlist: async (itemData) => {
-    const { contentid, title, firstimage, folder_id } = itemData;
-    const cid = String(contentid);
+    const { contentid, title, firstimage, folder_id } = normalizeWishlistItem(itemData);
+    if (!contentid) return false;
+
     try {
-      const result = await wishlistApi.toggleWishlist(cid, title, firstimage, folder_id);
+      const result = await wishlistApi.toggleWishlist(contentid, title, firstimage, folder_id);
       await get().syncWithServer();
       return result.wishlisted;
     } catch (err) {

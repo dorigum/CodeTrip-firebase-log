@@ -12,7 +12,7 @@ export const getTravelComments = async (contentId) => {
 };
 
 export const toggleTravelCommentLike = async (commentId) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   let liked = false;
   let likes = 0;
   await runTransaction(ref(realtimeDb, `travelComments/${commentId}/likeUserIds`), (current = {}) => {
@@ -31,7 +31,7 @@ export const toggleTravelCommentLike = async (commentId) => {
 };
 
 export const postTravelComment = async ({ contentId, nickname, body }) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const created_at = nowIso();
   const commentRef = push(ref(realtimeDb, 'travelComments'));
   const comment = {
@@ -67,7 +67,7 @@ export const postTravelComment = async ({ contentId, nickname, body }) => {
 };
 
 export const updateTravelComment = async (id, body) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const commentRef = ref(realtimeDb, `travelComments/${id}`);
   const snap = await get(commentRef);
   if (!snap.exists()) throw { message: '댓글을 찾을 수 없습니다.' };
@@ -78,7 +78,7 @@ export const updateTravelComment = async (id, body) => {
 };
 
 export const deleteTravelComment = async (id) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const commentRef = ref(realtimeDb, `travelComments/${id}`);
   const snap = await get(commentRef);
   if (!snap.exists()) return;

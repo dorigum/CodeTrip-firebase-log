@@ -3,7 +3,7 @@ import { realtimeDb } from '../firebase';
 import { getCurrentUser, snapshotToArray, toIso } from './firebaseHelpers';
 
 const getMyNotifications = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, 'notifications')))
     .filter((notification) => notification.user_id === user.id)
     .sort((a, b) => new Date(toIso(b.created_at)) - new Date(toIso(a.created_at)))

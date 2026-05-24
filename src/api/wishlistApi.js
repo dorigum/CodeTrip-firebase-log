@@ -3,7 +3,7 @@ import { realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso, snapshotToArray, toIso } from './firebaseHelpers';
 
 export const getWishlistDetails = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, 'wishlists')))
     .filter((item) => item.user_id === user.id)
     .map((item) => ({
@@ -17,7 +17,7 @@ export const getWishlistDetails = async () => {
 };
 
 export const toggleWishlist = async (contentId, title, imageUrl, folderId = null) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const wishlists = snapshotToArray(await get(ref(realtimeDb, 'wishlists')));
   const existing = wishlists.find((item) => item.user_id === user.id && item.contentId === String(contentId));
 
@@ -38,7 +38,7 @@ export const toggleWishlist = async (contentId, title, imageUrl, folderId = null
 };
 
 export const getFolders = async () => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, 'wishlistFolders')))
     .filter((folder) => folder.user_id === user.id)
     .map((folder) => ({
@@ -52,7 +52,7 @@ export const getFolders = async () => {
 };
 
 export const createFolder = async (name, startDate, endDate) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const created_at = nowIso();
   const folderRef = push(ref(realtimeDb, 'wishlistFolders'));
   await set(folderRef, {
@@ -84,7 +84,7 @@ export const updateFolder = async (folderId, name, startDate, endDate) => {
 };
 
 export const deleteFolder = async (folderId) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const [wishlists, notes] = await Promise.all([
     get(ref(realtimeDb, 'wishlists')),
     get(ref(realtimeDb, 'wishlistNotes')),
@@ -104,7 +104,7 @@ export const deleteFolder = async (folderId) => {
 };
 
 export const moveItem = async (contentId, folderId) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const wishlists = snapshotToArray(await get(ref(realtimeDb, 'wishlists')));
   const updates = {};
   wishlists
@@ -115,7 +115,7 @@ export const moveItem = async (contentId, folderId) => {
 };
 
 export const getFolderNotes = async (folderId) => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, 'wishlistNotes')))
     .filter((note) => note.user_id === user.id && note.folder_id === String(folderId))
     .map((note) => ({ ...note, created_at: toIso(note.created_at), is_completed: !!note.is_completed }))
@@ -123,7 +123,7 @@ export const getFolderNotes = async (folderId) => {
 };
 
 export const createNote = async (folderId, content, type = 'CHECKLIST') => {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const created_at = nowIso();
   const noteRef = push(ref(realtimeDb, 'wishlistNotes'));
   const note = {
