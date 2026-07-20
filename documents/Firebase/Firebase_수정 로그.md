@@ -1376,3 +1376,134 @@ https://console.firebase.google.com/project/newagent-9c2a8/overview
 
 배포 후 브라우저에 이전 번들이 남아 있으면 캐시 영향일 수 있으므로 `Ctrl + F5` 강력 새로고침 후 확인합니다.
 
+---
+
+## 2026.07.21 Firebase 제출용 저장소 정리
+
+### 작업 배경
+
+Firebase 전환 이후 프로젝트 실행 기준은 Vite 프론트엔드, Firebase Authentication, Realtime Database, Firebase Hosting입니다.
+
+하지만 저장소에는 기존 AWS EC2, Docker, Express/MySQL 배포 구조에서 사용하던 파일과 스크립트가 일부 남아 있었습니다.
+
+공모전 제출용 저장소의 기준을 명확히 하기 위해 현재 Firebase 배포 구조와 직접 관련 없는 파일을 정리했습니다.
+
+### 문서 파일명 정리
+
+Firebase 문서 파일명을 읽기 쉬운 형태로 변경하고 README 링크를 함께 수정했습니다.
+
+변경 전:
+
+```text
+documents/Firebase/Firebase_수정로그.md
+documents/Firebase/Firebase_상세내역서.md
+```
+
+변경 후:
+
+```text
+documents/Firebase/Firebase_수정 로그.md
+documents/Firebase/Firebase_상세 내역서.md
+```
+
+README의 문서 구조와 문서 링크도 새 파일명 기준으로 수정했습니다.
+
+### 서버 및 기존 배포 파일 정리
+
+Firebase Hosting 기준에서는 별도 Express 서버와 Docker/Nginx 배포 파일을 사용하지 않으므로 다음 항목을 제거했습니다.
+
+```text
+server/
+Dockerfile.frontend
+docker-compose.yml
+nginx.conf
+```
+
+### 미사용 API 파일 정리
+
+기존 Express API 호출용 보조 파일과 더 이상 참조되지 않는 mock 데이터를 제거했습니다.
+
+```text
+src/api/axiosInstance.js
+src/api/mockData.js
+```
+
+현재 여행지, 축제, 날씨 API 호출은 `axios` 패키지를 계속 사용하므로 `axios` 의존성은 유지했습니다.
+
+### npm script 및 의존성 정리
+
+기존 백엔드 동시 실행 스크립트를 제거했습니다.
+
+제거한 script:
+
+```json
+"dev:server": "cd server && npm run dev"
+"dev:all": "concurrently --kill-others-on-fail --names \"SERVER,CLIENT\" --prefix-colors \"yellow,cyan\" \"cd server && nodemon index.js\" \"vite\""
+```
+
+`concurrently`는 더 이상 필요하지 않아 devDependencies에서 제거하고 `package-lock.json`을 갱신했습니다.
+
+현재 유지 script:
+
+```json
+"dev": "vite"
+"build": "vite build"
+"lint": "eslint ."
+"preview": "vite preview"
+```
+
+### Vite 프록시 정리
+
+기존 백엔드 서버용 로컬 프록시를 제거했습니다.
+
+제거한 프록시:
+
+```text
+/api -> http://localhost:8080
+/uploads -> http://localhost:8080
+```
+
+공공데이터 API 호출 보조용 `/B551011` 프록시는 유지했습니다.
+
+### GitHub Actions CI 정리
+
+기존 CI에는 `main`, `develop` PR과 backend dependency check가 포함되어 있었습니다.
+
+현재 저장소는 `main` 단독 운영 기준이며 Express 서버를 제거했으므로 다음과 같이 정리했습니다.
+
+```text
+pull_request target: main
+frontend lint/build job 유지
+backend dependency check job 제거
+```
+
+### 검증 결과
+
+정리 후 다음 명령으로 검증했습니다.
+
+```bash
+npm run lint
+npm run build
+```
+
+결과:
+
+```text
+npm run lint 성공
+lint error 0개
+기존 React Hook warning 12개 유지
+
+npm run build 성공
+기존과 동일하게 일부 chunk size warning 발생
+```
+
+### 커밋 및 푸시
+
+문서 파일명 정리와 불필요 파일 정리는 커밋을 분리해서 진행했습니다.
+
+```text
+2f074ed 260721 docs: Firebase 문서 파일명 및 README 링크 정리
+525bc46 260721 chore: Firebase 기준 불필요한 서버 배포 파일 정리
+```
+
+두 커밋 모두 `origin/main`에 푸시했습니다.
