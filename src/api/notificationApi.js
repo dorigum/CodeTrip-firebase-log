@@ -4,8 +4,7 @@ import { getCurrentUser, snapshotToArray, toIso } from './firebaseHelpers';
 
 const getMyNotifications = async () => {
   const user = await getCurrentUser();
-  return snapshotToArray(await get(ref(realtimeDb, 'notifications')))
-    .filter((notification) => notification.user_id === user.id)
+  return snapshotToArray(await get(ref(realtimeDb, `users/${user.id}/notifications`)))
     .sort((a, b) => new Date(toIso(b.created_at)) - new Date(toIso(a.created_at)))
     .slice(0, 30);
 };
@@ -23,27 +22,31 @@ export const getNotifications = async () => {
 };
 
 export const markAllRead = async () => {
+  const user = await getCurrentUser();
   const notifications = await getMyNotifications();
   const updates = {};
   notifications
     .filter((notification) => !notification.is_read)
-    .forEach((notification) => { updates[`notifications/${notification.id}/is_read`] = true; });
+    .forEach((notification) => { updates[`users/${user.id}/notifications/${notification.id}/is_read`] = true; });
   if (Object.keys(updates).length) await update(ref(realtimeDb), updates);
 };
 
 export const markOneRead = async (id) => {
-  await update(ref(realtimeDb, `notifications/${id}`), { is_read: true });
+  const user = await getCurrentUser();
+  await update(ref(realtimeDb, `users/${user.id}/notifications/${id}`), { is_read: true });
 };
 
 export const deleteOneNotification = async (id) => {
-  await remove(ref(realtimeDb, `notifications/${id}`));
+  const user = await getCurrentUser();
+  await remove(ref(realtimeDb, `users/${user.id}/notifications/${id}`));
 };
 
 export const deleteReadNotifications = async () => {
+  const user = await getCurrentUser();
   const notifications = await getMyNotifications();
   const updates = {};
   notifications
     .filter((notification) => notification.is_read)
-    .forEach((notification) => { updates[`notifications/${notification.id}`] = null; });
+    .forEach((notification) => { updates[`users/${user.id}/notifications/${notification.id}`] = null; });
   if (Object.keys(updates).length) await update(ref(realtimeDb), updates);
 };

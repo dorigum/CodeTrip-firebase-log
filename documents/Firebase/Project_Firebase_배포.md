@@ -708,19 +708,34 @@ CORS 정책 영향 가능
 
 소규모 시연에서는 허용 가능한 수준으로 판단했습니다.
 
-### 15.2 Realtime Database 쿼리 한계
+### 15.2 Realtime Database 쿼리 구조
 
-Realtime Database는 Firestore보다 복합 쿼리가 약합니다.
+Realtime Database는 Firestore보다 복합 쿼리가 약하므로, 2026.07.20 구조 재정비 작업에서 자주 사용하는 조회 흐름은 인덱스 노드로 분리했습니다.
 
-현재 처리 방식:
+현재 주요 구조:
 
 ```text
-게시글 검색: 전체 게시글 로드 후 클라이언트 필터
-좋아요순 정렬: 전체 게시글 로드 후 클라이언트 정렬
-내 활동 조회: 전체 댓글/게시글 로드 후 클라이언트 필터
+users/{uid}/wishlists
+users/{uid}/wishlistFolders
+users/{uid}/wishlistNotes
+users/{uid}/notifications
+users/{uid}/activities/boardPosts
+users/{uid}/activities/boardComments
+users/{uid}/activities/travelComments
+users/{uid}/activities/likedPosts
+boardCommentsByPost/{postId}/{commentId}
+travelCommentsByContent/{contentId}/{commentId}
 ```
 
-데이터가 많아질 경우 개선이 필요합니다.
+남은 한계:
+
+```text
+게시글 목록 검색: boardPosts 전체 로드 후 클라이언트 필터
+게시글 좋아요순 정렬: boardPosts 전체 로드 후 클라이언트 정렬
+기존 데이터가 있는 경우 users/{uid}/activities 및 댓글 인덱스 마이그레이션 필요
+```
+
+공모전 제출용 데모 규모에서는 허용 가능한 수준으로 판단했습니다.
 
 ### 15.3 프로필 이미지 저장 방식
 
@@ -742,29 +757,35 @@ Storage 설정 불필요
 
 현재 `Settings.jsx`에서 이미지 압축 후 업로드하므로 시연용으로는 충분합니다.
 
-### 15.4 보안 규칙 개선 여지
+### 15.4 보안 규칙과 알림 처리
 
-현재 구조는 기존 화면 구조를 최대한 유지하기 위해 루트 컬렉션 형태를 유지했습니다.
+현재 구조는 클라이언트 단독 Firebase Web SDK 기반입니다.
 
-실제 운영 서비스라면 다음 구조가 더 안전합니다.
+타 사용자 알림 fan-out은 클라이언트에서 직접 `users/{otherUid}/notifications`에 쓰지 않도록 비활성화했습니다.
 
 ```text
-users/{uid}
-userWishlists/{uid}/{wishlistId}
-userNotifications/{uid}/{notificationId}
+게시글 댓글 알림
+여행지 댓글 알림
+```
+
+위 기능을 안전하게 구현하려면 다음과 같은 서버성 로직이 필요합니다.
+
+```text
+Cloud Functions
+또는 Firebase Admin SDK 기반 서버 API
 ```
 
 ---
 
 ## 16. 향후 개선 방향
 
-1. 사용자별 데이터 경로 재설계
-2. Realtime Database index 규칙 추가
+1. 기존 Firebase 데이터가 있는 경우 마이그레이션 스크립트 작성
+2. 게시글 목록 검색/정렬용 인덱스 추가 검토
 3. 공공데이터 API 호출 캐싱 전략 보완
 4. Firebase Storage 또는 압축 이미지 정책 개선
-5. Firebase Hosting preview channel 도입
-6. CI/CD에서 `firebase` 브랜치만 자동 배포하도록 분리
-7. README의 기존 Express/MySQL 설명과 Firebase 배포 설명을 브랜치별로 명확히 분리
+5. Cloud Functions 도입 가능 시 알림 fan-out 재설계
+6. Firebase Hosting preview channel 도입
+7. CI/CD에서 `firebase` 브랜치만 자동 배포하도록 분리
 
 ---
 
@@ -774,6 +795,12 @@ userNotifications/{uid}/{notificationId}
 
 ```bash
 npm run dev
+```
+
+기본 접속:
+
+```text
+http://localhost:5180
 ```
 
 ### 빌드
@@ -794,6 +821,85 @@ npm run lint
 npx firebase-tools deploy --only hosting,database
 ```
 
+Firebase CLI 로그인이 되어 있지 않거나 CLI 사용이 어려운 경우, Realtime Database Rules는 콘솔에서 직접 반영합니다.
+
+```text
+Firebase Console
+-> Realtime Database
+-> Rules
+-> database.rules.json 내용 붙여넣기
+-> Publish
+```
+
+Hosting만 배포할 경우:
+
+```bash
+npx firebase-tools deploy --only hosting
+```
+
+Rules만 배포할 경우:
+
+```bash
+npx firebase-tools deploy --only database
+```
+
+---
+
+## 18. 2026.07.20 로컬 테스트 결과
+
+### 테스트 환경
+
+```text
+로컬 개발 서버: http://localhost:5180
+Firebase Project ID: newagent-9c2a8
+Realtime Database Rules: Firebase Console에서 database.rules.json 반영
+```
+
+### 정상 확인한 기능
+
+```text
+회원가입
+로그인
+로그아웃
+위시리스트 저장
+위시리스트 삭제
+위시리스트 폴더 생성
+폴더 메모 생성
+폴더 체크리스트 생성
+게시글 목록 조회
+게시글 작성
+게시글 상세 조회
+게시글 삭제
+게시글 댓글 작성/수정/삭제
+게시글 좋아요/좋아요 취소
+MyActivity Board Posts 조회
+MyActivity Board Comments 조회
+MyActivity Liked Posts 조회
+여행지 댓글 작성/수정/삭제
+MyActivity Travel Comments 조회
+```
+
+### 테스트 중 발견 후 수정한 문제
+
+```text
+Firebase 환경변수 누락으로 auth/invalid-api-key 발생
+Realtime Database Rules 미반영으로 boardCommentsByPost permission_denied 발생
+boardPosts/{postId}/view_count 업데이트 권한 부족으로 게시글 상세 조회 오류 발생
+게시글 삭제 시 다른 사용자 댓글 원본 삭제 시도 가능성으로 permission_denied 발생
+```
+
+### 조치 결과
+
+```text
+.env에 Firebase Web App config 추가
+database.rules.json을 Firebase Console Rules에 반영
+view_count 별도 쓰기 규칙 추가
+likeUserIds/{uid} 본인 쓰기 규칙 추가
+게시글 삭제 로직에서 다른 사용자 댓글 원본 삭제 시도 제거
+npm run build 성공
+npm run lint 성공, error 0개
+```
+
 ### Firebase 브랜치 작업 흐름
 
 ```bash
@@ -810,7 +916,39 @@ git push origin firebase
 
 ---
 
-## 18. 결론
+## 19. 결론
 
 Firebase 전환 버전은 CodeTrip을 무료로 배포하고 시연하기 위한 개인 배포 브랜치입니다.  
 `main` 브랜치의 팀 협업용 Express/MySQL 구조와 병합하지 않고, `firebase` 브랜치에서 별도 운영하는 것이 가장 안전합니다.
+
+---
+
+## 20. 2026.07.20 최종 배포 결과
+
+### 수행 명령
+
+```bash
+npx firebase-tools deploy --only hosting,database
+```
+
+### 결과
+
+```text
+Deploy complete
+database rules syntax valid
+database rules released successfully
+hosting release complete
+```
+
+### 배포 URL
+
+```text
+https://newagent-9c2a8.web.app
+```
+
+### 배포 범위
+
+```text
+Firebase Hosting
+Realtime Database Rules
+```

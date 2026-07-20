@@ -3,13 +3,63 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "wishlists": {
+          "$wishlistId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['user_id', 'contentId', 'title', 'created_at']) && newData.child('user_id').val() === $uid)"
+          }
+        },
+        "wishlistFolders": {
+          "$folderId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['user_id', 'name', 'created_at', 'updated_at']) && newData.child('user_id').val() === $uid)"
+          }
+        },
+        "wishlistNotes": {
+          "$noteId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['folder_id', 'user_id', 'content', 'type', 'is_completed', 'created_at']) && newData.child('user_id').val() === $uid)"
+          }
+        },
+        "notifications": {
+          "$notificationId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['user_id', 'message', 'is_read', 'created_at']) && newData.child('user_id').val() === $uid)"
+          }
+        },
+        "activities": {
+          "boardPosts": {
+            "$postId": {
+              ".validate": "!newData.exists() || (newData.hasChildren(['post_id', 'title', 'created_at']) && newData.child('post_id').val() === $postId)"
+            }
+          },
+          "boardComments": {
+            "$commentId": {
+              ".validate": "!newData.exists() || (newData.hasChildren(['comment_id', 'post_id', 'created_at']) && newData.child('comment_id').val() === $commentId)"
+            }
+          },
+          "travelComments": {
+            "$commentId": {
+              ".validate": "!newData.exists() || (newData.hasChildren(['comment_id', 'content_id', 'created_at']) && newData.child('comment_id').val() === $commentId)"
+            }
+          },
+          "likedPosts": {
+            "$postId": {
+              ".validate": "!newData.exists() || (newData.hasChildren(['post_id', 'created_at']) && newData.child('post_id').val() === $postId)"
+            }
+          }
+        }
       }
     },
     "boardPosts": {
       ".read": true,
       "$postId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
+        ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
+        "view_count": {
+          ".write": "auth != null && data.exists() && newData.isNumber() && newData.val() >= data.val()"
+        },
+        "likeUserIds": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
       }
     },
     "boardComments": {
@@ -18,34 +68,29 @@
         ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
       }
     },
+    "boardCommentsByPost": {
+      ".read": true,
+      "$postId": {
+        ".write": "auth != null && !newData.exists() && root.child('boardPosts').child($postId).child('user_id').val() === auth.uid",
+        "$commentId": {
+          ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['comment_id', 'user_id', 'created_at']) && newData.child('comment_id').val() === $commentId)"
+        }
+      }
+    },
     "travelComments": {
       ".read": true,
       "$commentId": {
         ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
       }
     },
-    "wishlists": {
-      ".read": "auth != null",
-      "$wishlistId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
-      }
-    },
-    "wishlistFolders": {
-      ".read": "auth != null",
-      "$folderId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
-      }
-    },
-    "wishlistNotes": {
-      ".read": "auth != null",
-      "$noteId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
-      }
-    },
-    "notifications": {
-      ".read": "auth != null",
-      "$notificationId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
+    "travelCommentsByContent": {
+      ".read": true,
+      "$contentId": {
+        "$commentId": {
+          ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['comment_id', 'user_id', 'created_at']) && newData.child('comment_id').val() === $commentId)"
+        }
       }
     },
     "apiCache": {

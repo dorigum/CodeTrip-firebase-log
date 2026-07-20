@@ -1,4 +1,4 @@
-import { get, push, ref, remove, runTransaction, set, update } from 'firebase/database';
+import { get, push, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import {
   getCurrentUser,
@@ -11,7 +11,39 @@ import {
 } from './firebaseHelpers';
 
 const getAllPosts = async () => snapshotToArray(await get(ref(realtimeDb, 'boardPosts')));
-const getAllComments = async () => snapshotToArray(await get(ref(realtimeDb, 'boardComments')));
+const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
+const boardCommentIndexPath = (postId, commentId = '') =>
+  `boardCommentsByPost/${postId}${commentId ? `/${commentId}` : ''}`;
+
+const getActivityIds = async (uid, child) => {
+  const snap = await get(ref(realtimeDb, userActivityPath(uid, child)));
+  return Object.keys(snap.val() || {});
+};
+
+const getBoardCommentCounts = async () => {
+  const snap = await get(ref(realtimeDb, 'boardCommentsByPost'));
+  const value = snap.val() || {};
+  return Object.fromEntries(
+    Object.entries(value).map(([postId, comments]) => [postId, Object.keys(comments || {}).length])
+  );
+};
+
+const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
+  if (!ids.length) return [];
+  const [postSnaps, counts] = await Promise.all([
+    Promise.all(ids.map((id) => get(ref(realtimeDb, `boardPosts/${id}`)).then((snap) => ({ id, snap })))),
+    commentCounts ? Promise.resolve(commentCounts) : getBoardCommentCounts(),
+  ]);
+  return sortPosts(
+    postSnaps
+      .filter(({ snap }) => snap.exists())
+      .map(({ id, snap }) => ({
+        ...normalizePost({ id, ...snap.val() }, currentUserId),
+        comment_count: counts[id] || 0,
+      })),
+    'created_at'
+  );
+};
 
 const sortPosts = (posts, sort) => {
   const sorted = [...posts];
@@ -27,11 +59,7 @@ const sortPosts = (posts, sort) => {
 
 export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', sort = 'created_at' } = {}) => {
   const currentUserId = getStoredUser()?.id || null;
-  const [posts, comments] = await Promise.all([getAllPosts(), getAllComments()]);
-  const commentCounts = comments.reduce((acc, comment) => {
-    acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
-    return acc;
-  }, {});
+  const [posts, commentCounts] = await Promise.all([getAllPosts(), getBoardCommentCounts()]);
 
   const normalized = posts.map((post) => ({
     ...normalizePost(post, currentUserId),
@@ -70,7 +98,7 @@ export const createBoardPost = async ({ title, content, tags = [] }) => {
   const user = await getCurrentUser();
   const created_at = nowIso();
   const postRef = push(ref(realtimeDb, 'boardPosts'));
-  await set(postRef, {
+  const post = {
     user_id: user.id,
     nickname: user.name,
     title,
@@ -80,6 +108,14 @@ export const createBoardPost = async ({ title, content, tags = [] }) => {
     likeUserIds: {},
     created_at,
     updated_at: created_at,
+  };
+  await update(ref(realtimeDb), {
+    [`boardPosts/${postRef.key}`]: post,
+    [userActivityPath(user.id, `boardPosts/${postRef.key}`)]: {
+      post_id: postRef.key,
+      title,
+      created_at,
+    },
   });
   return { id: postRef.key };
 };
@@ -91,11 +127,18 @@ export const updateBoardPost = async (id, { title, content, tags = [] }) => {
   if (!snap.exists()) throw { message: '게시글을 찾을 수 없습니다.' };
   if (snap.val().user_id !== user.id) throw { message: '수정 권한이 없습니다.' };
 
+  const updated_at = nowIso();
   await update(postRef, {
     title,
     content,
     tags: tags.map((tag, index) => ({ id: tag.id || `${Date.now()}-${index}`, ...tag })),
-    updated_at: nowIso(),
+    updated_at,
+  });
+  await update(ref(realtimeDb, userActivityPath(user.id, `boardPosts/${id}`)), {
+    post_id: id,
+    title,
+    created_at: snap.val().created_at || updated_at,
+    updated_at,
   });
   return { message: '수정했습니다.' };
 };
@@ -106,20 +149,26 @@ export const deleteBoardPost = async (id) => {
   if (!postSnap.exists()) return;
   if (postSnap.val().user_id !== user.id) throw { message: '삭제 권한이 없습니다.' };
 
-  const comments = await getAllComments();
-  const updates = { [`boardPosts/${id}`]: null };
-  comments
-    .filter((comment) => comment.post_id === String(id))
-    .forEach((comment) => { updates[`boardComments/${comment.id}`] = null; });
+  const updates = {
+    [`boardPosts/${id}`]: null,
+    [boardCommentIndexPath(id)]: null,
+    [userActivityPath(user.id, `boardPosts/${id}`)]: null,
+    [userActivityPath(user.id, `likedPosts/${id}`)]: null,
+  };
   await update(ref(realtimeDb), updates);
 };
 
 export const getBoardComments = async (postId) => {
   const currentUserId = getStoredUser()?.id || null;
-  const comments = await getAllComments();
-  return comments
-    .filter((comment) => comment.post_id === String(postId))
-    .map((comment) => normalizeComment(comment, currentUserId))
+  const indexSnap = await get(ref(realtimeDb, boardCommentIndexPath(postId)));
+  const ids = Object.keys(indexSnap.val() || {});
+  if (!ids.length) return [];
+  const commentSnaps = await Promise.all(
+    ids.map((id) => get(ref(realtimeDb, `boardComments/${id}`)).then((snap) => ({ id, snap })))
+  );
+  return commentSnaps
+    .filter(({ snap }) => snap.exists())
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val() }, currentUserId))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
@@ -139,19 +188,20 @@ export const createBoardComment = async (postId, body) => {
     created_at,
     updated_at: created_at,
   };
-  await set(commentRef, comment);
-
-  const post = postSnap.val();
-  if (post.user_id !== user.id) {
-    const notificationRef = push(ref(realtimeDb, 'notifications'));
-    await set(notificationRef, {
-      user_id: post.user_id,
-      message: `${user.name}님이 게시글 '${post.title}'에 댓글을 작성했습니다.`,
-      content_id: `/board/${postId}`,
-      is_read: false,
+  await update(ref(realtimeDb), {
+    [`boardComments/${commentRef.key}`]: comment,
+    [boardCommentIndexPath(postId, commentRef.key)]: {
+      comment_id: commentRef.key,
+      user_id: user.id,
       created_at,
-    });
-  }
+    },
+    [userActivityPath(user.id, `boardComments/${commentRef.key}`)]: {
+      comment_id: commentRef.key,
+      post_id: String(postId),
+      post_title: postSnap.val().title || '',
+      created_at,
+    },
+  });
 
   return { id: commentRef.key, ...comment, likes: 0, liked: false };
 };
@@ -173,7 +223,11 @@ export const deleteBoardComment = async (id) => {
   const snap = await get(commentRef);
   if (!snap.exists()) return;
   if (snap.val().user_id !== user.id) throw { message: '삭제 권한이 없습니다.' };
-  await remove(commentRef);
+  await update(ref(realtimeDb), {
+    [`boardComments/${id}`]: null,
+    [boardCommentIndexPath(snap.val().post_id, id)]: null,
+    [userActivityPath(user.id, `boardComments/${id}`)]: null,
+  });
 };
 
 const toggleLike = async (path) => {
@@ -192,6 +246,14 @@ const toggleLike = async (path) => {
     likes = likeMapToIds(next).length;
     return next;
   });
+  if (path.startsWith('boardPosts/')) {
+    const postId = path.split('/')[1];
+    await update(ref(realtimeDb), {
+      [userActivityPath(user.id, `likedPosts/${postId}`)]: liked
+        ? { post_id: postId, created_at: nowIso() }
+        : null,
+    });
+  }
   return { liked, likes };
 };
 
@@ -200,44 +262,43 @@ export const toggleBoardCommentLike = async (id) => toggleLike(`boardComments/${
 
 export const getMyBoardPosts = async () => {
   const user = await getCurrentUser();
-  const [posts, comments] = await Promise.all([getAllPosts(), getAllComments()]);
-  return sortPosts(posts
-    .filter((post) => post.user_id === user.id)
-    .map((post) => ({
-      ...normalizePost(post, user.id),
-      comment_count: comments.filter((comment) => comment.post_id === post.id).length,
-    })), 'created_at');
+  const ids = await getActivityIds(user.id, 'boardPosts');
+  return getPostsByIds(ids, user.id);
 };
 
 export const getMyLikedPosts = async () => {
   const user = await getCurrentUser();
-  const [posts, comments] = await Promise.all([getAllPosts(), getAllComments()]);
-  return sortPosts(posts
-    .filter((post) => !!post.likeUserIds?.[user.id])
-    .map((post) => ({
-      ...normalizePost(post, user.id),
-      comment_count: comments.filter((comment) => comment.post_id === post.id).length,
-    })), 'created_at');
+  const ids = await getActivityIds(user.id, 'likedPosts');
+  return getPostsByIds(ids, user.id);
 };
 
 export const getMyBoardComments = async () => {
   const user = await getCurrentUser();
-  const [comments, posts] = await Promise.all([getAllComments(), getAllPosts()]);
-  const postMap = Object.fromEntries(posts.map((post) => [post.id, post]));
-  return comments
-    .filter((comment) => comment.user_id === user.id)
-    .map((comment) => ({
-      ...normalizeComment(comment, user.id),
-      post_title: postMap[comment.post_id]?.title || '',
+  const ids = await getActivityIds(user.id, 'boardComments');
+  if (!ids.length) return [];
+  const activitySnap = await get(ref(realtimeDb, userActivityPath(user.id, 'boardComments')));
+  const activityMap = activitySnap.val() || {};
+  const commentSnaps = await Promise.all(
+    ids.map((id) => get(ref(realtimeDb, `boardComments/${id}`)).then((snap) => ({ id, snap })))
+  );
+  return commentSnaps
+    .filter(({ snap }) => snap.exists())
+    .map(({ id, snap }) => ({
+      ...normalizeComment({ id, ...snap.val() }, user.id),
+      post_title: activityMap[id]?.post_title || '',
     }))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 };
 
 export const getMyTravelComments = async () => {
   const user = await getCurrentUser();
-  const snap = await get(ref(realtimeDb, 'travelComments'));
-  return snapshotToArray(snap)
-    .filter((comment) => comment.user_id === user.id)
-    .map((comment) => normalizeComment(comment, user.id))
+  const ids = await getActivityIds(user.id, 'travelComments');
+  if (!ids.length) return [];
+  const commentSnaps = await Promise.all(
+    ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))
+  );
+  return commentSnaps
+    .filter(({ snap }) => snap.exists())
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val() }, user.id))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 };

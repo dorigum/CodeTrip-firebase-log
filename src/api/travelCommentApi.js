@@ -1,14 +1,25 @@
-import { get, push, ref, remove, runTransaction, set, update } from 'firebase/database';
+import { get, push, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
-import { getCurrentUser, getStoredUser, likeMapToIds, normalizeComment, nowIso, snapshotToArray } from './firebaseHelpers';
+import { getCurrentUser, getStoredUser, likeMapToIds, normalizeComment, nowIso } from './firebaseHelpers';
+
+const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
+const travelCommentIndexPath = (contentId, commentId = '') =>
+  `travelCommentsByContent/${contentId}${commentId ? `/${commentId}` : ''}`;
 
 export const getTravelComments = async (contentId) => {
   const currentUserId = getStoredUser()?.id || null;
-  const comments = snapshotToArray(await get(ref(realtimeDb, 'travelComments')));
-  return comments
-    .filter((comment) => comment.content_id === String(contentId))
-    .map((comment) => normalizeComment(comment, currentUserId))
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const indexSnap = await get(ref(realtimeDb, travelCommentIndexPath(contentId)));
+  const ids = Object.keys(indexSnap.val() || {});
+  if (!ids.length) return [];
+
+  const commentSnaps = await Promise.all(
+    ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))
+  );
+
+  return commentSnaps
+    .filter(({ snap }) => snap.exists())
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val() }, currentUserId))
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
 export const toggleTravelCommentLike = async (commentId) => {
@@ -43,25 +54,20 @@ export const postTravelComment = async ({ contentId, nickname, body }) => {
     created_at,
     updated_at: created_at,
   };
-  await set(commentRef, comment);
 
-  const wishlists = snapshotToArray(await get(ref(realtimeDb, 'wishlists')));
-  const targetUserIds = new Set(
-    wishlists
-      .filter((item) => item.contentId === String(contentId) && item.user_id !== user.id)
-      .map((item) => item.user_id)
-  );
-
-  await Promise.all([...targetUserIds].map((userId) => {
-    const notificationRef = push(ref(realtimeDb, 'notifications'));
-    return set(notificationRef, {
-      user_id: userId,
-      message: `${nickname || user.name}님이 찜한 여행지에 댓글을 작성했습니다.`,
-      content_id: String(contentId),
-      is_read: false,
+  await update(ref(realtimeDb), {
+    [`travelComments/${commentRef.key}`]: comment,
+    [travelCommentIndexPath(contentId, commentRef.key)]: {
+      comment_id: commentRef.key,
+      user_id: user.id,
       created_at,
-    });
-  }));
+    },
+    [userActivityPath(user.id, `travelComments/${commentRef.key}`)]: {
+      comment_id: commentRef.key,
+      content_id: String(contentId),
+      created_at,
+    },
+  });
 
   return { id: commentRef.key, ...comment };
 };
@@ -83,5 +89,10 @@ export const deleteTravelComment = async (id) => {
   const snap = await get(commentRef);
   if (!snap.exists()) return;
   if (snap.val().user_id !== user.id) throw { message: '삭제 권한이 없습니다.' };
-  await remove(commentRef);
+
+  await update(ref(realtimeDb), {
+    [`travelComments/${id}`]: null,
+    [travelCommentIndexPath(snap.val().content_id, id)]: null,
+    [userActivityPath(user.id, `travelComments/${id}`)]: null,
+  });
 };
