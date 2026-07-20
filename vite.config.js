@@ -16,18 +16,6 @@ export default defineConfig({
         target: 'https://apis.data.go.kr',
         changeOrigin: true,
         secure: false,
-      },
-      // 우리 프로젝트 백엔드 서버 프록시 (로그인 등)
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-      // 서버의 정적 파일(업로드된 이미지) 프록시
-      '/uploads': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
       }
     }
   }
