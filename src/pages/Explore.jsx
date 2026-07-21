@@ -5,6 +5,7 @@ import useExploreStore, { NUM_OF_ROWS, getExploreScrollY, setExploreScrollY } fr
 import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
+import PageHeader from '../components/PageHeader';
 import { DEFAULT_THEMES } from '../constants/themes';
 import authApi from '../api/authApi';
 import useToast from '../hooks/useToast';
@@ -177,9 +178,11 @@ const Explore = () => {
   return (
     <div className="p-8 max-w-[1600px] mx-auto min-h-screen">
       <header className="mb-10">
-        <h1 className="text-4xl font-extrabold tracking-tight text-on-surface font-headline">
-          여행지 탐색 <span className="text-primary">.</span>
-        </h1>
+        <PageHeader
+          label="travel_explore.exe"
+          title="여행지 탐색"
+          description="지역과 테마를 조합해 지금 필요한 여행지 데이터를 탐색하세요."
+        />
         {keyword && (
           <div className="mt-4 inline-flex items-center gap-3 bg-surface-container-low border border-primary/20 rounded-lg px-4 py-2 font-mono text-sm">
             <span className="text-outline">// searching:</span>

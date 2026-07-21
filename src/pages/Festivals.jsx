@@ -5,6 +5,7 @@ import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
 import useToast from '../hooks/useToast';
+import PageHeader from '../components/PageHeader';
 
 const Festivals = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -88,18 +89,12 @@ const Festivals = () => {
   return (
     <div className="p-6 lg:p-10 space-y-8 flex-1 flex flex-col bg-background">
       {/* Header 섹션 */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-outline-variant/20 pb-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 text-primary font-bold">
-            <span className="material-symbols-outlined">celebration</span>
-            <p className="text-[11px] uppercase tracking-[0.2em] font-label">SYSTEM_EVENTS.EXE</p>
-          </div>
-          <h2 className="text-3xl font-headline font-bold text-slate-900">전국 축제 및 행사 정보</h2>
-          <p className="text-slate-500 font-body text-sm">대한민국 곳곳에서 열리는 활기찬 축제 데이터를 탐색하세요.</p>
-        </div>
-
-        {/* 정렬 드롭다운 */}
-        <div className="flex items-center gap-3 shrink-0">
+      <div className="border-b border-outline-variant/20 pb-6">
+        <PageHeader
+          label="system_events.exe"
+          title="전국 축제 및 행사 정보"
+          description="대한민국 곳곳에서 열리는 활기찬 축제 데이터를 탐색하세요."
+          action={(
           <select 
             value={sortOrder}
             onChange={(e) => handleSortChange(e.target.value)}
@@ -109,7 +104,8 @@ const Festivals = () => {
             <option value="date_asc">DATE_ASCENDING</option>
             <option value="date_desc">DATE_DESCENDING</option>
           </select>
-        </div>
+          )}
+        />
       </div>
 
       {/* 리스트 섹션 */}

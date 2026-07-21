@@ -4,6 +4,7 @@ import { createBoardPost, updateBoardPost } from '../api/boardApi';
 import useAuthStore from '../store/useAuthStore';
 import useBoardWriteStore from '../store/useBoardWriteStore';
 import MarkdownEditor from '../components/MarkdownEditor';
+import PageHeader from '../components/PageHeader';
 
 const BoardWrite = () => {
   const navigate = useNavigate();
@@ -83,17 +84,12 @@ const BoardWrite = () => {
       <div className="max-w-5xl mx-auto px-6 py-10">
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            <p className="text-[10px] font-mono text-primary uppercase tracking-widest">
-              {editId ? 'edit_post.sh' : 'new_post.sh'}
-            </p>
-          </div>
-          <h1 className="text-2xl font-headline font-extrabold tracking-tighter text-on-surface">
-            {editId ? 'Edit Post' : 'New Post'}
-          </h1>
-        </div>
+        <PageHeader
+          className="mb-8"
+          label={editId ? 'edit_post.md' : 'new_post.md'}
+          title={editId ? '게시글 수정' : '새 게시글 작성'}
+          description="여행 경험을 마크다운으로 정리하고 관련 여행지를 함께 태그하세요."
+        />
 
         {/* Editor Card */}
         <div className="bg-white rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden">

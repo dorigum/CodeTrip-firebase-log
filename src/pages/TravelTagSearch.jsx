@@ -4,6 +4,7 @@ import { getTravelList } from '../api/travelInfoApi';
 import useBoardWriteStore from '../store/useBoardWriteStore';
 import useRegionStore from '../store/useRegionStore';
 import { DEFAULT_THEMES } from '../constants/themes';
+import PageHeader from '../components/PageHeader';
 
 const NUM_OF_ROWS = 12;
 
@@ -91,41 +92,34 @@ const TravelTagSearch = () => {
       <div className="max-w-5xl mx-auto px-6 py-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <p className="text-[10px] font-mono text-primary uppercase tracking-widest">tag_destination_search.sh</p>
+        <PageHeader
+          className="mb-6"
+          label="tag_destination_search.exe"
+          title="여행지 태그"
+          description="여러 여행지를 선택한 후 확인 버튼을 눌러주세요."
+          action={(
+            <div className="flex items-center gap-3">
+              {selectedCount > 0 && (
+                <span className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-mono font-bold border border-primary/20">
+                  {selectedCount} selected
+                </span>
+              )}
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 text-xs font-bold font-label border border-outline-variant/30 rounded-xl text-on-secondary-container hover:bg-slate-50 transition-all"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold font-label hover:brightness-110 transition-all"
+              >
+                <span className="material-symbols-outlined text-sm">check</span>
+                CONFIRM_SELECTION.SH
+              </button>
             </div>
-            <h1 className="text-xl font-headline font-extrabold tracking-tighter text-on-surface">
-              여행지 태그
-            </h1>
-            <p className="text-xs font-mono text-outline mt-0.5">
-              // 여러 여행지를 선택한 후 확인 버튼을 눌러주세요
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {selectedCount > 0 && (
-              <span className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-mono font-bold border border-primary/20">
-                {selectedCount} selected
-              </span>
-            )}
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 text-xs font-bold font-label border border-outline-variant/30 rounded-xl text-on-secondary-container hover:bg-slate-50 transition-all"
-            >
-              CANCEL
-            </button>
-            <button
-              onClick={handleConfirm}
-              className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold font-label hover:brightness-110 transition-all"
-            >
-              <span className="material-symbols-outlined text-sm">check</span>
-              CONFIRM_SELECTION.SH
-            </button>
-          </div>
-        </div>
+          )}
+        />
 
         {/* Selected Preview Strip */}
         {selectedCount > 0 && (

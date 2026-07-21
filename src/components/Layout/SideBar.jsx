@@ -131,30 +131,31 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 py-8 flex flex-col gap-2">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              onClick={(e) => handleNavClick(e, item)}
-              className={`flex items-center gap-4 px-6 py-3 transition-all duration-300 group ${
-                isActive(item.path)
-                  ? 'text-primary bg-primary/5 border-r-4 border-primary font-semibold'
-                  : 'text-slate-600 hover:text-primary hover:bg-slate-50'
-              }`}
-            >
-              <div className="relative flex items-center justify-center">
-                <span className={`material-symbols-outlined ${isActive(item.path) ? 'fill-1' : ''} transition-all duration-300 ${item.animation}`}>
-                  {item.icon}
+        <div className={`flex-1 min-h-0 flex flex-col ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden no-scrollbar'}`}>
+          {/* Navigation Items */}
+          <nav className="py-8 flex flex-col gap-2 shrink-0">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.label}
+                to={item.path}
+                onClick={(e) => handleNavClick(e, item)}
+                className={`flex items-center gap-4 px-6 py-3 transition-all duration-300 group ${
+                  isActive(item.path)
+                    ? 'text-primary bg-primary/5 border-r-4 border-primary font-semibold'
+                    : 'text-slate-600 hover:text-primary hover:bg-slate-50'
+                }`}
+              >
+                <div className="relative flex items-center justify-center">
+                  <span className={`material-symbols-outlined ${isActive(item.path) ? 'fill-1' : ''} transition-all duration-300 ${item.animation}`}>
+                    {item.icon}
+                  </span>
+                  {item.extra}
+                </div>
+                <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+                  {item.label}
                 </span>
-                {item.extra}
-              </div>
-              <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                {item.label}
-              </span>
-            </Link>
-          ))}
+              </Link>
+            ))}
 
           {/* My Page 아이템 + 플로팅 서브메뉴 */}
           <div className="group relative">
@@ -271,42 +272,43 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
               )}
             </div>
           </div>
-        </nav>
+          </nav>
 
-        {/* User Profile Area */}
-        <div className="p-4 border-t border-outline-variant/10 mt-auto">
-          {user ? (
-            <div className={`flex flex-col gap-4 ${isCollapsed ? 'items-center' : ''}`}>
-              <div className="flex items-center gap-4 overflow-hidden">
-                <img 
-                  src={user.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'} 
-                  alt="User" 
-                  className="w-10 h-10 rounded-full border border-outline-variant/15 shrink-0 object-cover" 
-                  onError={(e) => {
-                    e.target.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-                  }}
-                />
-                <div className={`transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                  <p className="text-sm font-bold truncate">{user.name}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest truncate">Premium Core</p>
+          {/* User Profile Area */}
+          <div className="p-4 border-t border-outline-variant/10 mt-auto shrink-0">
+            {user ? (
+              <div className={`flex flex-col gap-4 ${isCollapsed ? 'items-center' : ''}`}>
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <img 
+                    src={user.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'} 
+                    alt="User" 
+                    className="w-10 h-10 rounded-full border border-outline-variant/15 shrink-0 object-cover" 
+                    onError={(e) => {
+                      e.target.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+                    }}
+                  />
+                  <div className={`transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+                    <p className="text-sm font-bold truncate">{user.name}</p>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest truncate">Premium Core</p>
+                  </div>
                 </div>
+                {!isCollapsed && (
+                  <button 
+                    onClick={() => { if (!window.confirm('로그아웃 하시겠습니까?')) return; logout(); clearWishlist(); }}
+                    className="w-full py-2 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 group/logout"
+                  >
+                    <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover/logout:-translate-x-1">logout</span>
+                    LOGOUT_SYSTEM
+                  </button>
+                )}
               </div>
-              {!isCollapsed && (
-                <button 
-                  onClick={() => { if (!window.confirm('로그아웃 하시겠습니까?')) return; logout(); clearWishlist(); }}
-                  className="w-full py-2 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 group/logout"
-                >
-                  <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover/logout:-translate-x-1">logout</span>
-                  LOGOUT_SYSTEM
-                </button>
-              )}
-            </div>
-          ) : (
-            <Link to="/login" className={`flex items-center gap-4 transition-all group ${isCollapsed ? 'justify-center' : 'px-2'}`}>
-              <span className="material-symbols-outlined text-primary transition-transform duration-300 group-hover:scale-110">account_circle</span>
-              {!isCollapsed && <span className="text-sm font-bold uppercase text-primary">Sign In</span>}
-            </Link>
-          )}
+            ) : (
+              <Link to="/login" className={`flex items-center gap-4 transition-all group ${isCollapsed ? 'justify-center' : 'px-2'}`}>
+                <span className="material-symbols-outlined text-primary transition-transform duration-300 group-hover:scale-110">account_circle</span>
+                {!isCollapsed && <span className="text-sm font-bold uppercase text-primary">Sign In</span>}
+              </Link>
+            )}
+          </div>
         </div>
       </aside>
 

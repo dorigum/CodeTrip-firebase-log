@@ -1694,3 +1694,166 @@ Gemini API key 노출 위험 재검토
 필요 시 응답 스키마 검증 강화
 feature/gemini PR 생성 및 셀프 리뷰
 ```
+
+---
+
+## 2026.07.21 UI 헤더 및 반응형 레이아웃 정리
+
+### 작업 배경
+
+Gemini 기능 1차 구현 이후 화면을 확인하면서 공모전 제출용으로 전체 UI 톤을 더 일관되게 정리했습니다.
+
+확인된 문제는 다음과 같습니다.
+
+```text
+왼쪽 사이드바 펼침 상태에서 Info 하위 메뉴가 길어지면 사용자 프로필/로그아웃 영역이 잘림
+일부 화면의 한글 본문이 고정폭 계열로 보여 굴림처럼 어색하게 표시됨
+전역 폰트 보정 후 material-symbols-outlined 아이콘이 텍스트로 깨져 표시됨
+페이지별 상단 헤더 형식이 서로 달라 화면 통일감이 떨어짐
+좁은 화면에서 상단 검색창이 hidden 처리되어 사라짐
+```
+
+### 사이드바 스크롤 구조 수정
+
+수정 파일:
+
+```text
+src/components/Layout/SideBar.jsx
+```
+
+수정 내용:
+
+```text
+로고 아래 영역을 flex-1 min-h-0 구조로 분리
+펼침 상태에서 메뉴와 사용자 프로필 영역이 함께 세로 스크롤되도록 변경
+접힘 상태에서는 기존 플로팅 서브메뉴 동작을 유지
+```
+
+결과:
+
+```text
+Info 하위 메뉴가 길어져도 사용자 프로필과 로그아웃 영역이 화면 밖으로 잘리지 않음
+메뉴 패널을 펼친 상태에서도 하단 영역까지 스크롤로 확인 가능
+```
+
+### 폰트 통일 및 아이콘 복구
+
+수정 파일:
+
+```text
+src/App.css
+```
+
+수정 내용:
+
+```text
+본문 폰트 스택에 Inter, Pretendard, Noto Sans KR, Malgun Gothic, Apple SD Gothic Neo 적용
+font-body, font-label, font-mono가 한글 화면에서 같은 산세리프 계열로 보이도록 보정
+code, pre, kbd, samp, markdown code 영역은 JetBrains Mono 계열 유지
+button 전체에 폰트를 강제하던 규칙 제거
+material-symbols-outlined에는 Material Symbols Outlined 폰트를 명시적으로 복구
+```
+
+결과:
+
+```text
+보드 페이지와 여행지 상세 설명의 한글 본문이 홈 설명 페이지와 유사한 반듯한 글씨체로 표시됨
+menu_open, favorite 등 아이콘이 텍스트로 깨져 보이던 문제 복구
+```
+
+### 공통 페이지 헤더 컴포넌트 추가
+
+추가 파일:
+
+```text
+src/components/PageHeader.jsx
+```
+
+공통 형식:
+
+```text
+// file_name.ext
+페이지 제목.
+설명 문구
+```
+
+적용 방향:
+
+```text
+AI 여행 코스 페이지의 // ai_trip.planner 형식을 기준으로 통일
+행사 정보 페이지처럼 .exe, .log, .md 등 개발자스러운 파일 확장자 형식 유지
+여행지 탐색의 청록색 제목 점을 다른 주요 페이지에도 동일하게 적용
+```
+
+적용 파일:
+
+```text
+src/pages/Explore.jsx
+src/pages/Festivals.jsx
+src/pages/AiPlanner.jsx
+src/pages/Board.jsx
+src/pages/BoardWrite.jsx
+src/pages/TravelTagSearch.jsx
+src/pages/MyActivity.jsx
+src/pages/MyPage.jsx
+src/pages/Settings.jsx
+```
+
+대표 라벨:
+
+```text
+// travel_explore.exe
+// system_events.exe
+// ai_trip.planner
+// board.log
+// new_post.md
+// tag_destination_search.exe
+// my_activity.log
+// wishlist.workspace
+// account_settings.exe
+```
+
+### 상단 검색창 반응형 유지
+
+수정 파일:
+
+```text
+src/components/Layout/Header.jsx
+```
+
+수정 내용:
+
+```text
+검색창의 hidden sm:block 조건 제거
+헤더 좌우 padding과 gap을 작은 화면 기준으로 축소
+검색 영역에 flex-1, min-w-0, min-w-[150px] 적용
+오른쪽 알림/프로필/로그아웃 영역의 간격과 버튼 크기를 작은 화면 기준으로 축소
+placeholder는 좁은 화면에서 자연스럽게 줄임 처리
+```
+
+결과:
+
+```text
+화면 폭을 줄여도 상단 검색창이 사라지지 않음
+프로필/알림 영역과 검색창이 같은 줄에서 함께 유지됨
+```
+
+### 검증 결과
+
+다음 명령으로 검증했습니다.
+
+```bash
+npm run lint
+npm run build
+```
+
+결과:
+
+```text
+npm run lint 성공
+lint error 0개
+기존 React Hook warning 11개 유지
+
+npm run build 성공
+기존과 동일하게 일부 chunk size warning 발생
+```

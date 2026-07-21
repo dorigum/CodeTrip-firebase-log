@@ -51,12 +51,30 @@
 
   body {
     @apply bg-[#f8f9fb] text-[#191c1e];
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   }
 
   h1, h2, h3, h4, .font-headline {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Space Grotesk', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   }
+}
+
+.font-body,
+.font-label,
+.font-mono,
+input,
+textarea,
+select {
+  font-family: 'Inter', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
+}
+
+code,
+pre,
+kbd,
+samp,
+.markdown-body :not(pre) > code,
+.markdown-body pre code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace !important;
 }
 
 /* Hide scrollbar visually while keeping scroll functionality */
@@ -89,6 +107,7 @@ nav a {
 }
 
 .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     vertical-align: middle;
     user-select: none;
@@ -168,7 +187,7 @@ nav a {
 
 /* ── Markdown Body ── */
 .markdown-body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   font-size: 0.9rem;
   line-height: 1.85;
   color: #191c1e;
@@ -184,7 +203,7 @@ nav a {
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   font-weight: 700;
   line-height: 1.3;
   margin-top: 1.6em;
@@ -284,7 +303,7 @@ nav a {
 .markdown-body th {
   background: #f0fbfd;
   font-weight: 600;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   color: #006879;
 }
 .markdown-body tr:nth-child(even) td { background: #f8f9fb; }

@@ -5,6 +5,7 @@ import { saveAiTripToFolder } from '../api/wishlistApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
+import PageHeader from '../components/PageHeader';
 
 const STYLE_OPTIONS = ['실내', '문화', '맛집', '자연', '힐링', '카페', '사진', '역사'];
 const AVOID_OPTIONS = ['장거리 이동', '등산', '혼잡한 장소', '야외 위주', '비싼 코스'];
@@ -100,21 +101,21 @@ const AiPlanner = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 pb-24 md:pb-8">
-      <section className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-primary text-[10px] font-bold uppercase tracking-[0.28em] font-label mb-2">// ai_trip.planner</p>
-          <h1 className="text-3xl font-black tracking-tight text-slate-950">AI 여행 코스</h1>
-          <p className="text-sm text-slate-500 mt-2 font-mono">조건을 입력하고 저장 가능한 여행 코스를 생성합니다.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/mypage')}
-          className="inline-flex items-center justify-center gap-2 px-4 h-11 rounded-lg border border-outline-variant/50 text-slate-600 hover:text-primary hover:border-primary/40 transition-colors text-xs font-bold uppercase tracking-wider"
-        >
-          <span className="material-symbols-outlined text-base">folder</span>
-          My Folders
-        </button>
-      </section>
+      <PageHeader
+        label="ai_trip.planner"
+        title="AI 여행 코스"
+        description="조건을 입력하고 저장 가능한 여행 코스를 생성합니다."
+        action={(
+          <button
+            type="button"
+            onClick={() => navigate('/mypage')}
+            className="inline-flex items-center justify-center gap-2 px-4 h-11 rounded-lg border border-outline-variant/50 text-slate-600 hover:text-primary hover:border-primary/40 transition-colors text-xs font-bold uppercase tracking-wider"
+          >
+            <span className="material-symbols-outlined text-base">folder</span>
+            My Folders
+          </button>
+        )}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
         <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">

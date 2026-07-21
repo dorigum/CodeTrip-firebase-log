@@ -4,6 +4,7 @@ import useAuthStore from '../store/useAuthStore';
 import authApi from '../api/authApi';
 import { DEFAULT_REGIONS } from '../constants/regions';
 import useToast from '../hooks/useToast';
+import PageHeader from '../components/PageHeader';
 
 const SELECTABLE_REGIONS = DEFAULT_REGIONS.filter(r => r.code !== '');
 
@@ -189,13 +190,12 @@ const Settings = () => {
       <div className="max-w-4xl mx-auto space-y-10">
         
         {/* Page Title */}
-        <header className="border-b border-outline-variant/15 pb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="material-symbols-outlined text-primary text-xl">settings_account_box</span>
-            <span className="font-label text-[0.6875rem] uppercase tracking-widest text-secondary font-bold">Account_Security_Manager</span>
-          </div>
-          <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface">계정 설정 <span className="text-primary">.</span></h1>
-        </header>
+        <PageHeader
+          className="border-b border-outline-variant/15 pb-6"
+          label="account_settings.exe"
+          title="계정 설정"
+          description="프로필, 관심지역, 보안 정보를 관리합니다."
+        />
 
         {/* SECTION 1: PROFILE UPDATE (Photo + Name) */}
         <section className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden">

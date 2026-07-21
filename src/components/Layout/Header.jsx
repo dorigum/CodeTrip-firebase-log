@@ -123,14 +123,14 @@ const Header = () => {
   };
 
   return (
-    <header className="flex items-center justify-between px-6 w-full h-16 sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/10 font-['Plus_Jakarta_Sans']">
-      <div className="flex items-center flex-1">
-        <div className="relative hidden sm:block w-full max-w-md lg:max-w-xl" ref={searchContainerRef}>
+    <header className="flex items-center justify-between gap-2 px-3 sm:px-6 w-full h-16 sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/10 font-['Plus_Jakarta_Sans']">
+      <div className="flex items-center flex-1 min-w-0">
+        <div className="relative block w-full max-w-md lg:max-w-xl min-w-[150px]" ref={searchContainerRef}>
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
             <span className="material-symbols-outlined text-outline text-sm">search</span>
           </div>
           <input
-            className="bg-surface-container-high border-none rounded-lg py-2.5 pl-10 pr-4 text-sm w-full focus:ring-1 focus:ring-primary focus:bg-surface-container-lowest transition-all outline-none"
+            className="bg-surface-container-high border-none rounded-lg py-2.5 pl-10 pr-3 text-sm w-full focus:ring-1 focus:ring-primary focus:bg-surface-container-lowest transition-all outline-none truncate"
             placeholder="Search destinations, festivals, themes..."
             type="text"
             value={searchInput}
@@ -164,21 +164,21 @@ const Header = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 shrink-0 ml-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {user ? (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-right hidden md:block leading-tight">
               <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-0.5">Authenticated</p>
               <p className="text-sm font-bold text-on-surface">{user.name}</p>
             </div>
 
-            <div className="flex items-center gap-1 bg-surface-container-low rounded-xl p-1 pr-1 border border-outline-variant/10">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-surface-container-low rounded-xl p-1 pr-1 border border-outline-variant/10">
 
               {/* 알림 벨 */}
               <div className="relative" ref={notiRef}>
                 <button
                   onClick={handleOpenNoti}
-                  className="relative flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
+                  className="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
                   title="알림"
                 >
                   <span className="material-symbols-outlined text-lg">notifications</span>
@@ -276,7 +276,7 @@ const Header = () => {
 
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group/logout"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group/logout"
                 title="Sign Out"
               >
                 <span className="material-symbols-outlined text-lg group-hover/logout:translate-x-0.5 transition-transform">logout</span>

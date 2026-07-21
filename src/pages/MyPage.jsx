@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
+import PageHeader from '../components/PageHeader';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
 
@@ -276,10 +277,12 @@ const MyPage = () => {
 
       <main className="p-10 flex flex-col lg:flex-row gap-8 max-w-[1600px] mx-auto">
         <aside className="w-full lg:w-72 flex flex-col gap-6 flex-shrink-0">
-          <div className="flex flex-col gap-1">
-            <span className="font-label text-[0.6875rem] uppercase tracking-widest text-secondary font-bold">Workspace</span>
-            <h2 className="font-headline text-2xl font-bold tracking-tight">{user?.name}.wishlist</h2>
-          </div>
+          <PageHeader
+            label="wishlist.workspace"
+            title={`${user?.name || 'user'} wishlist`}
+            description="저장한 여행지와 폴더별 메모를 관리합니다."
+            compact
+          />
 
           {/* TRAVEL_STATS */}
           <section className="bg-inverse-surface text-inverse-on-surface p-5 rounded-xl font-mono text-[10px] leading-relaxed shadow-lg">

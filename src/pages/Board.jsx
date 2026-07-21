@@ -4,6 +4,7 @@ import { getBoardPosts } from '../api/boardApi';
 import useAuthStore from '../store/useAuthStore';
 import useBoardWriteStore from '../store/useBoardWriteStore';
 import useToast from '../hooks/useToast';
+import PageHeader from '../components/PageHeader';
 
 const NUM_OF_ROWS = 10;
 
@@ -77,27 +78,20 @@ const Board = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            <p className="text-[10px] font-mono text-primary uppercase tracking-widest">board.log</p>
-          </div>
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-headline font-extrabold tracking-tighter text-on-surface">
-                Travel Board
-              </h1>
-              <p className="text-sm font-mono text-outline mt-1">
-                // 여행 경험을 공유하고 여행지를 태그해보세요
-              </p>
-            </div>
-            <button
+          <PageHeader
+            label="board.log"
+            title="여행 게시판"
+            description="여행 경험을 공유하고 여행지를 태그해보세요."
+            action={(
+              <button
               onClick={handleNewPost}
               className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-xs font-bold font-label hover:brightness-110 transition-all shrink-0"
-            >
-              <span className="material-symbols-outlined text-sm">edit_square</span>
-              NEW_POST.SH
-            </button>
-          </div>
+              >
+                <span className="material-symbols-outlined text-sm">edit_square</span>
+                NEW_POST.SH
+              </button>
+            )}
+          />
         </div>
 
         {/* Search Bar */}

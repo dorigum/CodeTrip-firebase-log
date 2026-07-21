@@ -5,6 +5,7 @@ import { getMyBoardPosts, getMyBoardComments, getMyTravelComments, getMyLikedPos
 import { deleteTravelComment } from '../api/travelCommentApi';
 import useToast from '../hooks/useToast';
 import useRecentlyViewedStore from '../store/useRecentlyViewedStore';
+import PageHeader from '../components/PageHeader';
 
 const TABS = [
   { key: 'likedPosts',     label: 'Liked Posts',      icon: 'favorite' },
@@ -152,12 +153,12 @@ const MyActivity = () => {
 
   return (
     <div className="p-8 max-w-[1000px] mx-auto min-h-screen">
-      <header className="mb-8">
-        <p className="text-[10px] font-mono text-primary uppercase tracking-widest mb-1">// my_activity.log</p>
-        <h1 className="text-3xl font-headline font-extrabold tracking-tight text-on-surface">
-          내 활동 <span className="text-primary">.</span>
-        </h1>
-      </header>
+      <PageHeader
+        className="mb-8"
+        label="my_activity.log"
+        title="내 활동"
+        description="좋아요, 게시글, 댓글, 최근 본 여행지를 한 곳에서 확인하세요."
+      />
 
       {/* Recently Viewed — pinned above tabs */}
       {recentlyViewed.length > 0 && (
