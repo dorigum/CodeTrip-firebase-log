@@ -12,6 +12,7 @@ import Settings from './pages/Settings.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import Festivals from './pages/Festivals.jsx'
 import Info from './pages/Info.jsx'
+import AiPlanner from './pages/AiPlanner.jsx'
 import Board from './pages/Board.jsx'
 import BoardDetail from './pages/BoardDetail.jsx'
 import BoardWrite from './pages/BoardWrite.jsx'
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="settings" element={<Settings />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="festivals" element={<Festivals />} />
+          <Route path="ai-planner" element={<AiPlanner />} />
           <Route path="info" element={<Info />} />
           <Route path="board" element={<Board />} />
           <Route path="board/write" element={<BoardWrite />} />

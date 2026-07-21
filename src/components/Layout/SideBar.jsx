@@ -33,11 +33,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    icon: 'auto_awesome',
+    label: 'AI Planner',
+    path: '/ai-planner',
+    animation: 'ai-sparkle',
+    extra: <div className="ai-halo" />,
+  },
+  {
     icon: 'article',
     label: 'Board',
     path: '/board',
     animation: 'board-pop-flip',
-    extra: null,
+    extra: <div className="board-halo" />,
   },
 ];
 
@@ -83,15 +90,17 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
 
   const isActive = (path) => (path === '/' ? pathname === '/' : pathname.startsWith(path));
 
-  React.useEffect(() => { setMobileMyPageOpen(false); }, [pathname]);
-
   const handleNavClick = (e, item) => {
-    const protectedPaths = ['/mypage', '/settings', '/my-activity'];
+    const protectedPaths = ['/mypage', '/settings', '/my-activity', '/ai-planner'];
     if (protectedPaths.includes(item.path) && !isLoggedIn) {
       e.preventDefault();
       alert('회원만 이용 가능한 서비스입니다.');
       navigate('/login');
+      setMobileMyPageOpen(false);
+      return;
     }
+
+    setMobileMyPageOpen(false);
   };
 
   return (
@@ -339,20 +348,26 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
               isActive(item.path) ? 'text-primary' : 'text-slate-400'
             }`}
           >
-            <span className={`material-symbols-outlined text-2xl ${isActive(item.path) ? 'fill-1' : ''} transition-all duration-300 ${item.animation}`}>
-              {item.icon}
+            <span className="relative flex items-center justify-center">
+              <span className={`material-symbols-outlined text-2xl ${isActive(item.path) ? 'fill-1' : ''} transition-all duration-300 ${item.animation}`}>
+                {item.icon}
+              </span>
+              {item.extra}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
           </Link>
         ))}
         <button
           onClick={() => setMobileMyPageOpen(prev => !prev)}
-          className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
+          className={`group flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
             MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'text-primary' : 'text-slate-400'
-          }`}
+          } ${mobileMyPageOpen ? 'is-mobile-open text-primary' : ''}`}
         >
-          <span className={`material-symbols-outlined text-2xl ${MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'fill-1' : ''} transition-all duration-300 ${MY_PAGE_ITEM.animation}`}>
-            {mobileMyPageOpen ? 'close' : MY_PAGE_ITEM.icon}
+          <span className="relative flex items-center justify-center">
+            <span className={`material-symbols-outlined text-2xl ${MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'fill-1' : ''} transition-all duration-300 ${MY_PAGE_ITEM.animation}`}>
+              {mobileMyPageOpen ? 'close' : MY_PAGE_ITEM.icon}
+            </span>
+            {MY_PAGE_ITEM.extra}
           </span>
           <span className="text-[10px] font-bold uppercase tracking-tighter">My Page</span>
         </button>

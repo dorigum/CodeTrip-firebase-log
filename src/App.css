@@ -367,6 +367,22 @@ nav a {
 }
 .group:hover .home-halo { opacity: 1; transform: scale(1); }
 
+/* AI Planner — violet sparkle glow */
+@keyframes ai-sparkle {
+  0%   { color: inherit; filter: none; transform: scale(1) rotate(0deg); }
+  35%  { color: #8b5cf6; filter: drop-shadow(0 0 7px #8b5cf6); transform: scale(1.18) rotate(-8deg); }
+  70%  { color: #d946ef; filter: drop-shadow(0 0 8px #d946ef); transform: scale(1.08) rotate(6deg); }
+  100% { color: #8b5cf6; filter: drop-shadow(0 0 7px #8b5cf6); transform: scale(1.12) rotate(0deg); }
+}
+.group:hover .ai-sparkle { animation: ai-sparkle 0.6s ease forwards; }
+.ai-halo {
+  position: absolute; width: 34px; height: 34px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(217,70,239,0.14) 42%, transparent 72%);
+  opacity: 0; transform: scale(0.4); pointer-events: none;
+  transition: opacity 0.3s ease 0.15s, transform 0.3s ease 0.15s;
+}
+.group:hover .ai-halo { opacity: 1; transform: scale(1); }
+
 /* Explore — cyan compass spin glow */
 @keyframes explore-spin {
   0%   { color: inherit; filter: none; transform: rotate(0deg); }
@@ -412,20 +428,27 @@ nav a {
   75%  { transform: rotate(-3deg); }
   100% { color: #10b981; filter: drop-shadow(0 0 6px #10b981); transform: rotate(0deg); }
 }
-.group:hover .account-shake { animation: account-shake 0.6s ease forwards; }
+.group:hover .account-shake,
+.group.is-mobile-open .account-shake {
+  animation: account-shake 0.6s ease forwards;
+}
 .settings-halo {
   position: absolute; width: 32px; height: 32px; border-radius: 50%;
   background: radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%);
   opacity: 0; transform: scale(0.4); pointer-events: none;
   transition: opacity 0.3s ease 0.2s, transform 0.3s ease 0.2s;
 }
-.group:hover .settings-halo { opacity: 1; transform: scale(1); }
+.group:hover .settings-halo,
+.group.is-mobile-open .settings-halo {
+  opacity: 1;
+  transform: scale(1);
+}
 
-/* Board — purple page flip & pop glow (subtle) */
+/* Board — navy page flip & pop glow (subtle) */
 @keyframes board-pop-flip {
-  0%   { transform: scale(1) rotateY(0deg); color: inherit; }
-  50%  { transform: scale(1.15) rotateY(180deg); color: #a855f7; }
-  100% { transform: scale(1.1) rotateY(0deg); color: #c084fc; }
+  0%   { transform: scale(1) rotateY(0deg); color: inherit; filter: none; }
+  50%  { transform: scale(1.15) rotateY(180deg); color: #1d4ed8; filter: drop-shadow(0 0 8px #1d4ed8); }
+  100% { transform: scale(1.1) rotateY(0deg); color: #1e3a8a; filter: drop-shadow(0 0 7px #1e3a8a); }
 }
 .group:hover .board-pop-flip { 
   animation: board-pop-flip 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards; 
@@ -434,7 +457,7 @@ nav a {
 
 .board-halo {
   position: absolute; width: 32px; height: 32px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(29,78,216,0.32) 0%, rgba(30,58,138,0.14) 42%, transparent 72%);
   opacity: 0; transform: scale(0.4); pointer-events: none;
   transition: opacity 0.3s ease 0.15s, transform 0.3s ease 0.15s;
 }

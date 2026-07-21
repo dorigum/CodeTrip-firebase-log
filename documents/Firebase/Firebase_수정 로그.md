@@ -1507,3 +1507,190 @@ npm run build 성공
 ```
 
 두 커밋 모두 `origin/main`에 푸시했습니다.
+
+---
+
+## 2026.07.21 Gemini AI 여행 코스 생성 1차 구현
+
+### 작업 배경
+
+공모전 제출용 차별화 기능으로 Gemini API 기반 AI 여행 코스 생성 기능을 추가하기로 했습니다.
+
+기존 CodeTrip 기능은 공공데이터 API 기반 여행지 탐색, 날씨 추천, 위시리스트 폴더, 메모, 체크리스트 기능을 제공하고 있습니다.
+
+이번 작업에서는 Gemini가 생성한 여행 코스를 기존 위시리스트 폴더 구조로 저장할 수 있도록 1차 구현을 진행했습니다.
+
+### 설계 문서 추가
+
+Gemini 기능 구현 전 프롬프트, 입력값, 응답 JSON 구조, 저장 방향을 먼저 정리했습니다.
+
+추가 문서:
+
+```text
+documents/Firebase/Gemini_프롬프트_설계.md
+```
+
+README 문서 목록에도 해당 설계 문서 링크를 추가했습니다.
+
+### 환경 변수
+
+Gemini API 호출을 위해 다음 환경 변수를 사용합니다.
+
+```env
+VITE_GEMINI_API_KEY=...
+VITE_GEMINI_MODEL=gemini-2.0-flash
+```
+
+`VITE_GEMINI_MODEL`은 생략 가능하며, 코드에서는 기본값으로 `gemini-2.0-flash`를 사용합니다.
+
+주의:
+
+```text
+VITE_ 접두사가 붙은 값은 브라우저 번들에 포함됩니다.
+공모전 시연용 1차 구현에서는 프론트엔드 직접 호출 방식을 사용하지만,
+실제 운영 환경에서는 Firebase Functions 또는 서버성 프록시로 이전하는 것이 안전합니다.
+```
+
+### Gemini API 모듈 추가
+
+추가 파일:
+
+```text
+src/api/geminiApi.js
+```
+
+주요 역할:
+
+```text
+사용자 입력값 기반 프롬프트 생성
+Gemini generateContent API 호출
+JSON 응답 파싱
+응답 필수 구조 검증
+```
+
+응답은 화면 렌더링과 Firebase 저장을 위해 JSON 형태로 고정했습니다.
+
+### AI Planner 화면 추가
+
+추가 파일:
+
+```text
+src/pages/AiPlanner.jsx
+```
+
+추가 라우트:
+
+```text
+/ai-planner
+```
+
+사이드바에도 `AI Planner` 메뉴를 추가했습니다.
+
+입력 항목:
+
+```text
+지역
+여행 일수
+동행 유형
+예산 수준
+이동 강도
+시작/종료 시간
+날씨 키워드
+여행 스타일
+피하고 싶은 조건
+위시리스트 후보 장소
+```
+
+### 위시리스트 폴더 저장 연동
+
+`src/api/wishlistApi.js`에 AI 코스 저장용 헬퍼를 추가했습니다.
+
+추가 함수:
+
+```text
+addWishlistToFolder
+saveAiTripToFolder
+```
+
+저장 방식:
+
+```text
+1. Gemini 응답의 saveGuide.folderName으로 새 위시리스트 폴더 생성
+2. 코스 요약과 일정 내용을 MEMO로 저장
+3. saveGuide.checklist를 CHECKLIST로 저장
+4. contentId가 있는 장소는 wishlists에 폴더 연결 상태로 저장
+```
+
+### README 반영
+
+README에 다음 내용을 반영했습니다.
+
+```text
+VITE_GEMINI_API_KEY
+VITE_GEMINI_MODEL
+/ai-planner 라우트
+Gemini 프롬프트 설계 문서 링크
+```
+
+### 검증 결과
+
+정적 검증을 수행했습니다.
+
+```bash
+npm run lint
+npm run build
+```
+
+결과:
+
+```text
+npm run lint 성공
+lint error 0개
+기존 React Hook warning 12개 유지
+
+npm run build 성공
+기존과 동일하게 일부 chunk size warning 발생
+```
+
+### 실제 API 호출 테스트 결과
+
+로컬 브라우저에서 Gemini API 호출 테스트를 진행했습니다.
+
+Gemini API key는 CodeTrip 프로젝트 기준으로 재생성하여 `.env`에 반영했으며, 요청은 Gemini API까지 도달했습니다.
+
+다만 Google AI Studio 프로젝트 상태로 인해 실제 생성 결과 검증은 완료하지 못했습니다.
+
+확인된 오류:
+
+```text
+HTTP 429 RESOURCE_EXHAUSTED
+Gemini API 사용량 한도 초과 또는 현재 프로젝트에서 사용 가능한 quota 없음
+Google AI Studio 결제 화면 기준 크레딧 잔액 0원
+서비스 재개를 위해 크레딧 잔액이 0보다 커야 한다는 안내 표시
+```
+
+판단:
+
+```text
+현재 오류는 프론트엔드 코드 오류나 API key 누락 문제가 아니라
+Google AI Studio 프로젝트의 크레딧/quota 제한으로 보는 것이 맞습니다.
+```
+
+조치:
+
+```text
+긴 Gemini 원본 오류 메시지는 사용자 화면에 그대로 노출하지 않도록 수정
+429, 400, 401, 403, 500 계열 오류를 짧은 사용자 안내 문구로 변환
+자세한 원본 오류는 개발자 콘솔에만 기록
+```
+
+### 남은 작업
+
+```text
+Google AI Studio 크레딧 충전 또는 사용 가능한 quota 확보
+로컬 브라우저에서 실제 Gemini API 호출 재테스트
+AI 코스 생성 결과 위시리스트 폴더 저장 end-to-end 테스트
+Gemini API key 노출 위험 재검토
+필요 시 응답 스키마 검증 강화
+feature/gemini PR 생성 및 셀프 리뷰
+```

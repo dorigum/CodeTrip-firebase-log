@@ -42,6 +42,34 @@ export const toggleWishlist = async (contentId, title, imageUrl, folderId = null
   return { wishlisted: true };
 };
 
+export const addWishlistToFolder = async (itemData = {}, folderId = null) => {
+  const user = await getCurrentUser();
+  const contentId = itemData.contentid ?? itemData.contentId ?? itemData.content_id;
+  if (!contentId) return null;
+
+  const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
+  const wishlists = snapshotToArray(await get(wishlistRoot));
+  const existing = wishlists.find((item) => item.contentId === String(contentId));
+  const payload = {
+    user_id: user.id,
+    contentId: String(contentId),
+    title: itemData.title || itemData.placeName || '여행지',
+    imageUrl: itemData.firstimage || itemData.imageUrl || '',
+    folder_id: folderId || null,
+    addr1: itemData.addr1 || itemData.address || '정보 없음',
+    created_at: existing?.created_at || nowIso(),
+  };
+
+  if (existing) {
+    await update(ref(realtimeDb, userPath(user.id, `wishlists/${existing.id}`)), payload);
+    return { id: existing.id, ...payload };
+  }
+
+  const wishlistRef = push(wishlistRoot);
+  await set(wishlistRef, payload);
+  return { id: wishlistRef.key, ...payload };
+};
+
 export const getFolders = async () => {
   const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlistFolders'))))
@@ -141,6 +169,48 @@ export const createNote = async (folderId, content, type = 'CHECKLIST') => {
   };
   await set(noteRef, note);
   return { id: noteRef.key, ...note };
+};
+
+export const saveAiTripToFolder = async (plan) => {
+  const folderName = plan?.saveGuide?.folderName || plan?.title || 'AI 여행 코스';
+  const folder = await createFolder(folderName, null, null);
+  const days = Array.isArray(plan?.days) ? plan.days : [];
+  const allItems = days.flatMap((day) =>
+    (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, day: day.day }))
+  );
+
+  const memoLines = [
+    `[AI 여행 코스] ${plan?.title || folderName}`,
+    plan?.summary || '',
+    plan?.saveGuide?.memo || '',
+    '',
+    ...days.map((day) => {
+      const items = Array.isArray(day.items) ? day.items : [];
+      const itemText = items
+        .map((item) => `${item.time || ''} ${item.placeName || item.title || '장소'} - ${item.reason || ''}`.trim())
+        .join('\n');
+      return `Day ${day.day || ''} ${day.theme || ''}\n${itemText}`.trim();
+    }),
+  ].filter(Boolean);
+
+  await createNote(folder.id, memoLines.join('\n\n'), 'MEMO');
+
+  const checklist = Array.isArray(plan?.saveGuide?.checklist) ? plan.saveGuide.checklist : [];
+  await Promise.all(checklist.filter(Boolean).map((item) => createNote(folder.id, item, 'CHECKLIST')));
+
+  const contentItems = allItems.filter((item) => item.contentId || item.contentid);
+  await Promise.all(contentItems.map((item) => addWishlistToFolder({
+    contentId: item.contentId || item.contentid,
+    title: item.placeName || item.title,
+    address: item.address,
+    firstimage: item.firstimage,
+  }, folder.id)));
+
+  return {
+    folder,
+    savedPlaces: contentItems.length,
+    savedChecklist: checklist.length,
+  };
 };
 
 export const toggleNote = async (noteId) => {
