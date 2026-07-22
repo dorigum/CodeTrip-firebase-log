@@ -2,6 +2,14 @@
   "projects": {
     "default": "newagent-9c2a8"
   },
-  "targets": {},
+  "targets": {
+    "newagent-9c2a8": {
+      "hosting": {
+        "codetrip": [
+          "dorigum-codetrip"
+        ]
+      }
+    }
+  },
   "etags": {}
 }
