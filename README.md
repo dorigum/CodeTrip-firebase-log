@@ -96,9 +96,11 @@ React / Vite
 CodeTrip-firebase-log-work/
 ├─ src/
 │  ├─ api/
+│  │  ├─ apiCache.js
 │  │  ├─ authApi.js
 │  │  ├─ boardApi.js
 │  │  ├─ firebaseHelpers.js
+│  │  ├─ geminiApi.js
 │  │  ├─ notificationApi.js
 │  │  ├─ travelApi.js
 │  │  ├─ travelCommentApi.js
@@ -106,12 +108,27 @@ CodeTrip-firebase-log-work/
 │  │  ├─ weatherApi.js
 │  │  └─ wishlistApi.js
 │  ├─ components/
+│  │  ├─ Layout/
+│  │  │  ├─ Footer.jsx
+│  │  │  ├─ Header.jsx
+│  │  │  └─ SideBar.jsx
+│  │  ├─ MarkdownEditor.jsx
+│  │  ├─ PageHeader.jsx
+│  │  ├─ Toast.jsx
+│  │  └─ WishlistModal.jsx
 │  ├─ constants/
+│  │  ├─ regions.js
+│  │  └─ themes.js
+│  ├─ context/
+│  │  ├─ ToastProvider.jsx
+│  │  └─ toastContext.js
 │  ├─ hooks/
 │  ├─ pages/
 │  ├─ store/
+│  ├─ App.css
 │  ├─ App.jsx
 │  ├─ firebase.js
+│  ├─ index.css
 │  └─ main.jsx
 ├─ public/
 ├─ dist/
@@ -119,11 +136,17 @@ CodeTrip-firebase-log-work/
 │  ├─ Firebase/
 │  │  ├─ Firebase_수정 로그.md
 │  │  ├─ Firebase_상세 내역서.md
+│  │  ├─ Gemini_프롬프트_설계.md
 │  │  └─ Project_Firebase_배포.md
 │  └─ archive-pre-firebase/
 ├─ database.rules.json
+├─ eslint.config.js
 ├─ firebase.json
+├─ Guide.md
+├─ package-lock.json
 ├─ package.json
+├─ postcss.config.js
+├─ tailwind.config.js
 └─ vite.config.js
 ```
 
