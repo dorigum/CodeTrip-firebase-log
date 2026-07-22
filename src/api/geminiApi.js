@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.5-flash';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = `당신은 한국 여행 코스를 설계하는 여행 큐레이션 어시스턴트입니다.
@@ -152,7 +152,7 @@ const createGeminiError = async (response) => {
   }
 
   if (response.status >= 500) {
-    return new Error('Gemini API 서버 응답이 불안정합니다. 잠시 후 다시 시도해주세요.');
+    return new Error('Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.');
   }
 
   return new Error(`Gemini API 요청에 실패했습니다. 상태 코드: ${response.status}`);

@@ -342,10 +342,10 @@ Gemini API key는 프론트엔드 환경 변수로 주입되며,
 
 ```env
 VITE_GEMINI_API_KEY=...
-VITE_GEMINI_MODEL=gemini-2.0-flash
+VITE_GEMINI_MODEL=gemini-3.5-flash
 ```
 
-`VITE_GEMINI_MODEL`은 생략할 수 있으며, 생략 시 코드에서 `gemini-2.0-flash`를 기본값으로 사용합니다.
+`VITE_GEMINI_MODEL`은 생략할 수 있으며, 생략 시 코드에서 `gemini-3.5-flash`를 기본값으로 사용합니다.
 
 ---
 
@@ -456,4 +456,86 @@ Google AI Studio 크레딧 충전 또는 사용 가능한 quota 확보
 AI 코스 생성 결과 화면 렌더링 확인
 생성 결과 위시리스트 폴더 저장 end-to-end 테스트
 필요 시 feature/gemini PR 생성 및 셀프 리뷰
+```
+
+---
+
+## 15. 2026.07.22 Gemini API key 트러블슈팅 기록
+
+### 작업 배경
+
+2026.07.21 기준으로는 Gemini API 호출이 `429 RESOURCE_EXHAUSTED`로 중단되어 실제 생성 결과 검증을 완료하지 못했습니다.
+2026.07.22에는 CodeTrip 프로젝트 기준 Gemini API key를 재확인하고, 로컬 환경에서 실제 호출이 어느 단계까지 통과하는지 추적했습니다.
+
+### 확인한 문제 흐름
+
+```text
+1. API key를 새로 입력했는데도 기존 오류 메시지가 반복됨
+2. Google Cloud 사용자 인증 정보 화면에서 CodeTrip 프로젝트 키와 별도 Gemini API 프로젝트 키가 함께 표시됨
+3. 일부 키는 서비스 계정에 바인딩되어 웹사이트 HTTP referrer 제한을 걸 수 없음
+4. 기존 .env의 VITE_GEMINI_MODEL이 gemini-2.0-flash로 남아 있음
+5. 모델명을 gemini-3.5-flash로 변경한 뒤 API key 인증 단계는 통과함
+6. 이후 503 Service Unavailable이 발생하여 Gemini 모델 서버 혼잡 상태로 판단함
+```
+
+### 상태 코드별 판단 기준
+
+```text
+401 Unauthorized
+- API key 값, 프로젝트, API 사용 설정, 서비스 계정 바인딩, API 제한 설정 문제 가능성이 큼
+- CodeTrip 프로젝트(newagent-9c2a8)에서 생성한 Gemini API key인지 확인 필요
+
+429 RESOURCE_EXHAUSTED
+- quota, 사용량 한도, 결제/크레딧 상태 문제 가능성이 큼
+- Google AI Studio 또는 Google Cloud Billing의 quota/credit 상태 확인 필요
+
+503 Service Unavailable
+- API key 인증 이후 Gemini 모델 서버가 일시적으로 혼잡한 상태
+- 코드나 key 설정 문제보다는 모델 수요 과부하로 판단
+- 잠시 후 재시도하거나 Lite 계열 모델 검토
+```
+
+### API key 설정 관련 결론
+
+```text
+프론트엔드에서 Gemini API를 직접 호출하는 현재 구조에서는 API key가 브라우저 번들에 포함됩니다.
+HTTP referrer 제한을 걸면 허용 도메인 밖 사용은 줄일 수 있지만, key 자체가 숨겨지는 것은 아닙니다.
+Google Cloud에서 서비스 계정 바인딩 Gemini API key는 웹사이트 referrer 제한을 사용할 수 없었습니다.
+따라서 로컬 검증 단계에서는 서비스 계정 바인딩 key와 API 제한을 사용하고,
+최종 제출 전에는 Firebase Functions + Functions Secret 구조로 전환하는 방향을 유지합니다.
+```
+
+### 반영한 코드 수정
+
+수정 파일:
+
+```text
+src/api/geminiApi.js
+README.md
+```
+
+수정 내용:
+
+```text
+Gemini 기본 모델을 gemini-2.0-flash에서 gemini-3.5-flash로 변경
+README 환경변수 예시의 VITE_GEMINI_MODEL도 gemini-3.5-flash로 변경
+500번대 Gemini 오류 안내 문구를 "Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해주세요."로 변경
+```
+
+### 현재 검증 결과
+
+```text
+Gemini API key는 비어 있지 않고 로컬 .env에서 읽히는 상태
+모델명을 gemini-3.5-flash로 변경 후 401/429가 아닌 503 응답 확인
+따라서 현재 남은 오류는 key 인증 문제가 아니라 Gemini 모델 서버 혼잡 문제로 판단
+```
+
+### 후속 작업
+
+```text
+잠시 후 동일 조건으로 Gemini 생성 재시도
+503이 반복되면 gemini-3.5-flash-lite 또는 사용 가능한 Lite 계열 모델 검토
+생성 성공 시 AI 코스 결과 렌더링 확인
+생성 결과 위시리스트 폴더/메모/체크리스트 저장 end-to-end 테스트
+제출 직전 Blaze 전환 후 Firebase Functions + Secret 구조로 전환
 ```
