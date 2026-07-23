@@ -4,6 +4,20 @@ import { getCurrentUser, nowIso, snapshotToArray, toIso } from './firebaseHelper
 
 const userPath = (uid, child) => `users/${uid}/${child}`;
 
+const toText = (value, fallback = '') => {
+  if (value == null) return fallback;
+  if (typeof value === 'string') return value.trim() || fallback;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'object') {
+    return value.text || value.content || value.title || value.label || fallback;
+  }
+  return fallback;
+};
+
+const compactObject = (value) => Object.fromEntries(
+  Object.entries(value).filter(([, entry]) => entry !== undefined)
+);
+
 export const getWishlistDetails = async () => {
   const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlists'))))
@@ -118,9 +132,10 @@ export const updateFolder = async (folderId, name, startDate, endDate) => {
 
 export const deleteFolder = async (folderId) => {
   const user = await getCurrentUser();
-  const [wishlists, notes] = await Promise.all([
+  const [wishlists, notes, aiTripPlans] = await Promise.all([
     get(ref(realtimeDb, userPath(user.id, 'wishlists'))),
     get(ref(realtimeDb, userPath(user.id, 'wishlistNotes'))),
+    get(ref(realtimeDb, userPath(user.id, 'aiTripPlans'))),
   ]);
   const updates = { [userPath(user.id, `wishlistFolders/${folderId}`)]: null };
 
@@ -131,6 +146,10 @@ export const deleteFolder = async (folderId) => {
   snapshotToArray(notes)
     .filter((note) => note.folder_id === String(folderId))
     .forEach((note) => { updates[userPath(user.id, `wishlistNotes/${note.id}`)] = null; });
+
+  snapshotToArray(aiTripPlans)
+    .filter((plan) => plan.folder_id === String(folderId))
+    .forEach((plan) => { updates[userPath(user.id, `aiTripPlans/${plan.id}`)] = null; });
 
   await update(ref(realtimeDb), updates);
   return { success: true };
@@ -155,6 +174,18 @@ export const getFolderNotes = async (folderId) => {
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
+export const getAiTripPlans = async (folderId) => {
+  const user = await getCurrentUser();
+  return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'aiTripPlans'))))
+    .filter((plan) => plan.folder_id === String(folderId))
+    .map((plan) => ({
+      ...plan,
+      created_at: toIso(plan.created_at),
+      days: Array.isArray(plan.days) ? plan.days : [],
+    }))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+};
+
 export const createNote = async (folderId, content, type = 'CHECKLIST') => {
   const user = await getCurrentUser();
   const created_at = nowIso();
@@ -171,43 +202,94 @@ export const createNote = async (folderId, content, type = 'CHECKLIST') => {
   return { id: noteRef.key, ...note };
 };
 
-export const saveAiTripToFolder = async (plan) => {
-  const folderName = plan?.saveGuide?.folderName || plan?.title || 'AI 여행 코스';
-  const folder = await createFolder(folderName, null, null);
+export const saveAiTripToFolder = async (plan, options = {}) => {
+  const user = await getCurrentUser();
+  const created_at = nowIso();
+  const folderName = toText(plan?.saveGuide?.folderName || plan?.title, 'AI 여행 코스');
+  const targetFolderId = options.folderId ? String(options.folderId) : null;
+  const folderRef = targetFolderId
+    ? ref(realtimeDb, userPath(user.id, `wishlistFolders/${targetFolderId}`))
+    : push(ref(realtimeDb, userPath(user.id, 'wishlistFolders')));
+  const existingFolderSnapshot = targetFolderId ? await get(folderRef) : null;
+  const existingFolder = existingFolderSnapshot?.exists() ? existingFolderSnapshot.val() : null;
+  const folder = {
+    id: targetFolderId || folderRef.key,
+    user_id: user.id,
+    name: existingFolder?.name || folderName,
+    start_date: existingFolder?.start_date || null,
+    end_date: existingFolder?.end_date || null,
+    created_at: toIso(existingFolder?.created_at || created_at),
+    updated_at: created_at,
+  };
   const days = Array.isArray(plan?.days) ? plan.days : [];
   const allItems = days.flatMap((day) =>
     (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, day: day.day }))
   );
 
-  const memoLines = [
-    `[AI 여행 코스] ${plan?.title || folderName}`,
-    plan?.summary || '',
-    plan?.saveGuide?.memo || '',
-    '',
-    ...days.map((day) => {
-      const items = Array.isArray(day.items) ? day.items : [];
-      const itemText = items
-        .map((item) => `${item.time || ''} ${item.placeName || item.title || '장소'} - ${item.reason || ''}`.trim())
-        .join('\n');
-      return `Day ${day.day || ''} ${day.theme || ''}\n${itemText}`.trim();
-    }),
-  ].filter(Boolean);
+  const updates = {};
 
-  await createNote(folder.id, memoLines.join('\n\n'), 'MEMO');
+  if (targetFolderId) {
+    updates[userPath(user.id, `wishlistFolders/${folder.id}/updated_at`)] = created_at;
+  } else {
+    updates[userPath(user.id, `wishlistFolders/${folder.id}`)] = {
+      user_id: folder.user_id,
+      name: folder.name,
+      start_date: folder.start_date,
+      end_date: folder.end_date,
+      created_at: folder.created_at,
+      updated_at: folder.updated_at,
+    };
+  }
 
-  const checklist = Array.isArray(plan?.saveGuide?.checklist) ? plan.saveGuide.checklist : [];
-  await Promise.all(checklist.filter(Boolean).map((item) => createNote(folder.id, item, 'CHECKLIST')));
+  const planRef = push(ref(realtimeDb, userPath(user.id, 'aiTripPlans')));
+  updates[userPath(user.id, `aiTripPlans/${planRef.key}`)] = {
+    folder_id: String(folder.id),
+    user_id: user.id,
+    title: toText(plan?.title, folderName),
+    summary: toText(plan?.summary),
+    saveGuide: plan?.saveGuide || null,
+    days,
+    created_at,
+  };
+
+  const checklist = Array.isArray(plan?.saveGuide?.checklist)
+    ? plan.saveGuide.checklist.map((item) => toText(item)).filter(Boolean)
+    : [];
+  checklist.forEach((item) => {
+    const noteRef = push(ref(realtimeDb, userPath(user.id, 'wishlistNotes')));
+    updates[userPath(user.id, `wishlistNotes/${noteRef.key}`)] = {
+      folder_id: String(folder.id),
+      user_id: user.id,
+      content: item,
+      type: 'CHECKLIST',
+      is_completed: false,
+      created_at,
+    };
+  });
 
   const contentItems = allItems.filter((item) => item.contentId || item.contentid);
-  await Promise.all(contentItems.map((item) => addWishlistToFolder({
-    contentId: item.contentId || item.contentid,
-    title: item.placeName || item.title,
-    address: item.address,
-    firstimage: item.firstimage,
-  }, folder.id)));
+  const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
+  const wishlists = snapshotToArray(await get(wishlistRoot));
+  contentItems.forEach((item) => {
+    const contentId = String(item.contentId || item.contentid);
+    const existing = wishlists.find((wishlist) => wishlist.contentId === contentId);
+    const wishlistId = existing?.id || push(wishlistRoot).key;
+    updates[userPath(user.id, `wishlists/${wishlistId}`)] = compactObject({
+      user_id: user.id,
+      contentId,
+      title: toText(item.placeName || item.title, '여행지'),
+      imageUrl: toText(item.firstimage || item.imageUrl),
+      folder_id: folder.id,
+      addr1: toText(item.address || item.addr1, '정보 없음'),
+      created_at: existing?.created_at || created_at,
+    });
+  });
+
+  await update(ref(realtimeDb), updates);
 
   return {
     folder,
+    planId: planRef.key,
     savedPlaces: contentItems.length,
     savedChecklist: checklist.length,
   };

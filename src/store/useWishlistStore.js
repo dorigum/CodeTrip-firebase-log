@@ -116,6 +116,15 @@ const useWishlistStore = create((set, get) => ({
     }
   },
 
+  fetchAiTripPlans: async (folderId) => {
+    try {
+      return await wishlistApi.getAiTripPlans(folderId);
+    } catch (err) {
+      console.error('Fetch AI trip plans failed:', err);
+      return [];
+    }
+  },
+
   addNote: async (folderId, content, type) => {
     try {
       return await wishlistApi.createNote(folderId, content, type);

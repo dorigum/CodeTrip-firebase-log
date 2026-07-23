@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authApi from '../api/authApi';
+import ConfirmModal from '../components/ConfirmModal';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const SignUp = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [signupSuccessOpen, setSignupSuccessOpen] = useState(false);
   const [, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -34,8 +36,7 @@ const SignUp = () => {
         password: formData.password,
         name: formData.name.trim()
       });
-      alert('Account created successfully! Please sign in.');
-      navigate('/login');
+      setSignupSuccessOpen(true);
     } catch (err) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
@@ -65,15 +66,15 @@ const SignUp = () => {
           {/* ... 필드 부분은 동일 ... */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary ml-1 uppercase tracking-tighter">Full Name</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-lg">badge</span>
+            <div className="flex h-14 items-center gap-3 rounded-2xl bg-surface-container-low px-4 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary">
+              <span className="material-symbols-outlined flex h-5 w-5 items-center justify-center text-lg leading-none text-outline">badge</span>
               <input
                 name="name"
                 type="text"
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full bg-surface-container-low border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all outline-none"
+                className="h-full min-w-0 flex-1 border-none bg-transparent p-0 text-sm leading-none outline-none placeholder:text-outline"
                 placeholder="Name or Nickname"
               />
             </div>
@@ -81,15 +82,15 @@ const SignUp = () => {
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary ml-1 uppercase tracking-tighter">Email Address</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-lg">mail</span>
+            <div className="flex h-14 items-center gap-3 rounded-2xl bg-surface-container-low px-4 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary">
+              <span className="material-symbols-outlined flex h-5 w-5 items-center justify-center text-lg leading-none text-outline">mail</span>
               <input
                 name="email"
                 type="email"
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full bg-surface-container-low border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all outline-none"
+                className="h-full min-w-0 flex-1 border-none bg-transparent p-0 text-sm leading-none outline-none placeholder:text-outline"
                 placeholder="developer@codetrip.com"
               />
             </div>
@@ -97,8 +98,8 @@ const SignUp = () => {
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary ml-1 uppercase tracking-tighter">Password</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-lg">lock</span>
+            <div className="flex h-14 items-center gap-3 rounded-2xl bg-surface-container-low px-4 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary">
+              <span className="material-symbols-outlined flex h-5 w-5 items-center justify-center text-lg leading-none text-outline">lock</span>
               <input
                 name="password"
                 type="password"
@@ -107,7 +108,7 @@ const SignUp = () => {
                 autoComplete="new-password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full bg-surface-container-low border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all outline-none"
+                className="h-full min-w-0 flex-1 border-none bg-transparent p-0 text-sm leading-none outline-none placeholder:text-outline"
                 placeholder="••••••••"
               />
             </div>
@@ -115,8 +116,8 @@ const SignUp = () => {
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary ml-1 uppercase tracking-tighter">Confirm Password</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-lg">verified_user</span>
+            <div className="flex h-14 items-center gap-3 rounded-2xl bg-surface-container-low px-4 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary">
+              <span className="material-symbols-outlined flex h-5 w-5 items-center justify-center text-lg leading-none text-outline">verified_user</span>
               <input
                 name="confirmPassword"
                 type="password"
@@ -125,7 +126,7 @@ const SignUp = () => {
                 autoComplete="new-password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full bg-surface-container-low border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all outline-none"
+                className="h-full min-w-0 flex-1 border-none bg-transparent p-0 text-sm leading-none outline-none placeholder:text-outline"
                 placeholder="••••••••"
               />
             </div>
@@ -145,6 +146,18 @@ const SignUp = () => {
           <Link to="/login" className="text-primary font-bold hover:underline">Sign In</Link>
         </div>
       </div>
+
+      <ConfirmModal
+        open={signupSuccessOpen}
+        title="회원가입 완료"
+        description="CodeTrip 계정이 생성되었습니다. 로그인 후 위시리스트와 AI 여행 코스를 이용해보세요."
+        confirmText="로그인하기"
+        cancelText="닫기"
+        icon="check_circle"
+        tone="success"
+        onConfirm={() => navigate('/login')}
+        onCancel={() => navigate('/login')}
+      />
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
+  browserSessionPersistence,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   updatePassword as updateFirebasePassword,
   updateProfile as updateFirebaseProfile,
@@ -27,6 +29,10 @@ const userPayload = (authUser, profile = {}) => ({
 });
 
 const authErrorMessage = (error, fallback) => {
+  if (error?.code?.includes('requests-to-this-api')) {
+    return 'Firebase API key 제한 설정으로 로그인이 차단되었습니다. Google Cloud에서 Firebase용 Browser key의 Identity Toolkit API 허용 여부를 확인해주세요.';
+  }
+
   switch (error?.code) {
     case 'auth/email-already-in-use':
       return '이미 가입된 이메일입니다. 로그인하거나 다른 이메일을 사용해 주세요.';
@@ -73,6 +79,7 @@ const authApi = {
 
   login: async ({ email, password }) => {
     try {
+      await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
       const token = await credential.user.getIdToken();
       const profileSnap = await get(ref(realtimeDb, `users/${credential.user.uid}`));

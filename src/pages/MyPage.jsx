@@ -14,7 +14,7 @@ const MyPage = () => {
   const {
     wishlistItems, folders, loading, syncError,
     initWishlist, toggleWishlist, createFolder, updateFolder, deleteFolder, moveItem,
-    fetchNotes, addNote, toggleNote: toggleNoteAction, deleteNote: deleteNoteAction
+    fetchNotes, fetchAiTripPlans, addNote, toggleNote: toggleNoteAction, deleteNote: deleteNoteAction
   } = useWishlistStore();
 
   const showToast = useToast();
@@ -36,8 +36,17 @@ const MyPage = () => {
 
   // --- Note(Memo/Checklist) States ---
   const [notes, setNotes] = useState([]);
+  const [aiTripPlans, setAiTripPlans] = useState([]);
   const [noteInput, setNoteInput] = useState('');
   const [noteType, setNoteType] = useState('CHECKLIST'); // 'CHECKLIST' or 'MEMO'
+  const visibleNotes = useMemo(
+    () => notes.filter((note) => {
+      const isLegacyAiCourseMemo = (note.type || 'CHECKLIST') === 'MEMO'
+        && String(note.content || '').trim().startsWith('[AI 여행 코스]');
+      return (note.type || 'CHECKLIST') === noteType && !isLegacyAiCourseMemo;
+    }),
+    [notes, noteType]
+  );
 
   // Authentication & Initial Data Load
   useEffect(() => {
@@ -50,16 +59,27 @@ const MyPage = () => {
 
   // 폴더 변경 시 노트 로드
   useEffect(() => {
-    if (selectedFolderId && selectedFolderId !== 'UNCATEGORIZED') {
-      const loadNotes = async () => {
-        const data = await fetchNotes(selectedFolderId);
-        setNotes(data);
-      };
-      loadNotes();
-    } else {
+    let isMounted = true;
+    const loadFolderData = async () => {
+      if (selectedFolderId && selectedFolderId !== 'UNCATEGORIZED') {
+        const [noteData, planData] = await Promise.all([
+          fetchNotes(selectedFolderId),
+          fetchAiTripPlans(selectedFolderId),
+        ]);
+        if (!isMounted) return;
+        setNotes(noteData);
+        setAiTripPlans(planData);
+        return;
+      }
+      if (!isMounted) return;
       setNotes([]);
-    }
-  }, [selectedFolderId, fetchNotes]);
+      setAiTripPlans([]);
+    };
+    loadFolderData();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedFolderId, fetchNotes, fetchAiTripPlans]);
 
   const handleRemoveWish = async (e, contentId) => {
     e.preventDefault();
@@ -209,6 +229,14 @@ const MyPage = () => {
       },
     });
   };
+
+  const getPlanItems = (day) => (
+    Array.isArray(day?.items) ? day.items : []
+  ).filter(Boolean);
+
+  const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
+  const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
+  const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
 
   if (!isLoggedIn) return null;
 
@@ -381,10 +409,10 @@ const MyPage = () => {
 
               {/* 노트 리스트 */}
               <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-2">
-                {notes.length === 0 ? (
+                {visibleNotes.length === 0 ? (
                   <p className="text-[10px] text-slate-300 font-mono text-center py-2">// no_notes_found</p>
                 ) : (
-                  notes.map(note => (
+                  visibleNotes.map(note => (
                     <div key={note.id} className="flex items-start gap-2 group">
                       {note.type === 'CHECKLIST' ? (
                         <button onClick={() => handleToggleNote(note.id)} className={`material-symbols-outlined text-base mt-0.5 shrink-0 transition-colors ${note.is_completed ? 'text-emerald-500 fill-1' : 'text-slate-300'}`}>
@@ -465,12 +493,87 @@ const MyPage = () => {
             </div>
           </div>
 
+          {selectedFolder && aiTripPlans.length > 0 && (
+            <section className="mb-8 space-y-4">
+              {aiTripPlans.map((plan) => (
+                <article key={plan.id} className="overflow-hidden rounded-2xl border border-outline-variant/20 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-outline-variant/15 bg-slate-50 px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary text-lg">terminal</span>
+                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">AI_COURSE.md</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-slate-400">{formatDate(plan.created_at)}</span>
+                  </div>
+
+                  <div className="p-5 md:p-6">
+                    <div className="mb-5">
+                      <p className="mb-2 inline-flex rounded-full bg-primary/10 px-3 py-1 font-label text-[10px] font-bold uppercase tracking-widest text-primary">
+                        CodeTrip generated course
+                      </p>
+                      <h4 className="font-headline text-2xl font-bold text-slate-950">{plan.title || selectedFolder.name}</h4>
+                      {plan.summary && (
+                        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{plan.summary}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      {plan.days.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-outline-variant/30 px-4 py-8 text-center font-mono text-xs text-slate-400">// no_course_items</p>
+                      ) : (
+                        plan.days.map((day, dayIndex) => (
+                          <section key={`${plan.id}-day-${day.day || dayIndex}`} className="rounded-xl border border-outline-variant/20 bg-slate-50/70">
+                            <div className="flex items-center justify-between border-b border-outline-variant/15 px-4 py-3">
+                              <div>
+                                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-primary">Day {day.day || dayIndex + 1}</p>
+                                <h5 className="mt-1 font-headline text-base font-bold text-slate-900">{day.theme || day.title || '추천 일정'}</h5>
+                              </div>
+                              <span className="material-symbols-outlined text-primary/60">route</span>
+                            </div>
+
+                            <div className="divide-y divide-outline-variant/10">
+                              {getPlanItems(day).map((item, itemIndex) => (
+                                <div key={`${plan.id}-${dayIndex}-${itemIndex}`} className="grid gap-3 px-4 py-4 sm:grid-cols-[72px_minmax(0,1fr)]">
+                                  <span className="font-mono text-xs font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <p className="font-headline text-base font-bold text-slate-950">{getPlanPlaceName(item)}</p>
+                                      {(item.category || item.cat3Name || item.type) && (
+                                        <span className="rounded-md bg-white px-2 py-1 text-[10px] font-bold text-slate-500 ring-1 ring-outline-variant/20">
+                                          {item.category || item.cat3Name || item.type}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {getPlanAddress(item) && (
+                                      <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
+                                    )}
+                                    {getPlanNote(item) && (
+                                      <p className="mt-2 text-sm leading-6 text-slate-600">{getPlanNote(item)}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" /></div>
           ) : sortedWishList.length === 0 ? (
             <div className="border-2 border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center p-20 cursor-pointer" onClick={selectedFolderId ? openExploreForCurrentFolder : () => navigate('/explore')}>
               <span className="material-symbols-outlined text-4xl text-primary mb-4">add_location_alt</span>
               <p className="text-xs font-mono text-slate-400">// empty_data_node</p>
+              {selectedFolderId && selectedFolderId !== 'UNCATEGORIZED' && (notes.length > 0 || aiTripPlans.length > 0) && (
+                <p className="mt-3 max-w-xl text-center text-xs leading-5 text-slate-400 md:whitespace-nowrap">
+                  이 폴더에는 저장된 여행지 카드는 없고 AI 코스 또는 체크리스트만 저장되어 있습니다.
+                </p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

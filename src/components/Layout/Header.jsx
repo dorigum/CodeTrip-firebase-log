@@ -6,6 +6,7 @@ import useWishlistStore from '../../store/useWishlistStore';
 import { getNotifications, markAllRead, markOneRead, deleteOneNotification, deleteReadNotifications } from '../../api/notificationApi';
 import useToast from '../../hooks/useToast';
 import useRecentSearch from '../../hooks/useRecentSearch';
+import ConfirmModal from '../ConfirmModal';
 
 const formatDate = (str) => {
   const d = new Date(str);
@@ -27,6 +28,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notiOpen, setNotiOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const notiRef = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
@@ -122,13 +124,14 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    if (!window.confirm('로그아웃 하시겠습니까?')) return;
+    setLogoutConfirmOpen(false);
     logout();
     clearWishlist();
-    navigate('/login');
+    navigate('/');
   };
 
   return (
+    <>
     <header className="flex items-center justify-between gap-2 px-3 sm:px-6 w-full h-16 sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/10 font-['Plus_Jakarta_Sans']">
       <div className="flex items-center flex-1 min-w-0">
         <div className="relative block w-full max-w-md lg:max-w-xl min-w-[150px]" ref={searchContainerRef}>
@@ -281,7 +284,7 @@ const Header = () => {
               </Link>
 
               <button
-                onClick={handleLogout}
+                onClick={() => setLogoutConfirmOpen(true)}
                 className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group/logout"
                 title="Sign Out"
               >
@@ -301,6 +304,18 @@ const Header = () => {
         )}
       </div>
     </header>
+    <ConfirmModal
+      open={logoutConfirmOpen}
+      title="로그아웃"
+      description="현재 계정에서 로그아웃하시겠습니까? 저장된 위시리스트 상태는 서버에 보관됩니다."
+      confirmText="LOGOUT"
+      cancelText="CANCEL"
+      icon="logout"
+      tone="danger"
+      onConfirm={handleLogout}
+      onCancel={() => setLogoutConfirmOpen(false)}
+    />
+    </>
   );
 };
 

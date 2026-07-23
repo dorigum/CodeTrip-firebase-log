@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import useWishlistStore from '../../store/useWishlistStore';
+import ConfirmModal from '../ConfirmModal';
 
 const NAV_ITEMS = [
   {
@@ -83,6 +84,8 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
   const [myPageSubOpen, setMyPageSubOpen] = useState(false);
   const [infoSubOpen, setInfoSubOpen] = useState(false);
   const [mobileMyPageOpen, setMobileMyPageOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [accessConfirmOpen, setAccessConfirmOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, logout, isLoggedIn } = useAuthStore();
@@ -91,11 +94,10 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
   const isActive = (path) => (path === '/' ? pathname === '/' : pathname.startsWith(path));
 
   const handleNavClick = (e, item) => {
-    const protectedPaths = ['/mypage', '/settings', '/my-activity', '/ai-planner'];
+    const protectedPaths = ['/mypage', '/settings', '/my-activity', '/ai-planner', '/board'];
     if (protectedPaths.includes(item.path) && !isLoggedIn) {
       e.preventDefault();
-      alert('회원만 이용 가능한 서비스입니다.');
-      navigate('/login');
+      setAccessConfirmOpen(true);
       setMobileMyPageOpen(false);
       return;
     }
@@ -103,11 +105,18 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
     setMobileMyPageOpen(false);
   };
 
+  const handleLogout = () => {
+    setLogoutConfirmOpen(false);
+    logout();
+    clearWishlist();
+    navigate('/');
+  };
+
   return (
     <>
       <aside 
         className={`fixed left-0 top-0 h-full bg-white border-r border-outline-variant/30 z-[55] flex flex-col transition-all duration-300 select-none ${
-          isCollapsed ? 'w-20 overflow-visible' : 'w-64 overflow-hidden'
+          isCollapsed ? 'w-20 overflow-visible' : 'w-56 overflow-hidden'
         } hidden md:flex`}
       >
         {/* Logo Section */}
@@ -115,12 +124,13 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           {!isCollapsed ? (
             <Link 
               to="/" 
-              className="text-xl font-bold tracking-tighter text-slate-900 transition-opacity duration-300 hover:text-primary opacity-100"
+              className="flex items-center gap-2 text-xl font-bold tracking-tighter text-slate-900 transition-opacity duration-300 hover:text-primary opacity-100"
             >
-              Code Trip
+              <img src="/favicon.svg" alt="" className="h-8 w-8 rounded-lg shadow-sm" />
+              <span>CodeTrip</span>
             </Link>
           ) : (
-            <div className="w-0 overflow-hidden opacity-0">Code Trip</div>
+            <div className="w-0 overflow-hidden opacity-0">CodeTrip</div>
           )}
           
           <button 
@@ -275,10 +285,10 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           </nav>
 
           {/* User Profile Area */}
-          <div className="p-4 border-t border-outline-variant/10 mt-auto shrink-0">
+          <div className={`border-t border-outline-variant/10 mt-auto shrink-0 ${isCollapsed ? 'px-0 py-4 flex justify-center' : 'p-4'}`}>
             {user ? (
               <div className={`flex flex-col gap-4 ${isCollapsed ? 'items-center' : ''}`}>
-                <div className="flex items-center gap-4 overflow-hidden">
+                <div className={`flex items-center overflow-hidden ${isCollapsed ? 'justify-center gap-0 w-full' : 'gap-4'}`}>
                   <img 
                     src={user.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'} 
                     alt="User" 
@@ -294,7 +304,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
                 </div>
                 {!isCollapsed && (
                   <button 
-                    onClick={() => { if (!window.confirm('로그아웃 하시겠습니까?')) return; logout(); clearWishlist(); }}
+                    onClick={() => setLogoutConfirmOpen(true)}
                     className="w-full py-2 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 group/logout"
                   >
                     <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover/logout:-translate-x-1">logout</span>
@@ -374,6 +384,35 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           <span className="text-[10px] font-bold uppercase tracking-tighter">My Page</span>
         </button>
       </nav>
+
+      <ConfirmModal
+        open={logoutConfirmOpen}
+        title="로그아웃"
+        description="현재 계정에서 로그아웃하시겠습니까? 저장된 위시리스트 상태는 서버에 보관됩니다."
+        confirmText="LOGOUT"
+        cancelText="CANCEL"
+        icon="logout"
+        tone="danger"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutConfirmOpen(false)}
+      />
+      <ConfirmModal
+        open={accessConfirmOpen}
+        title="회원 전용 페이지"
+        description="이 페이지는 로그인한 사용자만 이용할 수 있습니다. 로그인 후 AI 코스, 게시판, 마이페이지 기능을 이어서 사용해보세요."
+        confirmText="LOGIN"
+        cancelText="HOME"
+        icon="lock"
+        tone="primary"
+        onConfirm={() => {
+          setAccessConfirmOpen(false);
+          navigate('/login');
+        }}
+        onCancel={() => {
+          setAccessConfirmOpen(false);
+          navigate('/');
+        }}
+      />
     </>
   );
 };

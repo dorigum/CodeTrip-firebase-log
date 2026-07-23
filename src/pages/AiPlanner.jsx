@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateTripPlan } from '../api/geminiApi';
+import { getTravelList } from '../api/travelInfoApi';
 import { saveAiTripToFolder } from '../api/wishlistApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
@@ -14,6 +15,7 @@ const DEFAULT_FORM = {
   regionName: '서울',
   durationDays: 1,
   companionType: '친구',
+  peopleCount: 2,
   budgetLevel: '보통',
   pace: '여유',
   weatherKeyword: '',
@@ -23,8 +25,46 @@ const DEFAULT_FORM = {
   avoidKeywords: [],
 };
 
+const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
+
+const BUDGET_HELP = {
+  낮음: '1일 1인 3만 원 이하, 무료/저가 관광지와 가성비 식사 중심',
+  보통: '1일 1인 3만~8만 원, 일반 입장료·식사·카페 포함',
+  높음: '1일 1인 8만 원 이상, 유료 전시·체험·분위기 좋은 식당/카페 포함',
+};
+
+const BUDGET_RANGE = {
+  낮음: [0, 30000],
+  보통: [30000, 80000],
+  높음: [80000, null],
+};
+
+const PLAN_MODE = {
+  CUSTOM: 'custom',
+  FOLDER: 'folder',
+};
+
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+
+const normalizeTourCandidate = (item) => ({
+  contentid: item.contentid,
+  contentId: item.contentid,
+  title: item.title,
+  addr1: item.addr1,
+  firstimage: item.firstimage,
+  contenttypeid: item.contenttypeid,
+});
+
+const formatWon = (value) => `${Math.round(value / 10000)}만 원`;
+
+const getTotalBudgetLabel = (budgetLevel, peopleCount) => {
+  const count = Math.max(1, Number(peopleCount) || 1);
+  const [min, max] = BUDGET_RANGE[budgetLevel] || BUDGET_RANGE.보통;
+  if (min === 0) return `1일 총 ${formatWon(max * count)} 이하`;
+  if (max == null) return `1일 총 ${formatWon(min * count)} 이상`;
+  return `1일 총 ${formatWon(min * count)}~${formatWon(max * count)}`;
+};
 
 const FieldLabel = ({ children }) => (
   <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
@@ -36,8 +76,10 @@ const AiPlanner = () => {
   const navigate = useNavigate();
   const showToast = useToast();
   const { isLoggedIn } = useAuthStore();
-  const { wishlistItems, initWishlist, syncWithServer } = useWishlistStore();
+  const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [planningMode, setPlanningMode] = useState(PLAN_MODE.CUSTOM);
+  const [selectedFolderId, setSelectedFolderId] = useState('');
   const [selectedContentIds, setSelectedContentIds] = useState(new Set());
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
@@ -52,6 +94,11 @@ const AiPlanner = () => {
     initWishlist();
   }, [isLoggedIn, initWishlist, navigate, showToast]);
 
+  const folderPlaces = useMemo(
+    () => wishlistItems.filter((item) => selectedFolderId && String(item.folder_id) === String(selectedFolderId)),
+    [wishlistItems, selectedFolderId]
+  );
+
   const selectedPlaces = useMemo(
     () => wishlistItems.filter((item) => selectedContentIds.has(String(item.contentid || item.contentId))),
     [wishlistItems, selectedContentIds]
@@ -59,26 +106,102 @@ const AiPlanner = () => {
 
   const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const handleCompanionChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      companionType: value,
+      peopleCount: value === '혼자' ? 1 : prev.peopleCount,
+    }));
+
+    if (value === '혼자' && Number(form.peopleCount) > 1) {
+      showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.');
+    }
+  };
+
+  const handlePeopleCountChange = (value) => {
+    const nextCount = Math.max(1, Number(value) || 1);
+    if (form.companionType === '혼자' && nextCount > 1) {
+      updateForm('peopleCount', 1);
+      showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.');
+      return;
+    }
+
+    updateForm('peopleCount', Math.min(nextCount, 10));
+  };
+
+  const handlePlanningModeChange = (mode) => {
+    setPlanningMode(mode);
+    setPlan(null);
+    setSelectedContentIds(new Set());
+    if (mode === PLAN_MODE.CUSTOM) {
+      setSelectedFolderId('');
+    }
+  };
+
+  const handleFolderChange = (folderId) => {
+    setSelectedFolderId(folderId);
+    const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
+    setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
+  };
+
   const handleGenerate = async () => {
     if (!form.regionName.trim()) {
       showToast('여행 지역을 입력해주세요.');
       return;
     }
 
+    if (form.companionType === '혼자' && Number(form.peopleCount) > 1) {
+      updateForm('peopleCount', 1);
+      showToast('동행 유형이 혼자일 때는 인원 수를 1명으로 설정해주세요.');
+      return;
+    }
+
+    if (planningMode === PLAN_MODE.FOLDER) {
+      if (!selectedFolderId) {
+        showToast('코스 기준으로 사용할 위시리스트 폴더를 선택해주세요.');
+        return;
+      }
+      if (selectedPlaces.length === 0) {
+        showToast('선택한 폴더에서 코스에 반영할 여행지를 1개 이상 선택해주세요.');
+        return;
+      }
+    }
+
     setGenerating(true);
     setPlan(null);
     try {
+      let preferredPlaces = selectedPlaces;
+
+      if (planningMode === PLAN_MODE.CUSTOM) {
+        const { items } = await getTravelList({
+          keyword: form.regionName.trim(),
+          pageNo: 1,
+          numOfRows: 12,
+          sort: 'default',
+        });
+        preferredPlaces = items.map(normalizeTourCandidate).filter((item) => item.contentid);
+      }
+
       const result = await generateTripPlan({
         ...form,
+        planningMode,
+        sourceFolderName: folders.find((folder) => String(folder.id) === String(selectedFolderId))?.name || '',
         regionName: form.regionName.trim(),
         durationDays: Number(form.durationDays) || 1,
-        preferredPlaces: selectedPlaces,
+        peopleCount: Number(form.peopleCount) || 1,
+        totalBudgetLabel: getTotalBudgetLabel(form.budgetLevel, form.peopleCount),
+        preferredPlaces,
       });
       setPlan(result);
-      showToast('AI 여행 코스를 생성했습니다.', 'success');
+      showToast(
+        planningMode === PLAN_MODE.CUSTOM && preferredPlaces.length > 0
+          ? `관광공사 등록 장소 ${preferredPlaces.length}개를 우선 반영해 CodeTrip 여행 코스를 생성했습니다.`
+          : 'CodeTrip 여행 코스를 생성했습니다.',
+        'success'
+      );
     } catch (error) {
-      console.error('Gemini trip generation failed:', error);
-      showToast(error.message || 'AI 코스를 생성하지 못했습니다.');
+      console.error('CodeTrip trip generation failed:', error);
+      showToast(error.message || 'CodeTrip이 여행 코스를 생성하지 못했습니다.');
     } finally {
       setGenerating(false);
     }
@@ -88,12 +211,24 @@ const AiPlanner = () => {
     if (!plan) return;
     setSaving(true);
     try {
-      const result = await saveAiTripToFolder(plan);
+      const result = await saveAiTripToFolder(plan, {
+        folderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
+      });
       await syncWithServer();
-      showToast(`AI 코스를 "${result.folder.name}" 폴더로 저장했습니다.`, 'success');
+      if (result.savedPlaces > 0) {
+        showToast(
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.`,
+          'success'
+        );
+      } else {
+        showToast(
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 코스 데이터와 체크리스트로 저장됐습니다.`,
+          'success'
+        );
+      }
     } catch (error) {
       console.error('Save AI trip failed:', error);
-      showToast('AI 코스를 저장하지 못했습니다.');
+      showToast(error.message || 'CodeTrip 여행 코스를 저장하지 못했습니다.');
     } finally {
       setSaving(false);
     }
@@ -117,8 +252,104 @@ const AiPlanner = () => {
         )}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[500px_minmax(0,1fr)] gap-6">
         <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
+          <div>
+            <FieldLabel>Plan Mode</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1 border border-outline-variant/30">
+              <button
+                type="button"
+                onClick={() => handlePlanningModeChange(PLAN_MODE.CUSTOM)}
+                className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
+                  planningMode === PLAN_MODE.CUSTOM
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:text-primary hover:bg-white'
+                }`}
+              >
+                설정한 조건으로 새 코스 생성하기
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePlanningModeChange(PLAN_MODE.FOLDER)}
+                className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
+                  planningMode === PLAN_MODE.FOLDER
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:text-primary hover:bg-white'
+                }`}
+              >
+                위시리스트 폴더 기반으로 코스 생성하기
+              </button>
+            </div>
+            <p className="mt-2 text-[10px] leading-4 text-slate-400">
+              폴더 기반은 저장해둔 여행지를 우선 반영하고, 조건 기반은 입력한 지역과 취향으로 새 코스를 생성합니다.
+            </p>
+          </div>
+
+          {planningMode === PLAN_MODE.FOLDER && (
+            <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 space-y-3">
+              <div>
+                <FieldLabel>Source Folder</FieldLabel>
+                <select
+                  value={selectedFolderId}
+                  onChange={(e) => handleFolderChange(e.target.value)}
+                  className="w-full h-11 px-3 rounded-lg border border-primary/20 focus:border-primary focus:outline-none text-sm bg-white"
+                >
+                  <option value="">폴더를 선택해주세요</option>
+                  {folders.map((folder) => {
+                    const count = wishlistItems.filter((item) => String(item.folder_id) === String(folder.id)).length;
+                    return (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="mt-1.5 text-[10px] leading-4 text-slate-400">
+                  선택한 폴더 안의 여행지를 기준으로 이동 순서와 세부 일정을 추천합니다.
+                </p>
+              </div>
+
+              {selectedFolderId && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <FieldLabel>Folder Places</FieldLabel>
+                    <span className="text-[10px] font-mono font-bold text-primary">
+                      {selectedPlaces.length} / {folderPlaces.length}
+                    </span>
+                  </div>
+                  <div className="max-h-44 overflow-y-auto border border-outline-variant/30 rounded-lg divide-y divide-outline-variant/20 bg-white">
+                    {folderPlaces.length === 0 ? (
+                      <p className="text-xs text-slate-400 font-mono p-4">// empty_folder_places</p>
+                    ) : (
+                      folderPlaces.map((item) => {
+                        const id = String(item.contentid || item.contentId);
+                        const selected = selectedContentIds.has(id);
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setSelectedContentIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(id)) next.delete(id);
+                              else next.add(id);
+                              return next;
+                            })}
+                            className={`w-full text-left px-3 py-2 flex items-center gap-2 text-xs transition-colors ${
+                              selected ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-base">{selected ? 'check_circle' : 'radio_button_unchecked'}</span>
+                            <span className="truncate font-semibold">{item.title}</span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FieldLabel>Region</FieldLabel>
@@ -128,6 +359,7 @@ const AiPlanner = () => {
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
                 placeholder="서울"
               />
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{REGION_HELP}</p>
             </div>
             <div>
               <FieldLabel>Days</FieldLabel>
@@ -147,12 +379,26 @@ const AiPlanner = () => {
               <FieldLabel>Companion</FieldLabel>
               <select
                 value={form.companionType}
-                onChange={(e) => updateForm('companionType', e.target.value)}
+                onChange={(e) => handleCompanionChange(e.target.value)}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
               >
                 {['혼자', '연인', '가족', '친구'].map((item) => <option key={item}>{item}</option>)}
               </select>
             </div>
+            <div>
+              <FieldLabel>People</FieldLabel>
+              <input
+                type="number"
+                min="1"
+                max={form.companionType === '혼자' ? '1' : '10'}
+                value={form.peopleCount}
+                onChange={(e) => handlePeopleCountChange(e.target.value)}
+                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <FieldLabel>Budget</FieldLabel>
               <select
@@ -162,6 +408,12 @@ const AiPlanner = () => {
               >
                 {['낮음', '보통', '높음'].map((item) => <option key={item}>{item}</option>)}
               </select>
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">
+                {BUDGET_HELP[form.budgetLevel] || BUDGET_HELP.보통}
+                <span className="block text-primary font-bold">
+                  {getTotalBudgetLabel(form.budgetLevel, form.peopleCount)}
+                </span>
+              </p>
             </div>
           </div>
 
@@ -243,38 +495,6 @@ const AiPlanner = () => {
                   {item}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Wishlist Candidates</FieldLabel>
-            <div className="max-h-44 overflow-y-auto border border-outline-variant/30 rounded-lg divide-y divide-outline-variant/20">
-              {wishlistItems.length === 0 ? (
-                <p className="text-xs text-slate-400 font-mono p-4">// no_wishlist_candidates</p>
-              ) : (
-                wishlistItems.slice(0, 20).map((item) => {
-                  const id = String(item.contentid || item.contentId);
-                  const selected = selectedContentIds.has(id);
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setSelectedContentIds((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(id)) next.delete(id);
-                        else next.add(id);
-                        return next;
-                      })}
-                      className={`w-full text-left px-3 py-2 flex items-center gap-2 text-xs transition-colors ${
-                        selected ? 'bg-primary/5 text-primary' : 'hover:bg-slate-50 text-slate-600'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-base">{selected ? 'check_circle' : 'radio_button_unchecked'}</span>
-                      <span className="truncate font-semibold">{item.title}</span>
-                    </button>
-                  );
-                })
-              )}
             </div>
           </div>
 
