@@ -26,6 +26,18 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **요약**: Gemini 기능 로컬 테스트 과정에서의 API key 전달 오류 수정 및 원본 API 에러를 정제하여 알림 노드 권한 문제 해결
 - **상세 기록**: [2026-07-22 개발 로그](project-log/2026-07-22.md)
 
+## 5. Firebase API key 제한으로 인한 로그인 403 오류
+
+- **발생일**: 2026-07-23
+- **요약**: `identitytoolkit.googleapis.com` 로그인 API가 Firebase Browser key 제한에 의해 차단되어 `signInWithPassword` 403 오류가 발생한 문제를 분석하고, 실제 로컬 앱이 사용하는 Firebase Browser key를 재확인
+- **상세 기록**: [2026-07-23 개발 로그](project-log/2026-07-23.md)
+
+## 6. AI 플래너 저장 구조 및 관광공사 API 후보 미반영 문제
+
+- **발생일**: 2026-07-23
+- **요약**: Gemini가 TourAPI 미등록 장소 위주로 코스를 생성하여 위시리스트 카드 저장률이 낮고, 위시리스트 폴더 기반 저장 시 동일 폴더가 중복 생성되던 문제를 관광공사 후보 우선 전달 및 기존 폴더 저장 방식으로 보정
+- **상세 기록**: [2026-07-23 개발 로그](project-log/2026-07-23.md)
+
 ## 💡 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

@@ -38,6 +38,10 @@ const MyPage = () => {
   const [notes, setNotes] = useState([]);
   const [noteInput, setNoteInput] = useState('');
   const [noteType, setNoteType] = useState('CHECKLIST'); // 'CHECKLIST' or 'MEMO'
+  const visibleNotes = useMemo(
+    () => notes.filter((note) => (note.type || 'CHECKLIST') === noteType),
+    [notes, noteType]
+  );
 
   // Authentication & Initial Data Load
   useEffect(() => {
@@ -381,10 +385,10 @@ const MyPage = () => {
 
               {/* 노트 리스트 */}
               <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-2">
-                {notes.length === 0 ? (
+                {visibleNotes.length === 0 ? (
                   <p className="text-[10px] text-slate-300 font-mono text-center py-2">// no_notes_found</p>
                 ) : (
-                  notes.map(note => (
+                  visibleNotes.map(note => (
                     <div key={note.id} className="flex items-start gap-2 group">
                       {note.type === 'CHECKLIST' ? (
                         <button onClick={() => handleToggleNote(note.id)} className={`material-symbols-outlined text-base mt-0.5 shrink-0 transition-colors ${note.is_completed ? 'text-emerald-500 fill-1' : 'text-slate-300'}`}>
@@ -471,6 +475,11 @@ const MyPage = () => {
             <div className="border-2 border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center p-20 cursor-pointer" onClick={selectedFolderId ? openExploreForCurrentFolder : () => navigate('/explore')}>
               <span className="material-symbols-outlined text-4xl text-primary mb-4">add_location_alt</span>
               <p className="text-xs font-mono text-slate-400">// empty_data_node</p>
+              {selectedFolderId && selectedFolderId !== 'UNCATEGORIZED' && notes.length > 0 && (
+                <p className="mt-3 max-w-sm text-center text-xs leading-5 text-slate-400">
+                  이 폴더에는 저장된 여행지 카드는 없고 AI 메모와 체크리스트만 저장되어 있습니다.
+                </p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

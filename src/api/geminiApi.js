@@ -12,6 +12,12 @@ const toListText = (value) => {
   return value || '없음';
 };
 
+const BUDGET_GUIDE = {
+  낮음: '1일 1인 3만 원 이하, 무료/저가 관광지와 가성비 식사 중심',
+  보통: '1일 1인 3만~8만 원, 일반 입장료·식사·카페 포함',
+  높음: '1일 1인 8만 원 이상, 유료 전시·체험·분위기 좋은 식당/카페 포함',
+};
+
 const normalizePlace = (place) => ({
   contentid: place.contentid || place.contentId || null,
   title: place.title || place.placeName || '여행지',
@@ -27,11 +33,16 @@ export const buildTripPrompt = (input) => {
 다음 조건을 바탕으로 한국 여행 코스를 생성해주세요.
 
 [사용자 조건]
+- 생성 방식: ${input.planningMode === 'folder' ? '위시리스트 폴더 기반' : '조건 기반 새 코스'}
+- 기준 폴더: ${input.sourceFolderName || '없음'}
 - 지역: ${input.regionName || '미정'}
 - 여행 일수: ${input.durationDays || 1}일
 - 여행 스타일: ${toListText(input.travelStyle)}
 - 동행 유형: ${input.companionType || '미정'}
+- 인원 수: ${input.peopleCount || 1}명
 - 예산 수준: ${input.budgetLevel || '보통'}
+- 예산 기준: ${BUDGET_GUIDE[input.budgetLevel] || BUDGET_GUIDE.보통}
+- 예상 총예산 범위: ${input.totalBudgetLabel || '미정'}
 - 이동 강도: ${input.pace || '보통'}
 - 날씨 키워드: ${input.weatherKeyword || '없음'}
 - 시작 시간: ${input.startTime || '10:00'}
@@ -45,13 +56,16 @@ ${JSON.stringify(preferredPlaces, null, 2)}
 1. 반드시 JSON만 반환하세요.
 2. Markdown 코드블록을 사용하지 마세요.
 3. JSON 외의 설명 문장을 추가하지 마세요.
-4. preferredPlaces에 포함된 장소를 우선 사용하세요.
+4. preferredPlaces에 포함된 장소는 관광공사 API 또는 사용자의 위시리스트에 연결된 장소입니다. 가능한 한 이 장소들을 주요 방문지로 우선 사용하세요.
 5. preferredPlaces의 contentid는 응답의 contentId에 그대로 넣어주세요.
 6. contentid가 없는 장소를 새로 제안할 경우 contentId는 null로 작성하세요.
-7. 하루 일정은 시간 순서대로 작성하세요.
-8. 이동이 과도하게 많지 않도록 같은 지역 중심으로 구성하세요.
-9. 날씨 키워드가 있으면 실내/실외 비중에 반영하세요.
-10. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
+7. 생성 방식이 위시리스트 폴더 기반이면 preferredPlaces를 주요 방문지로 우선 배치하고, 필요한 식사/카페/보조 장소만 추가하세요.
+8. 생성 방식이 조건 기반 새 코스이고 preferredPlaces가 있다면, preferredPlaces만으로 일정 구성이 부족할 때만 contentId가 null인 장소를 추가 제안하세요.
+9. 하루 일정은 시간 순서대로 작성하세요.
+10. 이동이 과도하게 많지 않도록 같은 지역 중심으로 구성하세요.
+11. 날씨 키워드가 있으면 실내/실외 비중에 반영하세요.
+12. 예산은 1일 1인 기준과 예상 총예산 범위를 함께 고려하여 식사, 카페, 유료 체험 수준을 조절하세요.
+13. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
 
 [응답 JSON 스키마]
 {

@@ -4,6 +4,7 @@ import Header from './components/Layout/Header';
 import SideBar from './components/Layout/SideBar';
 import Footer from './components/Layout/Footer';
 import useRegionStore from './store/useRegionStore';
+import useAuthStore from './store/useAuthStore';
 import { ToastProvider } from './context/ToastProvider';
 import './App.css';
 
@@ -11,7 +12,11 @@ const App = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
+    const unsubscribeAuth = useAuthStore.getState().initAuthListener();
     useRegionStore.getState().fetchRegions();
+    return () => {
+      unsubscribeAuth?.();
+    };
   }, []);
 
   const toggleSidebar = () => {
