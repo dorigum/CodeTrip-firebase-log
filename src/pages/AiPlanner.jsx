@@ -106,6 +106,29 @@ const AiPlanner = () => {
 
   const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const handleCompanionChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      companionType: value,
+      peopleCount: value === '혼자' ? 1 : prev.peopleCount,
+    }));
+
+    if (value === '혼자' && Number(form.peopleCount) > 1) {
+      showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.');
+    }
+  };
+
+  const handlePeopleCountChange = (value) => {
+    const nextCount = Math.max(1, Number(value) || 1);
+    if (form.companionType === '혼자' && nextCount > 1) {
+      updateForm('peopleCount', 1);
+      showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.');
+      return;
+    }
+
+    updateForm('peopleCount', Math.min(nextCount, 10));
+  };
+
   const handlePlanningModeChange = (mode) => {
     setPlanningMode(mode);
     setPlan(null);
@@ -124,6 +147,12 @@ const AiPlanner = () => {
   const handleGenerate = async () => {
     if (!form.regionName.trim()) {
       showToast('여행 지역을 입력해주세요.');
+      return;
+    }
+
+    if (form.companionType === '혼자' && Number(form.peopleCount) > 1) {
+      updateForm('peopleCount', 1);
+      showToast('동행 유형이 혼자일 때는 인원 수를 1명으로 설정해주세요.');
       return;
     }
 
@@ -166,13 +195,13 @@ const AiPlanner = () => {
       setPlan(result);
       showToast(
         planningMode === PLAN_MODE.CUSTOM && preferredPlaces.length > 0
-          ? `관광공사 등록 장소 ${preferredPlaces.length}개를 우선 반영해 AI 여행 코스를 생성했습니다.`
-          : 'AI 여행 코스를 생성했습니다.',
+          ? `관광공사 등록 장소 ${preferredPlaces.length}개를 우선 반영해 CodeTrip 여행 코스를 생성했습니다.`
+          : 'CodeTrip 여행 코스를 생성했습니다.',
         'success'
       );
     } catch (error) {
-      console.error('Gemini trip generation failed:', error);
-      showToast(error.message || 'AI 코스를 생성하지 못했습니다.');
+      console.error('CodeTrip trip generation failed:', error);
+      showToast(error.message || 'CodeTrip이 여행 코스를 생성하지 못했습니다.');
     } finally {
       setGenerating(false);
     }
@@ -188,18 +217,18 @@ const AiPlanner = () => {
       await syncWithServer();
       if (result.savedPlaces > 0) {
         showToast(
-          `AI 코스를 "${result.folder.name}" 폴더로 저장했습니다. 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.`,
           'success'
         );
       } else {
         showToast(
-          `AI 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 메모와 체크리스트로 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 메모와 체크리스트로 저장됐습니다.`,
           'success'
         );
       }
     } catch (error) {
       console.error('Save AI trip failed:', error);
-      showToast(error.message || 'AI 코스를 저장하지 못했습니다.');
+      showToast(error.message || 'CodeTrip 여행 코스를 저장하지 못했습니다.');
     } finally {
       setSaving(false);
     }
@@ -350,7 +379,7 @@ const AiPlanner = () => {
               <FieldLabel>Companion</FieldLabel>
               <select
                 value={form.companionType}
-                onChange={(e) => updateForm('companionType', e.target.value)}
+                onChange={(e) => handleCompanionChange(e.target.value)}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
               >
                 {['혼자', '연인', '가족', '친구'].map((item) => <option key={item}>{item}</option>)}
@@ -361,9 +390,9 @@ const AiPlanner = () => {
               <input
                 type="number"
                 min="1"
-                max="10"
+                max={form.companionType === '혼자' ? '1' : '10'}
                 value={form.peopleCount}
-                onChange={(e) => updateForm('peopleCount', e.target.value)}
+                onChange={(e) => handlePeopleCountChange(e.target.value)}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>

@@ -11,6 +11,364 @@ const MOCK_NODE_HEADER = [
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
 
+const GUEST_FEATURES = [
+  {
+    emoji: '🧭',
+    icon: 'explore',
+    label: 'DESTINATION.DATA',
+    title: '공공 여행지 데이터를 탐색합니다',
+    desc: '관광공사 기반 여행지, 이미지, 주소, 상세 정보를 한 화면에서 확인할 수 있습니다.',
+    to: '/explore',
+    gradient: 'from-sky-500/15 via-cyan-400/10 to-white',
+    accent: 'text-sky-600 bg-sky-50 border-sky-100'
+  },
+  {
+    emoji: '💗',
+    icon: 'favorite',
+    label: 'WISHLIST.NODE',
+    title: '마음에 드는 장소를 폴더로 정리합니다',
+    desc: '관심 여행지를 저장하고 폴더별 메모와 체크리스트로 여행 준비 흐름을 이어갑니다.',
+    to: '/login',
+    gradient: 'from-rose-500/15 via-pink-400/10 to-white',
+    accent: 'text-rose-600 bg-rose-50 border-rose-100'
+  },
+  {
+    emoji: '✨',
+    icon: 'auto_awesome',
+    label: 'AI_TRIP.PLANNER',
+    title: 'CodeTrip이 여행 코스를 생성합니다',
+    desc: '지역, 인원, 예산, 취향 또는 위시리스트 폴더를 기준으로 하루 단위 일정을 만듭니다.',
+    to: '/login',
+    gradient: 'from-violet-500/15 via-indigo-400/10 to-white',
+    accent: 'text-violet-600 bg-violet-50 border-violet-100'
+  },
+  {
+    emoji: '📝',
+    icon: 'article',
+    label: 'BOARD.LOG',
+    title: '여행 기록과 후기를 공유합니다',
+    desc: '게시글, 댓글, 좋아요, 활동 기록을 통해 여행 경험을 커뮤니티 데이터로 남깁니다.',
+    to: '/board',
+    gradient: 'from-emerald-500/15 via-teal-400/10 to-white',
+    accent: 'text-emerald-600 bg-emerald-50 border-emerald-100'
+  }
+];
+
+const GUEST_STEPS = [
+  { step: '01', emoji: '🧭', title: '탐색', desc: '지역과 테마로 여행지를 찾습니다.' },
+  { step: '02', emoji: '💾', title: '저장', desc: '좋은 장소를 위시리스트 폴더에 담습니다.' },
+  { step: '03', emoji: '✨', title: '생성', desc: 'AI가 조건에 맞는 코스를 제안합니다.' }
+];
+
+const MEMBER_PREVIEW = [
+  { icon: 'favorite', title: '위시리스트 폴더', value: '3 folders', desc: '서울 실내 문화 여행, 부산 맛집 투어처럼 목적별 저장' },
+  { icon: 'auto_awesome', title: 'AI 코스 생성', value: '1 day plan', desc: '예산, 동행, 날씨, 저장 장소를 반영한 일정 추천' },
+  { icon: 'forum', title: '여행 게시판', value: 'share log', desc: '게시글, 댓글, 좋아요로 여행 경험 공유' }
+];
+
+const GuestReveal = ({ children, delay = 0, className = '' }) => {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.18 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`guest-reveal ${visible ? 'is-visible' : ''} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const GuestHome = () => (
+  <div className="relative flex-1 overflow-y-auto bg-background p-6 lg:p-10">
+    <style>{`
+      @keyframes codetrip-hero-pan {
+        0%, 100% { transform: scale(1.02) translate3d(0, 0, 0); }
+        50% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+      }
+      @keyframes codetrip-fade-up {
+        from { opacity: 0; transform: translateY(18px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes codetrip-scan {
+        0% { transform: translateX(-120%); opacity: 0; }
+        22% { opacity: .9; }
+        100% { transform: translateX(120%); opacity: 0; }
+      }
+      @keyframes codetrip-pulse {
+        0%, 100% { transform: scale(1); opacity: .72; }
+        50% { transform: scale(1.25); opacity: 1; }
+      }
+      @keyframes codetrip-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+      @keyframes codetrip-shine-text {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .guest-hero-image { animation: codetrip-hero-pan 16s ease-in-out infinite; }
+      .guest-fade-up { animation: codetrip-fade-up .75s cubic-bezier(.16,1,.3,1) both; }
+      .guest-scan-line { animation: codetrip-scan 4.5s ease-in-out infinite; }
+      .guest-pulse-dot { animation: codetrip-pulse 2s ease-in-out infinite; }
+      .guest-floating { animation: codetrip-float 4s ease-in-out infinite; }
+      .guest-gradient-text {
+        background: linear-gradient(120deg, #7ee7f4 0%, #00b8d4 32%, #a7f3d0 62%, #ffffff 100%);
+        background-size: 240% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: codetrip-shine-text 5s ease-in-out infinite;
+        text-shadow: none;
+      }
+      .guest-feature-card { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, border-color .35s ease; }
+      .guest-feature-card:hover { transform: translateY(-8px) scale(1.015); box-shadow: 0 20px 46px rgba(0, 120, 143, .15); border-color: rgba(0, 120, 143, .34); }
+      .guest-step-card { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, border-color .35s ease; }
+      .guest-step-card:hover { transform: translateY(-7px); box-shadow: 0 18px 38px rgba(15, 23, 42, .08); border-color: rgba(0, 120, 143, .28); }
+      .guest-reveal { opacity: 0; transform: translateY(24px); transition: opacity .72s cubic-bezier(.16,1,.3,1), transform .72s cubic-bezier(.16,1,.3,1); }
+      .guest-reveal.is-visible { opacity: 1; transform: translateY(0); }
+      .guest-emoji-badge { filter: drop-shadow(0 10px 18px rgba(15, 23, 42, .12)); }
+      @media (prefers-reduced-motion: reduce) {
+        .guest-hero-image, .guest-fade-up, .guest-scan-line, .guest-pulse-dot, .guest-floating, .guest-gradient-text { animation: none; }
+        .guest-reveal { opacity: 1; transform: none; transition: none; }
+        .guest-feature-card:hover, .guest-step-card:hover { transform: none; }
+      }
+    `}</style>
+
+    <section className="relative min-h-[460px] overflow-hidden rounded-2xl bg-slate-950 shadow-2xl">
+      <img
+        src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2070"
+        alt="CodeTrip service preview"
+        className="guest-hero-image absolute inset-0 h-full w-full object-cover opacity-80"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/70 to-slate-900/20" />
+      <div className="absolute inset-x-0 top-0 h-px bg-white/20">
+        <div className="guest-scan-line h-px w-1/2 bg-primary-container/90" />
+      </div>
+
+      <div className="relative z-10 grid min-h-[460px] grid-cols-1 items-center gap-8 px-7 py-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
+        <div className="max-w-3xl">
+          <div className="guest-fade-up inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-md font-label">
+            <span className="guest-pulse-dot h-2 w-2 rounded-full bg-primary-container" />
+            codetrip.service
+          </div>
+          <h1 className="guest-fade-up mt-6 font-headline text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl" style={{ animationDelay: '.08s' }}>
+            여행 데이터를<br />
+            <span className="guest-gradient-text">나만의 코스</span>로 연결하세요<span className="text-primary-container">.</span>
+          </h1>
+          <p className="guest-fade-up mt-5 max-w-2xl break-keep text-base leading-8 text-white/80 sm:text-lg" style={{ animationDelay: '.16s' }}>
+            CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 코스 생성, 여행 게시판을 하나의 흐름으로 연결하는 여행 계획 서비스입니다.
+          </p>
+          <div className="guest-fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: '.24s' }}>
+            <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label">
+              <span className="material-symbols-outlined text-lg">login</span>
+              로그인하고 시작하기
+            </Link>
+            <Link to="/explore" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/15 px-7 py-3 text-sm font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/25 font-label">
+              <span className="material-symbols-outlined text-lg">travel_explore</span>
+              여행지 둘러보기
+            </Link>
+          </div>
+        </div>
+
+        <div className="guest-fade-up guest-floating hidden rounded-2xl border border-white/20 bg-white/15 p-5 shadow-2xl backdrop-blur-xl lg:block" style={{ animationDelay: '.32s' }}>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary-container font-label">live.preview</p>
+              <h2 className="mt-1 text-xl font-bold text-white font-headline">AI 여행 코스</h2>
+            </div>
+            <span className="material-symbols-outlined rounded-xl bg-white/15 p-3 text-primary-container">auto_awesome</span>
+          </div>
+          <div className="space-y-3">
+            {['서울 실내 문화 여행', '부산 1박 2일 맛집 투어', '혼자 떠나는 감성 산책'].map((item, index) => (
+              <div key={item} className="rounded-xl border border-white/10 bg-white/12 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-white">{item}</p>
+                  <span className="text-[10px] font-bold text-primary-container">0{index + 1}</span>
+                </div>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15">
+                  <div className="h-full rounded-full bg-gradient-to-r from-primary-container to-emerald-300" style={{ width: `${72 - index * 14}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-4">
+      {GUEST_FEATURES.map((feature, index) => (
+        <GuestReveal key={feature.label} delay={index * 90}>
+          <Link
+            to={feature.to}
+            className={`guest-feature-card group block h-full overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-6 shadow-sm`}
+          >
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <span className={`guest-emoji-badge flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl ${feature.accent}`}>
+                {feature.emoji}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-label">{feature.label}</span>
+            </div>
+            <h3 className="break-keep text-xl font-black leading-snug text-on-surface font-headline">{feature.title}</h3>
+            <p className="mt-3 break-keep text-sm leading-6 text-slate-600">{feature.desc}</p>
+            <div className="mt-5 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-primary font-label">
+              launch_node
+              <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">arrow_forward</span>
+            </div>
+          </Link>
+        </GuestReveal>
+      ))}
+    </section>
+
+    <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <GuestReveal>
+      <div className="overflow-hidden rounded-2xl border border-outline-variant/20 bg-white p-7 shadow-sm">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <div className="flex items-center gap-2 text-primary">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              <p className="text-[11px] font-bold uppercase tracking-widest font-label">how_it_works.exe</p>
+            </div>
+            <h2 className="mt-4 break-keep text-2xl font-black text-on-surface font-headline">처음 방문해도 3단계면 충분합니다.</h2>
+          </div>
+          <p className="max-w-sm break-keep text-sm leading-6 text-outline">
+            둘러보기에서 시작해 저장과 AI 코스까지 자연스럽게 이어지는 흐름입니다.
+          </p>
+        </div>
+        <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
+          {GUEST_STEPS.map((item, index) => (
+            <React.Fragment key={item.step}>
+              <div className="guest-step-card rounded-2xl border border-outline-variant/10 bg-gradient-to-br from-white to-surface-container-high p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl">{item.emoji}</span>
+                  <p className="font-mono text-xs font-black text-primary">{item.step}</p>
+                </div>
+                <h3 className="mt-5 text-lg font-black text-on-surface font-headline">{item.title}</h3>
+                <p className="mt-2 break-keep text-sm leading-6 text-outline">{item.desc}</p>
+              </div>
+              {index < GUEST_STEPS.length - 1 && (
+                <div className="hidden items-center justify-center text-primary/50 md:flex">
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+      </GuestReveal>
+
+      <GuestReveal delay={120}>
+      <div className="relative h-full overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-white to-emerald-50 p-7 shadow-sm">
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-container/20 blur-2xl" />
+        <p className="text-[11px] font-bold uppercase tracking-widest text-primary font-label">ready_to_start</p>
+        <h2 className="mt-4 break-keep text-2xl font-bold text-on-surface font-headline">회원가입 후 나만의 여행 데이터를 쌓아보세요.</h2>
+        <p className="mt-3 break-keep text-sm leading-6 text-outline">
+          위시리스트와 AI 코스 저장은 로그인 후 사용할 수 있습니다. 먼저 둘러본 뒤 마음에 드는 여행지를 저장해도 좋습니다.
+        </p>
+        <Link to="/login" className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition-all hover:bg-primary-container font-label">
+          <span className="material-symbols-outlined text-lg">person_add</span>
+          계정 만들고 시작하기
+        </Link>
+      </div>
+      </GuestReveal>
+    </section>
+
+    <GuestReveal delay={80}>
+      <section className="mt-8 overflow-hidden rounded-2xl border border-slate-900/10 bg-slate-950 text-white shadow-2xl">
+        <div className="grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_520px]">
+          <div className="p-8 lg:p-10">
+            <div className="flex items-center gap-2 text-primary-container">
+              <span className="h-2 w-2 rounded-full bg-primary-container" />
+              <p className="text-[11px] font-bold uppercase tracking-widest font-label">member.workspace</p>
+            </div>
+            <h2 className="mt-5 break-keep text-3xl font-black leading-tight font-headline">
+              로그인하면 여행 계획이<br className="hidden sm:block" />
+              하나의 작업 공간으로 이어집니다.
+            </h2>
+            <p className="mt-4 max-w-xl break-keep text-sm leading-7 text-white/70">
+              저장한 장소를 폴더로 묶고, CodeTrip이 코스를 제안하면 체크리스트와 메모까지 같은 흐름에서 관리할 수 있습니다.
+            </p>
+            <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {MEMBER_PREVIEW.map((item) => (
+                <div key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition-all hover:-translate-y-1 hover:bg-white/[0.1]">
+                  <span className="material-symbols-outlined text-primary-container" style={{fontVariationSettings: "'FILL' 1"}}>{item.icon}</span>
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-primary-container font-label">{item.value}</p>
+                  <h3 className="mt-1 text-sm font-bold">{item.title}</h3>
+                  <p className="mt-2 break-keep text-xs leading-5 text-white/55">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 bg-white/[0.04] p-6 lg:border-l lg:border-t-0">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary-container font-label">saved_course.json</p>
+                  <h3 className="mt-1 text-xl font-black font-headline">부산 가족 힐링 여행</h3>
+                </div>
+                <span className="rounded-xl bg-primary-container px-3 py-1 text-[10px] font-black text-slate-950 font-label">AI READY</span>
+              </div>
+              <div className="space-y-3">
+                {['10:00 해운대 산책', '12:30 로컬 맛집 점심', '15:00 실내 전시 관람'].map((item, index) => (
+                  <div key={item} className="flex items-center gap-3 rounded-xl bg-white/10 p-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-black text-primary-container">0{index + 1}</span>
+                    <span className="flex-1 text-sm font-bold">{item}</span>
+                    <span className="material-symbols-outlined text-lg text-primary-container">check_circle</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </GuestReveal>
+
+    <GuestReveal delay={120}>
+      <section className="mt-8 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-white via-primary/5 to-cyan-50 p-7 shadow-sm lg:p-9">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-primary font-label">next.action</p>
+            <h2 className="mt-4 break-keep text-3xl font-black text-on-surface font-headline">비회원은 먼저 둘러보고, 관심 여행지는 계정으로 저장하세요.</h2>
+            <p className="mt-3 max-w-2xl break-keep text-sm leading-6 text-outline">
+              여행지 탐색과 서비스 소개는 열어두고, AI 코스 생성·게시판·마이페이지는 로그인 후 사용할 수 있도록 안내합니다.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            <Link to="/explore" className="rounded-xl border border-outline-variant/30 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-600 transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary font-label">
+              explore_first
+            </Link>
+            <Link to="/login" className="rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label">
+              sign_in
+            </Link>
+          </div>
+        </div>
+      </section>
+    </GuestReveal>
+  </div>
+);
+
 const Home = () => {
   const { isLoggedIn } = useAuthStore();
   const [weather, setWeather] = useState({ temp: 24, label: 'Sunny', icon: 'sunny', keywords: ['여행'], location: '서울' });
@@ -105,6 +463,8 @@ const Home = () => {
   }, []); // 의존성 배열을 비워 함수 안정화 (Ref 사용)
 
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     if (isInitialMount.current) {
       fetchMainData();
       isInitialMount.current = false;
@@ -119,7 +479,7 @@ const Home = () => {
         () => {}, { timeout: 10000 }
       );
     }
-  }, [fetchMainData]);
+  }, [fetchMainData, isLoggedIn]);
 
   const handleSlotSpin = async () => {
     if (isSlotSpinning) return;
@@ -157,11 +517,13 @@ const Home = () => {
   };
 
   useEffect(() => {
+    if (!isLoggedIn) return undefined;
+
     topImgTimerRef.current = setInterval(() => {
       setTopImgIndex(prev => (prev + 1) % (topImgList.length || 1));
     }, 5000);
     return () => clearInterval(topImgTimerRef.current);
-  }, [topImgList]);
+  }, [topImgList, isLoggedIn]);
 
   const currentNodeHeader = topImgList[topImgIndex] || MOCK_NODE_HEADER[0];
   const slotModeLabel = isLoggedIn ? 'PERSONAL RANDOM' : 'GUEST PREVIEW';
@@ -182,37 +544,41 @@ const Home = () => {
   const slotWeatherTemp = Number.isFinite(slotWeather?.temp) ? `${slotWeather.temp}°C` : '--°C';
   const slotWeatherIcon = slotWeather?.icon || weather.icon || 'partly_cloudy_day';
 
+  if (!isLoggedIn) {
+    return <GuestHome />;
+  }
+
   return (
     <div className="p-6 lg:p-10 space-y-6 flex-1 flex flex-col bg-background overflow-hidden">
       
       {/* 1. 상단 Node_Header 섹션 */}
-      <section className="relative w-full h-[25vh] min-h-[200px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0">
+      <section className="relative w-full min-h-[260px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0">
         <img src={currentNodeHeader.galWebImageUrl || currentNodeHeader.image} key={currentNodeHeader.galContentId || currentNodeHeader.id} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000" alt="bg" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/40 to-transparent flex items-center px-12">
-          <div className="max-w-2xl space-y-3">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/45 to-slate-900/10 flex items-center px-6 py-6 sm:px-10 lg:px-12">
+          <div className="max-w-[min(36rem,calc(100%-11rem))] space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
             <div className="inline-flex items-center px-3 py-1 bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 w-fit text-white text-[10px] font-bold tracking-widest uppercase font-label">system.log: node_header_active</div>
-            <h1 className="text-4xl lg:text-5xl font-headline font-bold text-white leading-tight drop-shadow-lg">Build your next <span className="text-primary-container">Adventure.</span></h1>
-            <p className="text-white/80 text-base font-body max-w-lg leading-relaxed">대한민국 곳곳의 숨겨진 데이터 노드들을 탐험하세요.</p>
-            <div className="pt-1"><Link to="/explore" className="bg-white/50 backdrop-blur-md text-slate-900 px-7 py-2.5 rounded-full font-bold hover:bg-white/70 transition-all flex items-center gap-2 w-fit text-sm shadow-lg font-label border border-white/20"><span>GET STARTED</span><span className="material-symbols-outlined text-sm font-bold">arrow_right_alt</span></Link></div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline font-bold text-white leading-tight drop-shadow-lg">Build your next <span className="text-primary-container">Adventure.</span></h1>
+            <p className="text-white/80 text-sm sm:text-base font-body max-w-lg leading-relaxed break-keep">대한민국 곳곳의 숨겨진 데이터 노드들을 탐험하세요.</p>
+            <div className="pt-1"><Link to="/explore" className="bg-white/50 backdrop-blur-md text-slate-900 px-7 py-2.5 rounded-full font-bold hover:bg-white/70 transition-all flex items-center justify-center gap-2 w-fit min-w-[170px] text-sm shadow-lg font-label border border-white/20 whitespace-nowrap"><span>GET STARTED</span><span className="material-symbols-outlined text-sm font-bold">arrow_right_alt</span></Link></div>
           </div>
-          <div className="absolute bottom-6 right-8 bg-white/70 backdrop-blur-2xl p-4 rounded-xl shadow-xl border border-white/30 text-slate-900">
-            <p className="text-slate-500 text-[9px] uppercase mb-0.5 font-bold tracking-widest font-label">{province} {weather.location}</p>
-            <div className="flex items-center gap-3"><span className="text-3xl font-headline font-bold text-primary">{weather.temp}°C</span><span className="material-symbols-outlined text-2xl text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
+          <div className="absolute right-6 bottom-6 sm:right-8 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 min-w-[132px] bg-white/75 backdrop-blur-2xl p-4 rounded-xl shadow-xl border border-white/30 text-slate-900">
+            <p className="text-slate-500 text-[9px] uppercase mb-0.5 font-bold tracking-widest font-label whitespace-nowrap">{province} {weather.location}</p>
+            <div className="flex items-center gap-3 whitespace-nowrap"><span className="text-3xl font-headline font-bold text-primary">{weather.temp}°C</span><span className="material-symbols-outlined text-2xl text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
           </div>
         </div>
       </section>
 
       {/* 2. 카드 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="lg:col-span-2 grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Card 1: Regional (Near Me) */}
           <div className="bg-white p-8 rounded-3xl shadow-xl border border-outline-variant/10 relative overflow-hidden flex flex-col group">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-5">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">location_on</span><p className="text-[10px] uppercase tracking-widest font-label">NEAR ME ({province} {weather.location})</p></div>
-                  <h3 className="font-headline text-2xl font-bold text-slate-900">🛫지역 기반 추천: {province}</h3>
+                  <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">location_on</span><p className="text-[10px] uppercase tracking-widest font-label whitespace-nowrap">NEAR ME ({province} {weather.location})</p></div>
+                  <h3 className="font-headline text-2xl font-bold text-slate-900 leading-tight break-keep">🛫지역 기반 추천: {province}</h3>
                 </div>
                 <button onClick={() => setNearbyIndex(i => (i+1) % (nearbyPlaces.length || 1))} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-900 rounded-xl hover:bg-primary hover:text-white transition-all shadow-md"><span className="material-symbols-outlined">navigate_next</span></button>
               </div>
@@ -235,13 +601,13 @@ const Home = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">casino</span><p className="text-[9px] uppercase tracking-widest font-label">{slotModeLabel}</p></div>
-                  <h3 className="font-headline text-xl font-bold text-slate-900 truncate">{slotTitle}</h3>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1 text-[10px] font-bold text-primary font-label uppercase tracking-widest">
+                  <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">{slotTitle}</h3>
+                  <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-primary/5 px-3 py-1 text-[10px] font-bold text-primary font-label uppercase tracking-widest whitespace-nowrap">
                     <span className="material-symbols-outlined text-sm" style={{fontVariationSettings: "'FILL' 1"}}>{slotWeatherIcon}</span>
-                    <span>{slotWeatherRegion}</span>
+                    <span className="truncate">{slotWeatherRegion}</span>
                     <span className="text-slate-300">|</span>
-                    <span>{slotWeatherLabel}</span>
-                    <span>{slotWeatherTemp}</span>
+                    <span className="shrink-0">{slotWeatherLabel}</span>
+                    <span className="shrink-0">{slotWeatherTemp}</span>
                   </div>
                 </div>
                 <button onClick={handleSlotSpin} disabled={isSlotSpinning} className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all shadow-md ${isSlotSpinning ? 'bg-primary text-white animate-pulse' : 'bg-slate-50 text-slate-900 hover:bg-primary hover:text-white'}`}><span className={`material-symbols-outlined ${isSlotSpinning ? 'animate-bounce' : ''}`}>casino</span></button>

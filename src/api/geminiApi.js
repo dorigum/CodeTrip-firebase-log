@@ -119,7 +119,7 @@ export const parseGeminiJson = (text) => {
     if (first >= 0 && last > first) {
       return JSON.parse(cleaned.slice(first, last + 1));
     }
-    throw new Error('Gemini 응답을 JSON으로 해석하지 못했습니다.');
+    throw new Error('CodeTrip 여행 코스 응답을 해석하지 못했습니다.');
   }
 };
 
@@ -154,22 +154,22 @@ const createGeminiError = async (response) => {
   });
 
   if (response.status === 429) {
-    return new Error('Gemini API 사용량 한도를 초과했거나 현재 프로젝트에서 사용 가능한 quota가 없습니다. 잠시 후 다시 시도하거나 Google AI Studio의 한도/결제 설정을 확인해주세요.');
+    return new Error('CodeTrip 여행 코스 생성 한도를 초과했거나 현재 프로젝트에서 사용할 수 있는 할당량이 없습니다. 잠시 후 다시 시도하거나 설정을 확인해주세요.');
   }
 
   if (response.status === 400) {
-    return new Error('Gemini API 요청 형식이 올바르지 않습니다. 입력 조건을 조금 단순하게 다시 시도해주세요.');
+    return new Error('CodeTrip 여행 코스 요청 형식이 올바르지 않습니다. 입력 조건을 조금 단순하게 다시 시도해주세요.');
   }
 
   if (response.status === 401 || response.status === 403) {
-    return new Error('Gemini API key 권한을 확인해주세요. 키 값, 프로젝트, API 사용 설정이 맞는지 점검이 필요합니다.');
+    return new Error('CodeTrip 여행 코스 생성 권한을 확인해주세요. API 키, 프로젝트, 사용 설정 점검이 필요합니다.');
   }
 
   if (response.status >= 500) {
-    return new Error('Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.');
+    return new Error('CodeTrip 여행 코스 생성 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.');
   }
 
-  return new Error(`Gemini API 요청에 실패했습니다. 상태 코드: ${response.status}`);
+  return new Error(`CodeTrip 여행 코스 생성 요청에 실패했습니다. 상태 코드: ${response.status}`);
 };
 
 export const generateTripPlan = async (input) => {

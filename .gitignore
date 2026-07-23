@@ -27,3 +27,6 @@ server/uploads/*
 *.njsproj
 *.sln
 *.sw?
+
+.obsidian
+.claudian
