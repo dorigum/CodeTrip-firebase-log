@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const FEATURES = [
@@ -87,6 +87,41 @@ const FEATURES = [
   },
 ];
 
+const InfoReveal = ({ children, className = '', delay = 0 }) => {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.16 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
+        visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+      } ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
 const Info = () => {
   const [activeId, setActiveId] = useState('home');
   const active = FEATURES.find((f) => f.id === activeId);
@@ -126,33 +161,35 @@ const Info = () => {
       </section>
 
       {/* Stats Bar */}
-      <div className="bg-white border-b border-outline-variant/10 px-10 py-5">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: '60,000+', label: '등록 여행지' },
-            { value: '16', label: '전국 시도 커버' },
-            { value: '8', label: '여행 테마' },
-            { value: '실시간', label: '날씨·위치 연동' },
-          ].map((stat) => (
-            <div key={stat.label} className="space-y-1">
-              <p className="text-2xl font-headline font-extrabold text-primary">{stat.value}</p>
-              <p className="text-[11px] font-label uppercase tracking-widest text-slate-400">{stat.label}</p>
-            </div>
-          ))}
+      <InfoReveal>
+        <div className="bg-white border-b border-outline-variant/10 px-10 py-5">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { value: '60,000+', label: '등록 여행지' },
+              { value: '16', label: '전국 시도 커버' },
+              { value: '8', label: '여행 테마' },
+              { value: '실시간', label: '날씨·위치 연동' },
+            ].map((stat) => (
+              <div key={stat.label} className="space-y-1">
+                <p className="text-2xl font-headline font-extrabold text-primary">{stat.value}</p>
+                <p className="text-[11px] font-label uppercase tracking-widest text-slate-400">{stat.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </InfoReveal>
 
       {/* Feature Navigator + Detail */}
       <div className="max-w-6xl mx-auto px-6 lg:px-10 py-20 space-y-16">
 
-        <div className="text-center space-y-3">
+        <InfoReveal className="text-center space-y-3">
           <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">Features</p>
           <h2 className="text-3xl font-headline font-bold text-on-surface">주요 기능 소개</h2>
           <p className="text-slate-400 text-sm font-body">탭을 클릭해 각 기능의 상세 내용을 확인하세요.</p>
-        </div>
+        </InfoReveal>
 
         {/* Tab Nav */}
-        <div className="flex flex-wrap justify-center gap-2">
+        <InfoReveal className="flex flex-wrap justify-center gap-2" delay={80}>
           {FEATURES.map((f) => (
             <button
               key={f.id}
@@ -167,11 +204,11 @@ const Info = () => {
               {f.title}
             </button>
           ))}
-        </div>
+        </InfoReveal>
 
         {/* Active Feature Detail */}
         {active && (
-          <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden">
+          <InfoReveal className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden" delay={120}>
             <div className="grid grid-cols-1 lg:grid-cols-2">
 
               {/* Left: Description */}
@@ -220,24 +257,25 @@ const Info = () => {
                 ))}
               </div>
             </div>
-          </div>
+          </InfoReveal>
         )}
       </div>
 
       {/* How to Use */}
       <section className="bg-surface-container-low border-t border-outline-variant/10 px-6 py-20">
         <div className="max-w-4xl mx-auto space-y-12">
-          <div className="text-center space-y-3">
+          <InfoReveal className="text-center space-y-3">
             <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">How to use</p>
             <h2 className="text-3xl font-headline font-bold text-on-surface">이렇게 이용하세요</h2>
-          </div>
+          </InfoReveal>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { step: '01', icon: 'search', title: '여행지 탐색', desc: 'Explore 메뉴에서 지역·테마·키워드로 원하는 여행지를 검색합니다.' },
               { step: '02', icon: 'favorite', title: '위시리스트 저장', desc: '마음에 드는 여행지를 하트로 저장하고 폴더로 정리합니다.' },
               { step: '03', icon: 'celebration', title: '축제 일정 확인', desc: 'Festivals 메뉴에서 전국 축제 일정을 날짜순으로 확인합니다.' },
-            ].map((s) => (
-              <div key={s.step} className="bg-white p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-5 relative overflow-hidden">
+            ].map((s, index) => (
+              <InfoReveal key={s.step} delay={index * 90}>
+                <div className="bg-white p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-5 relative overflow-hidden">
                 <p className="absolute top-5 right-6 text-6xl font-headline font-extrabold text-slate-50 leading-none select-none">{s.step}</p>
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary text-2xl">{s.icon}</span>
@@ -247,6 +285,7 @@ const Info = () => {
                   <p className="text-sm text-slate-400 font-body leading-relaxed">{s.desc}</p>
                 </div>
               </div>
+              </InfoReveal>
             ))}
           </div>
         </div>
@@ -254,17 +293,18 @@ const Info = () => {
 
       {/* Data Source */}
       <section className="px-6 py-16 max-w-4xl mx-auto space-y-8">
-        <div className="text-center space-y-3">
+        <InfoReveal className="text-center space-y-3">
           <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">Data Source</p>
           <h2 className="text-3xl font-headline font-bold text-on-surface">활용 데이터</h2>
-        </div>
+        </InfoReveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { icon: 'travel_explore', title: '한국관광공사 API', desc: '전국 여행지, 축제, 숙박, 음식점 등 60,000개 이상의 관광 정보를 제공합니다.', tag: 'KTO Open API' },
             { icon: 'map', title: '카카오 지도 API', desc: '여행지의 정확한 위치를 지도로 표시하고 길찾기를 지원합니다.', tag: 'Kakao Maps SDK' },
             { icon: 'wb_cloudy', title: '날씨 API', desc: '현재 위치의 실시간 날씨를 분석해 상황에 맞는 여행지를 추천합니다.', tag: 'Weather API' },
-          ].map((d) => (
-            <div key={d.title} className="bg-white p-7 rounded-2xl border border-outline-variant/10 shadow-sm space-y-4">
+          ].map((d, index) => (
+            <InfoReveal key={d.title} delay={index * 90}>
+              <div className="bg-white p-7 rounded-2xl border border-outline-variant/10 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-primary">{d.icon}</span>
@@ -276,6 +316,7 @@ const Info = () => {
                 <p className="text-[12px] text-slate-400 font-body leading-relaxed">{d.desc}</p>
               </div>
             </div>
+            </InfoReveal>
           ))}
         </div>
       </section>
@@ -283,11 +324,11 @@ const Info = () => {
       {/* Transportation Links */}
       <section className="bg-white border-y border-outline-variant/10 px-6 py-20">
         <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-3">
+          <InfoReveal className="text-center space-y-3">
             <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">External Modules</p>
             <h2 className="text-3xl font-headline font-bold text-on-surface">교통수단 예매 허브</h2>
             <p className="text-slate-400 text-sm font-body">원활한 여행을 위해 외부 예매 시스템으로 즉시 연결합니다.</p>
-          </div>
+          </InfoReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -315,8 +356,9 @@ const Info = () => {
                 icon: 'directions_bus',
                 url: 'https://txbus.t-money.co.kr/'
               },
-            ].map((sys) => (
-              <div key={sys.id} className="group bg-slate-50/50 p-8 rounded-3xl border border-outline-variant/10 hover:border-primary/20 hover:bg-white hover:shadow-xl transition-all duration-500 flex flex-col justify-between space-y-6">
+            ].map((sys, index) => (
+              <InfoReveal key={sys.id} delay={index * 90}>
+                <div className="group bg-slate-50/50 p-8 rounded-3xl border border-outline-variant/10 hover:border-primary/20 hover:bg-white hover:shadow-xl transition-all duration-500 flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono font-bold text-primary tracking-tighter bg-primary/5 px-2 py-1 rounded border border-primary/10 uppercase">
@@ -341,33 +383,36 @@ const Info = () => {
                   <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">open_in_new</span>
                 </a>
               </div>
+              </InfoReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-slate-900 px-6 py-20 text-center space-y-6">
-        <h2 className="text-3xl font-headline font-bold text-white">
-          지금 바로 여행을 시작하세요<span className="text-primary">.</span>
-        </h2>
-        <p className="text-white/60 font-body text-sm max-w-md mx-auto leading-relaxed">
-          회원가입 없이도 여행지 탐색과 축제 정보를 바로 이용할 수 있습니다.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link
-            to="/explore"
-            className="px-8 py-3 bg-primary text-white rounded-full font-bold text-sm hover:brightness-110 transition-all shadow-lg font-label"
-          >
-            탐색 시작하기
-          </Link>
-          <Link
-            to="/signup"
-            className="px-8 py-3 bg-white/10 text-white border border-white/20 rounded-full font-bold text-sm hover:bg-white/20 transition-all font-label backdrop-blur-md"
-          >
-            회원가입
-          </Link>
-        </div>
+      <section className="bg-slate-900 px-6 py-20 text-center">
+        <InfoReveal className="space-y-6">
+          <h2 className="text-3xl font-headline font-bold text-white">
+            지금 바로 여행을 시작하세요<span className="text-primary">.</span>
+          </h2>
+          <p className="text-white/60 font-body text-sm max-w-md mx-auto leading-relaxed">
+            회원가입 없이도 여행지 탐색과 축제 정보를 바로 이용할 수 있습니다.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              to="/explore"
+              className="px-8 py-3 bg-primary text-white rounded-full font-bold text-sm hover:brightness-110 transition-all shadow-lg font-label"
+            >
+              탐색 시작하기
+            </Link>
+            <Link
+              to="/signup"
+              className="px-8 py-3 bg-white/10 text-white border border-white/20 rounded-full font-bold text-sm hover:bg-white/20 transition-all font-label backdrop-blur-md"
+            >
+              회원가입
+            </Link>
+          </div>
+        </InfoReveal>
       </section>
     </div>
   );

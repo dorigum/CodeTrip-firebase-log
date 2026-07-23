@@ -132,9 +132,10 @@ export const updateFolder = async (folderId, name, startDate, endDate) => {
 
 export const deleteFolder = async (folderId) => {
   const user = await getCurrentUser();
-  const [wishlists, notes] = await Promise.all([
+  const [wishlists, notes, aiTripPlans] = await Promise.all([
     get(ref(realtimeDb, userPath(user.id, 'wishlists'))),
     get(ref(realtimeDb, userPath(user.id, 'wishlistNotes'))),
+    get(ref(realtimeDb, userPath(user.id, 'aiTripPlans'))),
   ]);
   const updates = { [userPath(user.id, `wishlistFolders/${folderId}`)]: null };
 
@@ -145,6 +146,10 @@ export const deleteFolder = async (folderId) => {
   snapshotToArray(notes)
     .filter((note) => note.folder_id === String(folderId))
     .forEach((note) => { updates[userPath(user.id, `wishlistNotes/${note.id}`)] = null; });
+
+  snapshotToArray(aiTripPlans)
+    .filter((plan) => plan.folder_id === String(folderId))
+    .forEach((plan) => { updates[userPath(user.id, `aiTripPlans/${plan.id}`)] = null; });
 
   await update(ref(realtimeDb), updates);
   return { success: true };
@@ -167,6 +172,18 @@ export const getFolderNotes = async (folderId) => {
     .filter((note) => note.folder_id === String(folderId))
     .map((note) => ({ ...note, created_at: toIso(note.created_at), is_completed: !!note.is_completed }))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+};
+
+export const getAiTripPlans = async (folderId) => {
+  const user = await getCurrentUser();
+  return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'aiTripPlans'))))
+    .filter((plan) => plan.folder_id === String(folderId))
+    .map((plan) => ({
+      ...plan,
+      created_at: toIso(plan.created_at),
+      days: Array.isArray(plan.days) ? plan.days : [],
+    }))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 };
 
 export const createNote = async (folderId, content, type = 'CHECKLIST') => {
@@ -209,20 +226,6 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, day: day.day }))
   );
 
-  const memoLines = [
-    `[AI 여행 코스] ${toText(plan?.title, folderName)}`,
-    toText(plan?.summary),
-    toText(plan?.saveGuide?.memo),
-    '',
-    ...days.map((day) => {
-      const items = Array.isArray(day.items) ? day.items : [];
-      const itemText = items
-        .map((item) => `${toText(item.time)} ${toText(item.placeName || item.title, '장소')} - ${toText(item.reason)}`.trim())
-        .join('\n');
-      return `Day ${toText(day.day)} ${toText(day.theme)}\n${itemText}`.trim();
-    }),
-  ].filter(Boolean);
-
   const updates = {};
 
   if (targetFolderId) {
@@ -238,13 +241,14 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     };
   }
 
-  const memoRef = push(ref(realtimeDb, userPath(user.id, 'wishlistNotes')));
-  updates[userPath(user.id, `wishlistNotes/${memoRef.key}`)] = {
+  const planRef = push(ref(realtimeDb, userPath(user.id, 'aiTripPlans')));
+  updates[userPath(user.id, `aiTripPlans/${planRef.key}`)] = {
     folder_id: String(folder.id),
     user_id: user.id,
-    content: memoLines.join('\n\n'),
-    type: 'MEMO',
-    is_completed: false,
+    title: toText(plan?.title, folderName),
+    summary: toText(plan?.summary),
+    saveGuide: plan?.saveGuide || null,
+    days,
     created_at,
   };
 
@@ -285,6 +289,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
 
   return {
     folder,
+    planId: planRef.key,
     savedPlaces: contentItems.length,
     savedChecklist: checklist.length,
   };

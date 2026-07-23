@@ -116,7 +116,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
     <>
       <aside 
         className={`fixed left-0 top-0 h-full bg-white border-r border-outline-variant/30 z-[55] flex flex-col transition-all duration-300 select-none ${
-          isCollapsed ? 'w-20 overflow-visible' : 'w-64 overflow-hidden'
+          isCollapsed ? 'w-20 overflow-visible' : 'w-56 overflow-hidden'
         } hidden md:flex`}
       >
         {/* Logo Section */}
@@ -285,10 +285,10 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           </nav>
 
           {/* User Profile Area */}
-          <div className="p-4 border-t border-outline-variant/10 mt-auto shrink-0">
+          <div className={`border-t border-outline-variant/10 mt-auto shrink-0 ${isCollapsed ? 'px-0 py-4 flex justify-center' : 'p-4'}`}>
             {user ? (
               <div className={`flex flex-col gap-4 ${isCollapsed ? 'items-center' : ''}`}>
-                <div className="flex items-center gap-4 overflow-hidden">
+                <div className={`flex items-center overflow-hidden ${isCollapsed ? 'justify-center gap-0 w-full' : 'gap-4'}`}>
                   <img 
                     src={user.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'} 
                     alt="User" 

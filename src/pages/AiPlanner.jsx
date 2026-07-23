@@ -222,7 +222,7 @@ const AiPlanner = () => {
         );
       } else {
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 메모와 체크리스트로 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 코스 데이터와 체크리스트로 저장됐습니다.`,
           'success'
         );
       }

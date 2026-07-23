@@ -200,12 +200,12 @@ const Explore = () => {
       <div className="grid grid-cols-12 gap-8">
         {/* Sidebar Filters */}
         <aside className="col-span-12 lg:col-span-3 xl:col-span-2 self-start">
-          <div className="bg-surface-container-low rounded-xl p-5 sticky top-8 border border-outline-variant/10 shadow-sm">
+          <div className="bg-surface-container-low rounded-xl p-5 lg:sticky lg:top-8 border border-outline-variant/10 shadow-sm">
             <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/20 pb-4">
               <span className="material-symbols-outlined text-primary text-lg">settings_ethernet</span>
               <span className="font-bold text-on-surface font-mono text-sm uppercase tracking-tight">FILTERS.CONFIG</span>
             </div>
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:block lg:space-y-6">
               {/* Region */}
               <section>
                 <div
@@ -221,7 +221,7 @@ const Explore = () => {
                   <span className="syntax-keyword text-sm">Region</span>
                 </div>
                 {regionOpen && (
-                  <ul className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2 ml-4 border-l border-outline-variant/30 pl-4">
+                  <ul className="grid grid-cols-3 gap-x-4 gap-y-2 mt-2 ml-4 border-l border-outline-variant/30 pl-4 sm:grid-cols-4 lg:grid-cols-2 lg:gap-x-2">
                     {regions.map((r) => (
                       <li
                         key={r.code}
@@ -253,7 +253,7 @@ const Explore = () => {
                   <span className="syntax-keyword text-sm">Theme</span>
                 </div>
                 {themeOpen && (
-                  <ul className="ml-4 space-y-2 border-l border-outline-variant/30 pl-4">
+                  <ul className="grid grid-cols-2 gap-x-4 gap-y-2 ml-4 border-l border-outline-variant/30 pl-4 sm:grid-cols-3 lg:block lg:space-y-2">
                     {DEFAULT_THEMES.map((t) => (
                       <li
                         key={t.code}
@@ -270,7 +270,7 @@ const Explore = () => {
                 )}
               </section>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 md:col-span-2 md:grid md:grid-cols-3 lg:flex lg:flex-col">
                 <button
                   onClick={applyFilter}
                   className="w-full py-2.5 bg-primary text-white rounded-lg font-mono text-[11px] font-bold hover:brightness-110 transition-all shadow-md tracking-tighter"
