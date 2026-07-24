@@ -14,7 +14,7 @@ const formatDate = (str) => {
 };
 
 const Header = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isLoggedIn, isLoading } = useAuthStore();
   const { setKeyword } = useExploreStore();
   const { clearWishlist } = useWishlistStore();
   const navigate = useNavigate();
@@ -48,9 +48,9 @@ const Header = () => {
   }, [showToast]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!isLoggedIn || !user) return;
     fetchNotifications();
-  }, [user, fetchNotifications]);
+  }, [isLoggedIn, user, fetchNotifications]);
 
   // 외부 클릭 시 닫기 (알림 + 검색창)
   useEffect(() => {
@@ -174,7 +174,9 @@ const Header = () => {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        {user ? (
+        {isLoading ? (
+          <div className="h-10 w-28 animate-pulse rounded-xl bg-surface-container-low" aria-label="인증 상태 확인 중" />
+        ) : isLoggedIn && user ? (
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-right hidden md:block leading-tight">
               <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-0.5">Authenticated</p>

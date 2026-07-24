@@ -6,6 +6,7 @@ import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useRecentlyViewedStore from '../store/useRecentlyViewedStore';
 import WishlistModal from '../components/WishlistModal';
+import useToast from '../hooks/useToast';
 import '../App.css';
 import { Map, MapMarker } from 'react-kakao-maps-sdk';
 
@@ -48,6 +49,7 @@ const TravelDetail = () => {
   const mapRef = useRef(null);
 
   const { isLoggedIn, user } = useAuthStore();
+  const showToast = useToast();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
   const { addItem: addRecentlyViewed } = useRecentlyViewedStore();
 
@@ -91,7 +93,7 @@ const TravelDetail = () => {
     if (wishlistIds.has(id)) {
       try {
         await toggleWishlist(common);
-        alert('위시리스트에서 삭제되었습니다.');
+        showToast('위시리스트에서 삭제되었습니다.', 'success');
       } catch (error) {
         console.error('Wishlist toggle error:', error);
       }

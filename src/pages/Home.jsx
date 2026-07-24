@@ -671,7 +671,7 @@ const Home = () => {
     <div className="p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
       <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-5">
         <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-6 lg:p-7 overflow-hidden">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-4">
             <div className="space-y-2">
               <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-primary font-label">
                 <span className="w-2 h-2 rounded-full bg-primary-container"></span>
@@ -684,10 +684,16 @@ const Home = () => {
                 저장한 여행지와 폴더를 기준으로 다음 여행 준비 상태를 빠르게 확인할 수 있습니다.
               </p>
             </div>
-            <Link to="/mypage" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 font-label whitespace-nowrap">
-              <span className="material-symbols-outlined text-base">folder_open</span>
-              MY WISHLIST
-            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Link to="/ai-planner" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-5 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:bg-primary/15 font-label whitespace-nowrap">
+                <span className="material-symbols-outlined text-base">auto_awesome</span>
+                AI 여행 계획 생성하기
+              </Link>
+              <Link to="/mypage" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary/90 font-label whitespace-nowrap">
+                <span className="material-symbols-outlined text-base">folder_open</span>
+                MY WISHLIST
+              </Link>
+            </div>
           </div>
 
           <div className="mt-6 overflow-hidden rounded-2xl border border-slate-800/10 bg-slate-900 shadow-lg">

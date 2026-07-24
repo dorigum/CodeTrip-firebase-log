@@ -88,7 +88,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
   const [accessConfirmOpen, setAccessConfirmOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, logout, isLoggedIn } = useAuthStore();
+  const { user, logout, isLoggedIn, isLoading } = useAuthStore();
   const { clearWishlist } = useWishlistStore();
 
   const isActive = (path) => (path === '/' ? pathname === '/' : pathname.startsWith(path));
@@ -286,7 +286,9 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
 
           {/* User Profile Area */}
           <div className={`border-t border-outline-variant/10 mt-auto shrink-0 ${isCollapsed ? 'px-0 py-4 flex justify-center' : 'p-4'}`}>
-            {user ? (
+            {isLoading ? (
+              <div className={`h-10 animate-pulse rounded-full bg-surface-container-low ${isCollapsed ? 'w-10' : 'w-full'}`} />
+            ) : isLoggedIn && user ? (
               <div className={`flex flex-col gap-4 ${isCollapsed ? 'items-center' : ''}`}>
                 <div className={`flex items-center overflow-hidden ${isCollapsed ? 'justify-center gap-0 w-full' : 'gap-4'}`}>
                   <img 

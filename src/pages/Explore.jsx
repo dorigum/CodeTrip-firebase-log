@@ -60,7 +60,7 @@ const Explore = () => {
       try {
         setWishlistLoadingId(postId);
         await toggleWishlist(post);
-        alert('위시리스트에서 삭제되었습니다.');
+        showToast('위시리스트에서 삭제되었습니다.', 'success');
       } catch (error) {
         console.error('Wishlist error:', error);
       } finally {
@@ -74,7 +74,7 @@ const Explore = () => {
             ...post,
             folder_id: targetWishlistFolder.id || null,
           });
-          alert(`${targetWishlistFolder.name} 폴더에 추가되었습니다.`);
+          showToast(`${targetWishlistFolder.name} 폴더에 추가되었습니다.`, 'success');
         } catch (error) {
           console.error('Wishlist error:', error);
         } finally {

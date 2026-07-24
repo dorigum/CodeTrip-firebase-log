@@ -18,6 +18,13 @@ const compactObject = (value) => Object.fromEntries(
   Object.entries(value).filter(([, entry]) => entry !== undefined)
 );
 
+const LEGACY_AI_COURSE_PREFIX = '[AI 여행 코스]';
+
+const isLegacyAiCourseNote = (note) => (
+  (note?.type || 'CHECKLIST') === 'MEMO'
+  && String(note?.content || '').trim().startsWith(LEGACY_AI_COURSE_PREFIX)
+);
+
 export const getWishlistDetails = async () => {
   const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlists'))))
@@ -31,7 +38,7 @@ export const getWishlistDetails = async () => {
     }));
 };
 
-export const toggleWishlist = async (contentId, title, imageUrl, folderId = null) => {
+export const toggleWishlist = async (contentId, title, imageUrl, folderId = null, addr1 = '') => {
   const user = await getCurrentUser();
   const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
   const wishlists = snapshotToArray(await get(wishlistRoot));
@@ -50,6 +57,7 @@ export const toggleWishlist = async (contentId, title, imageUrl, folderId = null
       title,
       imageUrl: imageUrl || '',
       folder_id: folderId || null,
+      addr1: addr1 || '정보 없음',
       created_at: nowIso(),
     }
   });
@@ -184,6 +192,52 @@ export const getAiTripPlans = async (folderId) => {
       days: Array.isArray(plan.days) ? plan.days : [],
     }))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+};
+
+export const migrateLegacyAiCourseNotes = async (folderId, noteIds = []) => {
+  const user = await getCurrentUser();
+  const normalizedFolderId = String(folderId);
+  const selectedNoteIds = new Set(noteIds.map(String));
+  const [notesSnapshot, folderSnapshot] = await Promise.all([
+    get(ref(realtimeDb, userPath(user.id, 'wishlistNotes'))),
+    get(ref(realtimeDb, userPath(user.id, `wishlistFolders/${normalizedFolderId}`))),
+  ]);
+  const folderName = folderSnapshot.exists() ? toText(folderSnapshot.val()?.name, '여행 코스') : '여행 코스';
+  const legacyNotes = snapshotToArray(notesSnapshot).filter((note) => (
+    String(note.folder_id) === normalizedFolderId
+    && isLegacyAiCourseNote(note)
+    && (selectedNoteIds.size === 0 || selectedNoteIds.has(String(note.id)))
+  ));
+
+  if (legacyNotes.length === 0) return { migratedCount: 0 };
+
+  const migratedAt = nowIso();
+  const updates = {};
+
+  legacyNotes.forEach((note, index) => {
+    const originalContent = toText(note.content);
+    const courseContent = originalContent.slice(LEGACY_AI_COURSE_PREFIX.length).trim();
+    const planRef = push(ref(realtimeDb, userPath(user.id, 'aiTripPlans')));
+
+    updates[userPath(user.id, `aiTripPlans/${planRef.key}`)] = {
+      folder_id: normalizedFolderId,
+      user_id: user.id,
+      title: legacyNotes.length > 1 ? `${folderName} AI 여행 코스 ${index + 1}` : `${folderName} AI 여행 코스`,
+      summary: courseContent.slice(0, 240),
+      days: [],
+      legacy_content: courseContent,
+      source: 'legacy_wishlist_note',
+      migrated_from_note_id: String(note.id),
+      created_at: toIso(note.created_at || migratedAt),
+      migrated_at: migratedAt,
+    };
+    updates[userPath(user.id, `wishlistNotes/${note.id}`)] = null;
+  });
+
+  updates[userPath(user.id, `wishlistFolders/${normalizedFolderId}/updated_at`)] = migratedAt;
+  await update(ref(realtimeDb), updates);
+
+  return { migratedCount: legacyNotes.length };
 };
 
 export const createNote = async (folderId, content, type = 'CHECKLIST') => {

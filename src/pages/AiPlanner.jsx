@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateTripPlan } from '../api/geminiApi';
-import { getTravelList } from '../api/travelInfoApi';
+import { getDetailCommon, getTravelList } from '../api/travelInfoApi';
 import { saveAiTripToFolder } from '../api/wishlistApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
@@ -44,8 +44,133 @@ const PLAN_MODE = {
   FOLDER: 'folder',
 };
 
+const REGION_ALIASES = {
+  서울특별시: '서울',
+  부산광역시: '부산',
+  대구광역시: '대구',
+  인천광역시: '인천',
+  광주광역시: '광주',
+  대전광역시: '대전',
+  울산광역시: '울산',
+  세종특별자치시: '세종',
+  경기도: '경기',
+  강원특별자치도: '강원',
+  강원도: '강원',
+  충청북도: '충북',
+  충청남도: '충남',
+  전북특별자치도: '전북',
+  전라북도: '전북',
+  전라남도: '전남',
+  경상북도: '경북',
+  경상남도: '경남',
+  제주특별자치도: '제주',
+};
+
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+
+const getRegionFromText = (value) => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  const fullNameMatch = Object.entries(REGION_ALIASES)
+    .find(([fullName]) => text.includes(fullName));
+  if (fullNameMatch) return fullNameMatch[1];
+
+  return [...new Set(Object.values(REGION_ALIASES))]
+    .sort((a, b) => b.length - a.length)
+    .find((region) => text.includes(region)) || '';
+};
+
+const GENERIC_FOLDER_WORDS = new Set([
+  '여행', '투어', '코스', '일정', '폴더', '실내', '문화', '맛집',
+  '힐링', '가족', '친구', '혼자', '당일', '주말', '추천', '고양이',
+]);
+
+const getFolderLocality = (folder, places) => {
+  const folderTokens = String(folder?.name || '').match(/[가-힣A-Za-z0-9]+/g) || [];
+  const placeTitles = places.map((place) => String(place.title || ''));
+  const placeAddresses = places.map((place) => String(place.addr1 || place.address || ''));
+  const requiredMatches = Math.max(1, Math.ceil(places.length / 2));
+
+  return folderTokens.find((token) => {
+    if (token.length < 2 || GENERIC_FOLDER_WORDS.has(token) || getRegionFromText(token)) {
+      return false;
+    }
+
+    const titleMatches = placeTitles.filter((title) => title.includes(token)).length;
+    const addressMatches = placeAddresses.filter((address) => address.includes(token)).length;
+    return titleMatches >= requiredMatches || addressMatches > 0;
+  }) || '';
+};
+
+const isUsableAddress = (value) => {
+  const address = String(value || '').trim();
+  return address && address !== '정보' && address !== '정보 없음';
+};
+
+const getAdministrativeParts = (address) => {
+  const parts = String(address || '').trim().split(/\s+/);
+  return parts.filter((part, index) => (
+    index < 4 && /(?:특별시|광역시|특별자치시|특별자치도|도|시|군|구|읍|면|동)$/.test(part)
+  ));
+};
+
+const getAddressRegion = (places) => {
+  const addressParts = places
+    .map((place) => place.addr1 || place.address || '')
+    .filter(isUsableAddress)
+    .map(getAdministrativeParts)
+    .filter((parts) => parts.length > 0);
+
+  if (addressParts.length === 0) return '';
+
+  const commonParts = addressParts[0].filter((part, index) => (
+    addressParts.every((parts) => parts[index] === part)
+  ));
+  return commonParts.join(' ');
+};
+
+const hydratePlaceAddresses = async (places) => Promise.all(places.map(async (place) => {
+  if (isUsableAddress(place.addr1 || place.address)) return place;
+
+  const contentId = place.contentid || place.contentId;
+  if (!contentId) return place;
+
+  try {
+    const detail = await getDetailCommon(contentId);
+    return detail?.addr1 ? { ...place, addr1: detail.addr1 } : place;
+  } catch {
+    return place;
+  }
+}));
+
+const getFolderRegion = (folder, places) => {
+  const addressRegion = getAddressRegion(places);
+  if (addressRegion) {
+    const folderLocality = getFolderLocality(folder, places);
+    if (folderLocality && !addressRegion.includes(folderLocality)) {
+      return `${addressRegion} ${folderLocality}`;
+    }
+    return addressRegion;
+  }
+
+  const explicitRegion = folder?.region_name || folder?.regionName || folder?.region;
+  if (explicitRegion) return getRegionFromText(explicitRegion) || explicitRegion;
+
+  return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
+};
+
+const getFolderDurationDays = (folder) => {
+  if (!folder?.start_date) return null;
+  if (!folder.end_date) return 1;
+
+  const start = Date.parse(`${folder.start_date}T00:00:00Z`);
+  const end = Date.parse(`${folder.end_date}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+
+  return Math.min(5, Math.floor((end - start) / 86400000) + 1);
+};
 
 const normalizeTourCandidate = (item) => ({
   contentid: item.contentid,
@@ -84,6 +209,7 @@ const AiPlanner = () => {
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const folderSelectionRequestRef = useRef(0);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -114,7 +240,7 @@ const AiPlanner = () => {
     }));
 
     if (value === '혼자' && Number(form.peopleCount) > 1) {
-      showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.');
+      showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.', 'info');
     }
   };
 
@@ -122,7 +248,7 @@ const AiPlanner = () => {
     const nextCount = Math.max(1, Number(value) || 1);
     if (form.companionType === '혼자' && nextCount > 1) {
       updateForm('peopleCount', 1);
-      showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.');
+      showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.', 'info');
       return;
     }
 
@@ -134,14 +260,31 @@ const AiPlanner = () => {
     setPlan(null);
     setSelectedContentIds(new Set());
     if (mode === PLAN_MODE.CUSTOM) {
+      folderSelectionRequestRef.current += 1;
       setSelectedFolderId('');
     }
   };
 
-  const handleFolderChange = (folderId) => {
+  const handleFolderChange = async (folderId) => {
+    const requestId = ++folderSelectionRequestRef.current;
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
+    const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
+    const folderDurationDays = getFolderDurationDays(selectedFolder);
+
     setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
+    setForm((prev) => ({
+      ...prev,
+      ...(folderDurationDays ? { durationDays: folderDurationDays } : {}),
+    }));
+
+    const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
+    if (requestId !== folderSelectionRequestRef.current) return;
+
+    const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
+    if (folderRegion) {
+      updateForm('regionName', folderRegion);
+    }
   };
 
   const handleGenerate = async () => {

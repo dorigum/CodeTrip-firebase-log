@@ -1,6 +1,30 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.5-flash';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MAX_RETRIES = 2;
+const GEMINI_RETRY_BASE_DELAY_MS = 1000;
+
+const sleep = (delayMs) => new Promise((resolve) => {
+  setTimeout(resolve, delayMs);
+});
+
+const isRetryableStatus = (status) => status === 408 || status === 429 || status >= 500;
+
+const fetchGeminiWithRetry = async (requestOptions) => {
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
+    const response = await fetch(GEMINI_ENDPOINT, requestOptions);
+
+    if (response.ok || !isRetryableStatus(response.status) || attempt === GEMINI_MAX_RETRIES) {
+      return response;
+    }
+
+    const exponentialDelay = GEMINI_RETRY_BASE_DELAY_MS * (2 ** attempt);
+    const jitter = Math.floor(Math.random() * 250);
+    await sleep(exponentialDelay + jitter);
+  }
+
+  throw new Error('Gemini API 재시도 처리 중 예상하지 못한 오류가 발생했습니다.');
+};
 
 const SYSTEM_PROMPT = `당신은 한국 여행 코스를 설계하는 여행 큐레이션 어시스턴트입니다.
 사용자의 지역, 일정, 취향, 날씨, 동행 유형, 선택한 여행지 후보를 바탕으로 현실적인 여행 코스를 생성합니다.
@@ -177,7 +201,7 @@ export const generateTripPlan = async (input) => {
     throw new Error('VITE_GEMINI_API_KEY가 설정되어 있지 않습니다.');
   }
 
-  const response = await fetch(GEMINI_ENDPOINT, {
+  const response = await fetchGeminiWithRetry({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -191,7 +215,6 @@ export const generateTripPlan = async (input) => {
         },
       ],
       generationConfig: {
-        temperature: 0.7,
         responseMimeType: 'application/json',
       },
     }),
