@@ -1,6 +1,7 @@
 import { get, push, ref, remove, set, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso, snapshotToArray, toIso } from './firebaseHelpers';
+import { getDetailCommon } from './travelInfoApi';
 
 const userPath = (uid, child) => `users/${uid}/${child}`;
 
@@ -17,6 +18,76 @@ const toText = (value, fallback = '') => {
 const compactObject = (value) => Object.fromEntries(
   Object.entries(value).filter(([, entry]) => entry !== undefined)
 );
+
+const getTourContentId = (item = {}) => {
+  const contentId = item.contentId ?? item.contentid ?? item.content_id;
+  return contentId == null ? '' : String(contentId).trim();
+};
+
+const verifyTourPlace = async (item) => {
+  const contentId = getTourContentId(item);
+  if (!contentId) return null;
+
+  try {
+    const detail = await getDetailCommon(contentId);
+    const verifiedContentId = String(detail?.contentid ?? detail?.contentId ?? '').trim();
+    const title = toText(detail?.title);
+
+    if (!detail || verifiedContentId !== contentId || !title) return null;
+
+    return {
+      contentId,
+      title,
+      imageUrl: toText(detail.firstimage || detail.firstimage2),
+      addr1: toText(
+        [detail.addr1, detail.addr2].map((value) => toText(value)).filter(Boolean).join(' '),
+        '정보 없음'
+      ),
+      contentTypeId: toText(detail.contenttypeid || detail.contentTypeId),
+    };
+  } catch (error) {
+    console.warn(`TourAPI contentId verification failed: ${contentId}`, error);
+    return null;
+  }
+};
+
+const normalizePlanItemSource = (item, verifiedPlace) => {
+  const contentId = getTourContentId(item);
+
+  if (verifiedPlace) {
+    return compactObject({
+      ...item,
+      placeName: verifiedPlace.title,
+      title: verifiedPlace.title,
+      contentId: verifiedPlace.contentId,
+      contentid: verifiedPlace.contentId,
+      address: verifiedPlace.addr1,
+      addr1: verifiedPlace.addr1,
+      firstimage: verifiedPlace.imageUrl,
+      imageUrl: verifiedPlace.imageUrl,
+      contentTypeId: verifiedPlace.contentTypeId,
+      source: 'tour_api',
+      tourApiVerified: true,
+    });
+  }
+
+  const {
+    contentId: ignoredContentId,
+    contentid: ignoredContentid,
+    content_id: ignoredContentIdSnake,
+    ...itemWithoutContentId
+  } = item;
+  void ignoredContentId;
+  void ignoredContentid;
+  void ignoredContentIdSnake;
+
+  return compactObject({
+    ...itemWithoutContentId,
+    aiSuggestedContentId: contentId || undefined,
+    source: 'ai_generated',
+    tourApiVerified: false,
+  });
+};
 
 const LEGACY_AI_COURSE_PREFIX = '[AI 여행 코스]';
 
@@ -194,6 +265,23 @@ export const getAiTripPlans = async (folderId) => {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 };
 
+export const updateAiTripPlan = async (planId, values = {}) => {
+  const user = await getCurrentUser();
+  const updates = compactObject({
+    title: values.title != null ? toText(values.title, 'AI 여행 코스') : undefined,
+    summary: values.summary != null ? toText(values.summary) : undefined,
+    updated_at: nowIso(),
+  });
+  await update(ref(realtimeDb, userPath(user.id, `aiTripPlans/${planId}`)), updates);
+  return { id: String(planId), ...updates };
+};
+
+export const deleteAiTripPlan = async (planId) => {
+  const user = await getCurrentUser();
+  await remove(ref(realtimeDb, userPath(user.id, `aiTripPlans/${planId}`)));
+  return { success: true };
+};
+
 export const migrateLegacyAiCourseNotes = async (folderId, noteIds = []) => {
   const user = await getCurrentUser();
   const normalizedFolderId = String(folderId);
@@ -275,10 +363,36 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     created_at: toIso(existingFolder?.created_at || created_at),
     updated_at: created_at,
   };
-  const days = Array.isArray(plan?.days) ? plan.days : [];
+  const originalDays = Array.isArray(plan?.days) ? plan.days : [];
+  const originalItems = originalDays.flatMap((day) =>
+    (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, day: day.day }))
+  );
+  const uniqueContentItems = Array.from(
+    new Map(
+      originalItems
+        .filter((item) => getTourContentId(item))
+        .map((item) => [getTourContentId(item), item])
+    ).values()
+  );
+  const verificationResults = await Promise.all(
+    uniqueContentItems.map(async (item) => [getTourContentId(item), await verifyTourPlace(item)])
+  );
+  const verifiedPlaceMap = new Map(
+    verificationResults.filter(([, verifiedPlace]) => verifiedPlace)
+  );
+  const days = originalDays.map((day) => ({
+    ...day,
+    items: (Array.isArray(day.items) ? day.items : []).map((item) => (
+      normalizePlanItemSource(item, verifiedPlaceMap.get(getTourContentId(item)))
+    )),
+  }));
   const allItems = days.flatMap((day) =>
     (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, day: day.day }))
   );
+  const verifiedPlaces = Array.from(verifiedPlaceMap.values());
+  const verifiedItemCount = allItems.filter((item) => item.tourApiVerified).length;
+  const documentOnlyPlaces = allItems.length - verifiedItemCount;
+  const rejectedContentIds = verificationResults.filter(([, verifiedPlace]) => !verifiedPlace).length;
 
   const updates = {};
 
@@ -302,6 +416,13 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     title: toText(plan?.title, folderName),
     summary: toText(plan?.summary),
     saveGuide: plan?.saveGuide || null,
+    generation_context: plan?.generationContext || plan?.generation_context || null,
+    tour_api_verification: {
+      verified_places: verifiedPlaces.length,
+      document_only_places: documentOnlyPlaces,
+      rejected_content_ids: rejectedContentIds,
+      verified_at: created_at,
+    },
     days,
     created_at,
   };
@@ -321,20 +442,21 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     };
   });
 
-  const contentItems = allItems.filter((item) => item.contentId || item.contentid);
   const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
   const wishlists = snapshotToArray(await get(wishlistRoot));
-  contentItems.forEach((item) => {
-    const contentId = String(item.contentId || item.contentid);
+  verifiedPlaces.forEach((place) => {
+    const contentId = place.contentId;
     const existing = wishlists.find((wishlist) => wishlist.contentId === contentId);
     const wishlistId = existing?.id || push(wishlistRoot).key;
     updates[userPath(user.id, `wishlists/${wishlistId}`)] = compactObject({
       user_id: user.id,
       contentId,
-      title: toText(item.placeName || item.title, '여행지'),
-      imageUrl: toText(item.firstimage || item.imageUrl),
+      title: place.title,
+      imageUrl: place.imageUrl,
       folder_id: folder.id,
-      addr1: toText(item.address || item.addr1, '정보 없음'),
+      addr1: place.addr1,
+      source: 'tour_api',
+      verified_at: created_at,
       created_at: existing?.created_at || created_at,
     });
   });
@@ -344,7 +466,9 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
   return {
     folder,
     planId: planRef.key,
-    savedPlaces: contentItems.length,
+    savedPlaces: verifiedPlaces.length,
+    documentOnlyPlaces,
+    rejectedContentIds,
     savedChecklist: checklist.length,
   };
 };

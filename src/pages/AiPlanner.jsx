@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { generateTripPlan } from '../api/geminiApi';
 import { getDetailCommon, getTravelList } from '../api/travelInfoApi';
 import { saveAiTripToFolder } from '../api/wishlistApi';
@@ -199,17 +199,29 @@ const FieldLabel = ({ children }) => (
 
 const AiPlanner = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const showToast = useToast();
   const { isLoggedIn } = useAuthStore();
   const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
-  const [form, setForm] = useState(DEFAULT_FORM);
-  const [planningMode, setPlanningMode] = useState(PLAN_MODE.CUSTOM);
-  const [selectedFolderId, setSelectedFolderId] = useState('');
+  const regeneratePlan = location.state?.regeneratePlan || null;
+  const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
+  const regenerateFolderId = location.state?.folderId || regenerationContext.sourceFolderId || '';
+  const [form, setForm] = useState(() => ({
+    ...DEFAULT_FORM,
+    ...regenerationContext,
+  }));
+  const [planningMode, setPlanningMode] = useState(
+    regenerateFolderId ? PLAN_MODE.FOLDER : (regenerationContext.planningMode || PLAN_MODE.CUSTOM)
+  );
+  const [selectedFolderId, setSelectedFolderId] = useState(
+    regenerateFolderId ? String(regenerateFolderId) : ''
+  );
   const [selectedContentIds, setSelectedContentIds] = useState(new Set());
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const folderSelectionRequestRef = useRef(0);
+  const regenerationHydratedRef = useRef(false);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -230,7 +242,10 @@ const AiPlanner = () => {
     [wishlistItems, selectedContentIds]
   );
 
-  const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const updateForm = useCallback(
+    (key, value) => setForm((prev) => ({ ...prev, [key]: value })),
+    []
+  );
 
   const handleCompanionChange = (value) => {
     setForm((prev) => ({
@@ -265,7 +280,7 @@ const AiPlanner = () => {
     }
   };
 
-  const handleFolderChange = async (folderId) => {
+  const handleFolderChange = useCallback(async (folderId) => {
     const requestId = ++folderSelectionRequestRef.current;
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
@@ -285,7 +300,37 @@ const AiPlanner = () => {
     if (folderRegion) {
       updateForm('regionName', folderRegion);
     }
-  };
+  }, [folders, updateForm, wishlistItems]);
+
+  useEffect(() => {
+    if (!regeneratePlan || regenerationHydratedRef.current) return;
+
+    if (!regenerateFolderId) {
+      regenerationHydratedRef.current = true;
+      navigate('/ai-planner', { replace: true, state: null });
+      showToast('기존 코스의 생성 조건을 불러왔습니다. 조건을 확인한 뒤 다시 생성해주세요.', 'info');
+      return;
+    }
+
+    if (wishlistItems.length === 0 || folders.length === 0) return;
+    const sourceFolder = folders.find((folder) => String(folder.id) === String(regenerateFolderId));
+    if (!sourceFolder) return;
+
+    regenerationHydratedRef.current = true;
+    queueMicrotask(() => {
+      handleFolderChange(String(regenerateFolderId));
+    });
+    navigate('/ai-planner', { replace: true, state: null });
+    showToast('기존 코스와 위시리스트 폴더 조건을 불러왔습니다.', 'info');
+  }, [
+    folders,
+    handleFolderChange,
+    navigate,
+    regenerateFolderId,
+    regeneratePlan,
+    showToast,
+    wishlistItems,
+  ]);
 
   const handleGenerate = async () => {
     if (!form.regionName.trim()) {
@@ -335,7 +380,24 @@ const AiPlanner = () => {
         totalBudgetLabel: getTotalBudgetLabel(form.budgetLevel, form.peopleCount),
         preferredPlaces,
       });
-      setPlan(result);
+      setPlan({
+        ...result,
+        generationContext: {
+          planningMode,
+          sourceFolderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
+          regionName: form.regionName.trim(),
+          durationDays: Number(form.durationDays) || 1,
+          companionType: form.companionType,
+          peopleCount: Number(form.peopleCount) || 1,
+          budgetLevel: form.budgetLevel,
+          pace: form.pace,
+          weatherKeyword: form.weatherKeyword,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          travelStyle: form.travelStyle,
+          avoidKeywords: form.avoidKeywords,
+        },
+      });
       showToast(
         planningMode === PLAN_MODE.CUSTOM && preferredPlaces.length > 0
           ? `관광공사 등록 장소 ${preferredPlaces.length}개를 우선 반영해 CodeTrip 여행 코스를 생성했습니다.`
@@ -359,13 +421,16 @@ const AiPlanner = () => {
       });
       await syncWithServer();
       if (result.savedPlaces > 0) {
+        const documentOnlyMessage = result.documentOnlyPlaces > 0
+          ? ` 검증되지 않은 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관했습니다.`
+          : '';
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 관광공사 검증 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.${documentOnlyMessage}`,
           'success'
         );
       } else {
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 코스 데이터와 체크리스트로 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 관광공사에서 확인되지 않은 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관했습니다.`,
           'success'
         );
       }
@@ -701,7 +766,13 @@ const AiPlanner = () => {
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="font-black text-slate-900">{item.placeName}</h4>
                               <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">{item.category}</span>
-                              {item.contentId && <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">TourAPI</span>}
+                              {item.tourApiVerified ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">TourAPI verified</span>
+                              ) : item.contentId ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-bold">TourAPI 후보</span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">AI 추천</span>
+                              )}
                             </div>
                             {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}
                             <p className="text-sm text-slate-600 mt-3 leading-6">{item.reason}</p>

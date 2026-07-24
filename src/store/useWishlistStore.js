@@ -127,6 +127,25 @@ const useWishlistStore = create((set, get) => ({
     }
   },
 
+  updateAiTripPlan: async (planId, values) => {
+    try {
+      return await wishlistApi.updateAiTripPlan(planId, values);
+    } catch (err) {
+      console.error('Update AI trip plan failed:', err);
+      return null;
+    }
+  },
+
+  deleteAiTripPlan: async (planId) => {
+    try {
+      await wishlistApi.deleteAiTripPlan(planId);
+      return true;
+    } catch (err) {
+      console.error('Delete AI trip plan failed:', err);
+      return false;
+    }
+  },
+
   migrateLegacyAiCourseNotes: async (folderId, noteIds) => {
     try {
       return await wishlistApi.migrateLegacyAiCourseNotes(folderId, noteIds);

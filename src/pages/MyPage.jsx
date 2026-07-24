@@ -18,7 +18,7 @@ const MyPage = () => {
   const {
     wishlistItems, folders, loading, syncError,
     initWishlist, toggleWishlist, createFolder, updateFolder, deleteFolder, moveItem,
-    fetchNotes, fetchAiTripPlans, migrateLegacyAiCourseNotes,
+    fetchNotes, fetchAiTripPlans, migrateLegacyAiCourseNotes, updateAiTripPlan, deleteAiTripPlan,
     addNote, toggleNote: toggleNoteAction, deleteNote: deleteNoteAction
   } = useWishlistStore();
 
@@ -39,6 +39,11 @@ const MyPage = () => {
   const [editFolderEnd, setEditFolderEnd] = useState('');
   const [movingItemId, setMovingItemId] = useState(null);
   const [selectedAiPlan, setSelectedAiPlan] = useState(null);
+  const [editingAiPlan, setEditingAiPlan] = useState(false);
+  const [editAiPlanTitle, setEditAiPlanTitle] = useState('');
+  const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
+  const [aiPlanPending, setAiPlanPending] = useState(false);
+  const [planDeleteTarget, setPlanDeleteTarget] = useState(null);
   const [legacyMigrationOpen, setLegacyMigrationOpen] = useState(false);
   const [legacyMigrationPending, setLegacyMigrationPending] = useState(false);
 
@@ -258,6 +263,14 @@ const MyPage = () => {
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
   };
 
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return 'N/A';
+
+    return `${formatDate(dateStr)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+  };
+
   const DAYS_KO = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
   const parseLocalDate = (str) => {
     if (!str) return new Date();
@@ -309,11 +322,98 @@ const MyPage = () => {
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
+  const getPlanSourceBadge = (item) => {
+    if (item.tourApiVerified) {
+      return { label: 'TourAPI verified', className: 'bg-primary/10 text-primary' };
+    }
+    if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) {
+      return { label: 'AI 추천', className: 'bg-slate-100 text-slate-500' };
+    }
+    return { label: 'TourAPI legacy', className: 'bg-amber-100 text-amber-700' };
+  };
   const getPlanItemCount = (plan) => (
     Array.isArray(plan?.days) ? plan.days : []
   ).reduce((total, day) => total + getPlanItems(day).length, 0);
+
+  const openAiPlan = (plan) => {
+    setEditingAiPlan(false);
+    setSelectedAiPlan(plan);
+  };
+
+  const closeAiPlan = () => {
+    if (aiPlanPending) return;
+    setEditingAiPlan(false);
+    setSelectedAiPlan(null);
+  };
+
+  const startAiPlanEdit = () => {
+    setEditAiPlanTitle(selectedAiPlan?.title || selectedFolder?.name || '');
+    setEditAiPlanSummary(selectedAiPlan?.summary || '');
+    setEditingAiPlan(true);
+  };
+
+  const handleUpdateAiPlan = async () => {
+    if (!selectedAiPlan || aiPlanPending) return;
+    if (!editAiPlanTitle.trim()) {
+      showToast('코스 문서 제목을 입력해주세요.', 'info');
+      return;
+    }
+
+    setAiPlanPending(true);
+    const updated = await updateAiTripPlan(selectedAiPlan.id, {
+      title: editAiPlanTitle.trim(),
+      summary: editAiPlanSummary.trim(),
+    });
+    setAiPlanPending(false);
+
+    if (!updated) {
+      showToast('AI 여행 코스 문서를 수정하지 못했습니다.');
+      return;
+    }
+
+    const nextPlan = { ...selectedAiPlan, ...updated };
+    setSelectedAiPlan(nextPlan);
+    setAiTripPlans((prev) => prev.map((plan) => (
+      String(plan.id) === String(nextPlan.id) ? nextPlan : plan
+    )));
+    setEditingAiPlan(false);
+    showToast('AI 여행 코스 문서를 수정했습니다.', 'success');
+  };
+
+  const handleDeleteAiPlan = async () => {
+    if (!planDeleteTarget || aiPlanPending) return;
+
+    setAiPlanPending(true);
+    const deleted = await deleteAiTripPlan(planDeleteTarget.id);
+    setAiPlanPending(false);
+
+    if (!deleted) {
+      showToast('AI 여행 코스 문서를 삭제하지 못했습니다.');
+      return;
+    }
+
+    setAiTripPlans((prev) => prev.filter((plan) => String(plan.id) !== String(planDeleteTarget.id)));
+    if (String(selectedAiPlan?.id) === String(planDeleteTarget.id)) {
+      setSelectedAiPlan(null);
+      setEditingAiPlan(false);
+    }
+    setPlanDeleteTarget(null);
+    showToast('AI 여행 코스 문서를 삭제했습니다.', 'success');
+  };
+
+  const handleRegenerateAiPlan = () => {
+    if (!selectedAiPlan) return;
+    navigate('/ai-planner', {
+      state: {
+        regeneratePlan: selectedAiPlan,
+        folderId: selectedFolderId,
+      },
+    });
+  };
+
   const handleSelectFolder = (folderId) => {
     setSelectedAiPlan(null);
+    setEditingAiPlan(false);
     setSelectedFolderId(folderId);
   };
 
@@ -396,7 +496,7 @@ const MyPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedAiPlan(null)}
+                onClick={closeAiPlan}
                 className="material-symbols-outlined rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white"
                 aria-label="AI 코스 상세 닫기"
               >
@@ -407,11 +507,58 @@ const MyPage = () => {
             <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_260px]">
               <div className="custom-scrollbar overflow-y-auto p-6 md:p-8">
                 <p className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.22em] text-primary"># CodeTrip course document</p>
-                <h2 className="font-headline text-3xl font-bold text-slate-950">{selectedAiPlan.title || selectedFolder?.name}</h2>
-                {selectedAiPlan.summary && (
-                  <blockquote className="mt-5 border-l-4 border-primary bg-primary/5 px-5 py-4 text-sm leading-7 text-slate-600">
-                    {selectedAiPlan.summary}
-                  </blockquote>
+                {editingAiPlan ? (
+                  <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                        Course_title
+                      </label>
+                      <input
+                        type="text"
+                        value={editAiPlanTitle}
+                        onChange={(event) => setEditAiPlanTitle(event.target.value)}
+                        className="w-full rounded-xl border border-outline-variant/30 bg-white px-4 py-3 font-headline text-lg font-bold text-slate-950 outline-none transition focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                        Course_summary
+                      </label>
+                      <textarea
+                        value={editAiPlanSummary}
+                        onChange={(event) => setEditAiPlanSummary(event.target.value)}
+                        rows={4}
+                        className="w-full resize-none rounded-xl border border-outline-variant/30 bg-white px-4 py-3 text-sm leading-7 text-slate-600 outline-none transition focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingAiPlan(false)}
+                        disabled={aiPlanPending}
+                        className="h-10 rounded-xl px-4 text-xs font-bold text-slate-500 transition hover:bg-white disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUpdateAiPlan}
+                        disabled={aiPlanPending}
+                        className="h-10 rounded-xl bg-primary px-4 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                      >
+                        {aiPlanPending ? 'Saving...' : 'Save_changes'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="font-headline text-3xl font-bold text-slate-950">{selectedAiPlan.title || selectedFolder?.name}</h2>
+                    {selectedAiPlan.summary && (
+                      <blockquote className="mt-5 border-l-4 border-primary bg-primary/5 px-5 py-4 text-sm leading-7 text-slate-600">
+                        {selectedAiPlan.summary}
+                      </blockquote>
+                    )}
+                  </>
                 )}
 
                 {selectedAiPlan.legacy_content && (
@@ -444,6 +591,9 @@ const MyPage = () => {
                                     {item.category || item.cat3Name || item.type}
                                   </span>
                                 )}
+                                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
+                                  {getPlanSourceBadge(item).label}
+                                </span>
                               </div>
                               {getPlanAddress(item) && (
                                 <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
@@ -469,7 +619,7 @@ const MyPage = () => {
                   </div>
                   <div>
                     <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Created</dt>
-                    <dd className="mt-1 font-bold text-slate-900">{formatDate(selectedAiPlan.created_at)}</dd>
+                    <dd className="mt-1 font-bold text-slate-900">{formatDateTime(selectedAiPlan.created_at)}</dd>
                   </div>
                   <div>
                     <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Days</dt>
@@ -480,18 +630,61 @@ const MyPage = () => {
                     <dd className="mt-1 font-bold text-slate-900">{getPlanItemCount(selectedAiPlan)}</dd>
                   </div>
                 </dl>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAiPlan(null)}
-                  className="mt-8 h-11 w-full rounded-xl bg-primary text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110"
-                >
-                  Return_to_folder
-                </button>
+                <div className="mt-8 space-y-2">
+                  <button
+                    type="button"
+                    onClick={startAiPlanEdit}
+                    disabled={editingAiPlan || aiPlanPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-base">edit</span>
+                    Edit_document
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateAiPlan}
+                    disabled={aiPlanPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-base">refresh</span>
+                    Regenerate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlanDeleteTarget(selectedAiPlan)}
+                    disabled={aiPlanPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white text-xs font-bold uppercase tracking-wider text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                    Delete_document
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeAiPlan}
+                    className="h-11 w-full rounded-xl bg-primary text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                  >
+                    Return_to_folder
+                  </button>
+                </div>
               </aside>
             </div>
           </article>
         </div>
       )}
+
+      <ConfirmModal
+        open={Boolean(planDeleteTarget)}
+        title="AI 여행 코스 문서를 삭제할까요?"
+        description="코스 문서만 삭제됩니다. 같은 폴더에 저장된 여행지, 체크리스트와 메모는 유지됩니다."
+        confirmText={aiPlanPending ? '삭제 중...' : '코스 문서 삭제'}
+        cancelText="취소"
+        icon="delete"
+        tone="danger"
+        onConfirm={handleDeleteAiPlan}
+        onCancel={() => {
+          if (!aiPlanPending) setPlanDeleteTarget(null);
+        }}
+      />
 
       <ConfirmModal
         open={legacyMigrationOpen}
@@ -720,18 +913,34 @@ const MyPage = () => {
 
           {selectedFolder && aiTripPlans.length > 0 && (
             <section className="mb-8 space-y-4">
-              {aiTripPlans.map((plan) => (
+              {aiTripPlans.map((plan, planIndex) => {
+                const sequence = aiTripPlans.length - planIndex;
+                const documentName = `AI_COURSE_${String(sequence).padStart(2, '0')}.md`;
+
+                return (
                 <article key={plan.id} className="overflow-hidden rounded-2xl border border-outline-variant/20 bg-white shadow-sm">
-                  <div className="flex items-center justify-between border-b border-outline-variant/15 bg-slate-50 px-5 py-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-3 border-b border-outline-variant/15 bg-slate-50 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="material-symbols-outlined text-primary text-lg">terminal</span>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">AI_COURSE.md</span>
+                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{documentName}</span>
+                      <span className={`rounded-full px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        plan.source === 'legacy_wishlist_note'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-primary/10 text-primary'
+                      }`}>
+                        {plan.source === 'legacy_wishlist_note' ? 'Legacy_import' : 'Saved_course'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] text-slate-400">{formatDate(plan.created_at)}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {planIndex === 0 && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-700">
+                          Latest
+                        </span>
+                      )}
+                      <span className="font-mono text-[10px] text-slate-400">{formatDateTime(plan.created_at)}</span>
                       <button
                         type="button"
-                        onClick={() => setSelectedAiPlan(plan)}
+                        onClick={() => openAiPlan(plan)}
                         className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
                       >
                         View_Markdown
@@ -745,6 +954,9 @@ const MyPage = () => {
                         CodeTrip generated course
                       </p>
                       <h4 className="font-headline text-2xl font-bold text-slate-950">{plan.title || selectedFolder.name}</h4>
+                      <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {Array.isArray(plan.days) ? plan.days.length : 0} days · {getPlanItemCount(plan)} places
+                      </p>
                       {plan.summary && (
                         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{plan.summary}</p>
                       )}
@@ -782,6 +994,9 @@ const MyPage = () => {
                                           {item.category || item.cat3Name || item.type}
                                         </span>
                                       )}
+                                      <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
+                                        {getPlanSourceBadge(item).label}
+                                      </span>
                                     </div>
                                     {getPlanAddress(item) && (
                                       <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
@@ -799,7 +1014,8 @@ const MyPage = () => {
                     </div>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </section>
           )}
 
