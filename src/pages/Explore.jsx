@@ -59,7 +59,11 @@ const Explore = () => {
     if (wishlistIds.has(postId)) {
       try {
         setWishlistLoadingId(postId);
-        await toggleWishlist(post);
+        const result = await toggleWishlist(post);
+        if (!result.success) {
+          showToast('위시리스트에서 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
         showToast('위시리스트에서 삭제되었습니다.', 'success');
       } catch (error) {
         console.error('Wishlist error:', error);
@@ -70,10 +74,14 @@ const Explore = () => {
       if (targetWishlistFolder) {
         try {
           setWishlistLoadingId(postId);
-          await toggleWishlist({
+          const result = await toggleWishlist({
             ...post,
             folder_id: targetWishlistFolder.id || null,
           });
+          if (!result.success || !result.wishlisted) {
+            showToast('위시리스트에 추가하지 못했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+          }
           showToast(`${targetWishlistFolder.name} 폴더에 추가되었습니다.`, 'success');
         } catch (error) {
           console.error('Wishlist error:', error);

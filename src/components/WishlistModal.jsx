@@ -25,8 +25,8 @@ const WishlistModal = ({ isOpen, onClose, travelData }) => {
       addr1: travelData.addr1 || travelData.address || travelData.addr,
       folder_id: folderId
     };
-    const wishlisted = await toggleWishlist(travelInfo);
-    if (!wishlisted) {
+    const result = await toggleWishlist(travelInfo);
+    if (!result.success || !result.wishlisted) {
       showToast('위시리스트에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
       return;
     }

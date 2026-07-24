@@ -73,7 +73,11 @@ const Festivals = () => {
     if (wishlistIds.has(postId)) {
       try {
         setWishlistLoadingId(postId);
-        await toggleWishlist(post);
+        const result = await toggleWishlist(post);
+        if (!result.success) {
+          showToast('위시리스트에서 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
         showToast('위시리스트에서 삭제되었습니다.', 'success');
       } catch (error) {
         console.error('Wishlist error:', error);

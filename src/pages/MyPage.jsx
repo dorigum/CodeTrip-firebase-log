@@ -374,6 +374,9 @@ const MyPage = () => {
   const getPlanItems = (day) => (
     Array.isArray(day?.items) ? day.items : []
   ).filter(Boolean);
+  const getPlanDays = (plan) => (
+    Array.isArray(plan?.days) ? plan.days : []
+  ).filter(Boolean);
 
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
@@ -387,9 +390,8 @@ const MyPage = () => {
     }
     return { label: 'TourAPI legacy', className: 'bg-amber-100 text-amber-700' };
   };
-  const getPlanItemCount = (plan) => (
-    Array.isArray(plan?.days) ? plan.days : []
-  ).reduce((total, day) => total + getPlanItems(day).length, 0);
+  const getPlanItemCount = (plan) => getPlanDays(plan)
+    .reduce((total, day) => total + getPlanItems(day).length, 0);
 
   const openAiPlan = (plan) => {
     setEditingAiPlan(false);
@@ -629,7 +631,7 @@ const MyPage = () => {
                 )}
 
                 <div className="mt-8 space-y-6">
-                  {(selectedAiPlan.days || []).map((day, dayIndex) => (
+                  {getPlanDays(selectedAiPlan).map((day, dayIndex) => (
                     <section key={`${selectedAiPlan.id}-detail-${day.day || dayIndex}`} className="rounded-2xl border border-outline-variant/20">
                       <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
                         <p className="font-mono text-xs font-bold text-primary">## DAY_{day.day || dayIndex + 1}</p>
@@ -679,7 +681,7 @@ const MyPage = () => {
                   </div>
                   <div>
                     <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Days</dt>
-                    <dd className="mt-1 font-bold text-slate-900">{selectedAiPlan.days?.length || 0}</dd>
+                    <dd className="mt-1 font-bold text-slate-900">{getPlanDays(selectedAiPlan).length}</dd>
                   </div>
                   <div>
                     <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Places</dt>
@@ -1028,7 +1030,7 @@ const MyPage = () => {
                       </p>
                       <h4 className="font-headline text-2xl font-bold text-slate-950">{plan.title || selectedFolder.name}</h4>
                       <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        {Array.isArray(plan.days) ? plan.days.length : 0} days · {getPlanItemCount(plan)} places
+                        {getPlanDays(plan).length} days · {getPlanItemCount(plan)} places
                       </p>
                       {plan.summary && (
                         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{plan.summary}</p>
@@ -1036,7 +1038,7 @@ const MyPage = () => {
                     </div>
 
                     <div className="space-y-4">
-                      {plan.days.length === 0 ? (
+                      {getPlanDays(plan).length === 0 ? (
                         plan.legacy_content ? (
                           <div className="rounded-xl border border-outline-variant/20 bg-slate-50 px-5 py-4">
                             <p className="line-clamp-4 whitespace-pre-wrap text-sm leading-7 text-slate-600">{plan.legacy_content}</p>
@@ -1045,7 +1047,7 @@ const MyPage = () => {
                           <p className="rounded-xl border border-dashed border-outline-variant/30 px-4 py-8 text-center font-mono text-xs text-slate-400">// no_course_items</p>
                         )
                       ) : (
-                        plan.days.map((day, dayIndex) => (
+                        getPlanDays(plan).map((day, dayIndex) => (
                           <section key={`${plan.id}-day-${day.day || dayIndex}`} className="rounded-xl border border-outline-variant/20 bg-slate-50/70">
                             <div className="flex items-center justify-between border-b border-outline-variant/15 px-4 py-3">
                               <div>

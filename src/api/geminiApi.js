@@ -3,19 +3,42 @@ const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.5-flash-lite
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const GEMINI_MAX_RETRIES = 2;
 const GEMINI_RETRY_BASE_DELAY_MS = 1000;
+const GEMINI_REQUEST_TIMEOUT_MS = 45000;
 
 const sleep = (delayMs) => new Promise((resolve) => {
   setTimeout(resolve, delayMs);
 });
 
 const isRetryableStatus = (status) => status === 408 || status === 429 || status >= 500;
+const isRetryableFetchError = (error) => (
+  error?.name === 'AbortError' || error instanceof TypeError
+);
 
 const fetchGeminiWithRetry = async (requestOptions) => {
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
-    const response = await fetch(GEMINI_ENDPOINT, requestOptions);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, GEMINI_REQUEST_TIMEOUT_MS);
 
-    if (response.ok || !isRetryableStatus(response.status) || attempt === GEMINI_MAX_RETRIES) {
-      return response;
+    try {
+      const response = await fetch(GEMINI_ENDPOINT, {
+        ...requestOptions,
+        signal: controller.signal,
+      });
+
+      if (response.ok || !isRetryableStatus(response.status) || attempt === GEMINI_MAX_RETRIES) {
+        return response;
+      }
+    } catch (error) {
+      if (!isRetryableFetchError(error) || attempt === GEMINI_MAX_RETRIES) {
+        if (error?.name === 'AbortError') {
+          throw new Error('CodeTrip 여행 코스 생성 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.');
+        }
+        throw new Error('CodeTrip 여행 코스 생성 서버에 연결하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.');
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
     }
 
     const exponentialDelay = GEMINI_RETRY_BASE_DELAY_MS * (2 ** attempt);

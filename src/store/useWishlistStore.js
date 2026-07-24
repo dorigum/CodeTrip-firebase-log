@@ -57,15 +57,17 @@ const useWishlistStore = create((set, get) => ({
 
   toggleWishlist: async (itemData) => {
     const { contentid, title, firstimage, addr1, folder_id } = normalizeWishlistItem(itemData);
-    if (!contentid) return false;
+    if (!contentid) {
+      return { success: false, wishlisted: false, error: 'missing_content_id' };
+    }
 
     try {
       const result = await wishlistApi.toggleWishlist(contentid, title, firstimage, folder_id, addr1);
       await get().syncWithServer();
-      return result.wishlisted;
+      return { success: true, wishlisted: result.wishlisted };
     } catch (err) {
       console.error('Toggle wishlist failed:', err);
-      return false;
+      return { success: false, wishlisted: false, error: err };
     }
   },
 

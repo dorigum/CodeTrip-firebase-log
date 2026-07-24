@@ -92,7 +92,11 @@ const TravelDetail = () => {
     // 이미 찜한 상태라면 즉시 삭제
     if (wishlistIds.has(id)) {
       try {
-        await toggleWishlist(common);
+        const result = await toggleWishlist(common);
+        if (!result.success) {
+          showToast('위시리스트에서 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
         showToast('위시리스트에서 삭제되었습니다.', 'success');
       } catch (error) {
         console.error('Wishlist toggle error:', error);

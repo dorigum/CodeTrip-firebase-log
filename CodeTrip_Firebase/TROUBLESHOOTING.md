@@ -344,3 +344,57 @@ git diff --check
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
 - 새로운 트러블슈팅 이력은 날짜별 로그에 기록을 작성한 뒤, 이 색인 문서에 추가합니다.
+## 11. CodeRabbit 리뷰 대응 중 빌드 권한 및 위시리스트 성공 토스트 오판 문제
+
+- **발생일**: 2026-07-24
+- **영향 범위**: 위시리스트 추가/삭제 토스트, AI 코스 문서 렌더링, Gemini API 호출 안정성, 로컬 빌드 검증
+- **요약**: CodeRabbit 리뷰를 통해 위시리스트 토글 실패 시에도 성공 메시지가 표시될 수 있는 구조와 `plan.days` 비정상 데이터 렌더링 위험, Gemini API 네트워크 예외 처리 부족 문제가 확인되었습니다. 수정 후 빌드 검증 과정에서는 샌드박스 쓰기 권한 제한으로 Vite 임시 파일 생성이 차단되는 문제가 있었습니다.
+
+### 증상
+
+위시리스트 토글 함수가 삭제 성공과 오류를 모두 `false`로 반환하고 있어, 호출부에서 실제 실패와 정상 삭제를 구분하기 어려운 상태였습니다. 이 구조에서는 Firebase 요청이 실패했는데도 사용자에게 성공 토스트가 표시될 가능성이 있었습니다.
+
+AI 코스 문서 화면에서는 `plan.days`가 배열이라는 전제를 두고 렌더링하는 지점이 있어, 오래된 데이터나 비정상 데이터가 들어오면 `TypeError`로 화면 렌더링이 중단될 수 있었습니다.
+
+Gemini API 호출은 HTTP status 기반 재시도만 처리하고 있었고, 네트워크 오류, DNS 실패, 오프라인, 요청 지연 timeout에 대한 catch 및 재시도 처리가 부족했습니다.
+
+### 원인
+
+- `toggleWishlist`가 boolean만 반환해 성공/실패 상태를 충분히 표현하지 못함
+- 일부 호출부가 반환값을 확인하지 않고 바로 성공 토스트를 표시함
+- AI 코스 문서 데이터가 항상 최신 정상 구조라는 가정이 남아 있음
+- `fetch()` 자체가 reject되는 네트워크 예외와 timeout 제어가 없음
+- Codex 실행 환경의 읽기 전용 샌드박스에서는 Vite가 `node_modules/.vite-temp`에 임시 config 파일을 생성할 수 없음
+
+### 해결
+
+- `toggleWishlist` 반환값을 `{ success, wishlisted, error }` 구조로 변경
+- 위시리스트 추가/삭제 호출부에서 `success`와 `wishlisted`를 확인한 뒤 성공 토스트 표시
+- AI 코스 문서 렌더링에 `getPlanDays(plan)` 헬퍼 추가
+- `fetchGeminiWithRetry`에 `AbortController` 기반 45초 timeout 추가
+- timeout, 네트워크 오류, 재시도 가능 HTTP status를 구분해 재시도 처리
+- 일반 권한 빌드에서 `EPERM` 발생 확인 후, 쓰기 권한이 있는 실행으로 `npm run build` 재검증
+
+### 검증 결과
+
+```text
+npx eslint src/api/geminiApi.js src/store/useWishlistStore.js src/components/WishlistModal.jsx src/pages/Explore.jsx src/pages/Festivals.jsx src/pages/TravelDetail.jsx src/pages/MyPage.jsx
+- 오류 0개
+- 기존 React Hook dependency 경고 5개 유지
+
+npm run build
+- 빌드 성공
+- 기존 500kB 초과 번들 경고 유지
+- Vite plugin timing 경고 출력
+
+git diff --check
+- 공백 오류 없음
+```
+
+### 보류 및 후속 작업
+
+`REGION_MATCHERS/getRegionKey` 공통 유틸 추출은 기능 오류 수정과 분리해 후속 리팩터링으로 처리합니다.
+
+- 지역명/별칭/주소 파싱 로직이 여러 파일에 분산되어 있음
+- 한글 지역 매칭 로직을 한 번에 이동하면 AI 플래너 지역 자동 반영, 위시리스트 통계, 주소 기반 지역 판정에 회귀가 생길 수 있음
+- 다음 작업에서는 `src/utils/regionUtils.js`로 분리하고 각 페이지가 동일 유틸을 참조하도록 변경 예정
