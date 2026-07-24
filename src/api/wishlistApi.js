@@ -140,6 +140,7 @@ export const getWishlistDetails = async () => {
       const contentId = getTourContentId(item);
 
       return {
+        id: item.id,
         contentid: contentId,
         contentId,
         title: item.title || '여행지',
@@ -515,7 +516,10 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
   const wishlists = snapshotToArray(await get(wishlistRoot));
   verifiedPlaces.forEach((place) => {
     const contentId = place.contentId;
-    const existing = wishlists.find((wishlist) => getTourContentId(wishlist) === contentId);
+    const existing = wishlists.find((wishlist) => (
+      getTourContentId(wishlist) === contentId
+      && String(wishlist.folder_id || '') === String(folder.id)
+    ));
     const wishlistId = existing?.id || push(wishlistRoot).key;
     updates[userPath(user.id, `wishlists/${wishlistId}`)] = compactObject({
       user_id: user.id,

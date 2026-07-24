@@ -27,6 +27,77 @@ const DEFAULT_FORM = {
 
 const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
 
+const BROAD_REGION_TOUR_CODES = {
+  서울: '11',
+  서울특별시: '11',
+  부산: '26',
+  부산광역시: '26',
+  대구: '27',
+  대구광역시: '27',
+  인천: '28',
+  인천광역시: '28',
+  광주: '29',
+  광주광역시: '29',
+  대전: '30',
+  대전광역시: '30',
+  울산: '31',
+  울산광역시: '31',
+  경기: '41',
+  경기도: '41',
+  충북: '43',
+  충청북도: '43',
+  충남: '44',
+  충청남도: '44',
+  전북: '52',
+  전라북도: '52',
+  전남: '46',
+  전라남도: '46',
+  경북: '47',
+  경상북도: '47',
+  경남: '48',
+  경상남도: '48',
+  제주: '50',
+  제주도: '50',
+  제주특별자치도: '50',
+  강원: '51',
+  강원도: '51',
+  강원특별자치도: '51',
+  세종: '36110',
+  세종특별자치시: '36110',
+};
+
+const getBroadRegionTourCode = (regionName) => {
+  const normalized = String(regionName || '').trim();
+  return BROAD_REGION_TOUR_CODES[normalized] || '';
+};
+
+const getPlaceAreaKey = (place = {}) => {
+  const address = String(place.addr1 || place.address || '').trim();
+  if (!address) return String(place.title || place.placeName || '').trim();
+  return address.split(/\s+/).slice(0, 2).join(' ');
+};
+
+const diversifyPreferredPlaces = (places = [], limit = 12) => {
+  const buckets = new Map();
+  places.forEach((place) => {
+    const key = getPlaceAreaKey(place) || 'unknown';
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(place);
+  });
+
+  const result = [];
+  const areaLists = Array.from(buckets.values());
+  let index = 0;
+  while (result.length < limit && areaLists.some((list) => index < list.length)) {
+    areaLists.forEach((list) => {
+      if (result.length < limit && list[index]) result.push(list[index]);
+    });
+    index += 1;
+  }
+
+  return result;
+};
+
 const BUDGET_HELP = {
   낮음: '1일 1인 3만 원 이하, 무료/저가 관광지와 가성비 식사 중심',
   보통: '1일 1인 3만~8만 원, 일반 입장료·식사·카페 포함',
@@ -361,13 +432,18 @@ const AiPlanner = () => {
       let preferredPlaces = selectedPlaces;
 
       if (planningMode === PLAN_MODE.CUSTOM) {
+        const broadRegionCode = getBroadRegionTourCode(form.regionName.trim());
         const { items } = await getTravelList({
-          keyword: form.regionName.trim(),
+          keyword: broadRegionCode ? '' : form.regionName.trim(),
+          regions: broadRegionCode ? [broadRegionCode] : [''],
           pageNo: 1,
-          numOfRows: 12,
+          numOfRows: broadRegionCode ? 30 : 18,
           sort: 'default',
         });
-        preferredPlaces = items.map(normalizeTourCandidate).filter((item) => item.contentid);
+        preferredPlaces = diversifyPreferredPlaces(
+          items.map(normalizeTourCandidate).filter((item) => item.contentid),
+          12
+        );
       }
 
       const result = await generateTripPlan({

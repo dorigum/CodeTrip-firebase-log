@@ -10,33 +10,6 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const REGION_MATCHERS = [
-  { key: '서울', aliases: ['서울', '서울특별시'] },
-  { key: '부산', aliases: ['부산', '부산광역시'] },
-  { key: '대구', aliases: ['대구', '대구광역시'] },
-  { key: '인천', aliases: ['인천', '인천광역시'] },
-  { key: '광주', aliases: ['광주', '광주광역시'] },
-  { key: '대전', aliases: ['대전', '대전광역시'] },
-  { key: '울산', aliases: ['울산', '울산광역시'] },
-  { key: '세종', aliases: ['세종', '세종특별자치시'] },
-  { key: '경기', aliases: ['경기', '경기도'] },
-  { key: '강원', aliases: ['강원', '강원도', '강원특별자치도'] },
-  { key: '충북', aliases: ['충북', '충청북도'] },
-  { key: '충남', aliases: ['충남', '충청남도'] },
-  { key: '전북', aliases: ['전북', '전라북도', '전북특별자치도'] },
-  { key: '전남', aliases: ['전남', '전라남도'] },
-  { key: '경북', aliases: ['경북', '경상북도'] },
-  { key: '경남', aliases: ['경남', '경상남도'] },
-  { key: '제주', aliases: ['제주', '제주도', '제주특별자치도'] },
-];
-
-const getRegionKey = (value) => {
-  const text = String(value || '').trim();
-  if (!text) return '';
-
-  return REGION_MATCHERS.find(({ aliases }) => aliases.some((alias) => text.includes(alias)))?.key || '';
-};
-
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuthStore();
@@ -270,22 +243,12 @@ const MyPage = () => {
     } else if (selectedFolderId) {
       items = items.filter(item => String(item.folder_id) === String(selectedFolderId));
     }
-    const latestAiPlanRegion = aiTripPlans
-      .map((plan) => plan.generation_context?.regionName || plan.generationContext?.regionName)
-      .find(Boolean);
-    const expectedRegionKey = getRegionKey(latestAiPlanRegion);
 
     return items.filter((item) => {
       if (item.source === 'ai_generated' || item.aiSuggestedContentId) return false;
-
-      if (item.verified_at && expectedRegionKey) {
-        const itemRegionKey = getRegionKey(item.addr1 || item.address);
-        if (itemRegionKey && itemRegionKey !== expectedRegionKey) return false;
-      }
-
       return true;
     });
-  }, [aiTripPlans, wishlistItems, selectedFolderId]);
+  }, [wishlistItems, selectedFolderId]);
 
   const sortedWishList = useMemo(() => {
     return [...filteredItems].sort((a, b) => {
@@ -1110,12 +1073,13 @@ const MyPage = () => {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               {sortedWishList.map((item) => {
                 const itemId = item.contentid || item.content_id;
+                const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;
                 const itemTitle = item.title || '여행지';
                 const itemImage = item.firstimage || item.image_url || FALLBACK_IMAGE;
 
                 return (
-                  <div key={itemId} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
-                    {movingItemId === itemId && (
+                  <div key={itemKey} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
+                    {movingItemId === itemKey && (
                       <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 flex flex-col">
                         <div className="flex justify-between mb-4 border-b pb-2"><span className="text-[10px] font-bold font-mono text-primary">MOVE_TO_FOLDER</span><button onClick={() => setMovingItemId(null)} className="material-symbols-outlined text-xs">close</button></div>
                         <div className="flex-1 overflow-y-auto space-y-1">
@@ -1136,7 +1100,7 @@ const MyPage = () => {
                       <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
                       <div className="absolute top-3 right-3 flex flex-col gap-2">
                         <button onClick={(e) => handleRemoveWish(e, item)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
-                        <button onClick={() => setMovingItemId(itemId)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
+                        <button onClick={() => setMovingItemId(itemKey)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
                       </div>
                     </div>
                     <div className="p-5">
