@@ -165,7 +165,7 @@ export const toggleWishlist = async (contentId, title, imageUrl, folderId = null
 
   if (existing) {
     await remove(ref(realtimeDb, userPath(user.id, `wishlists/${existing.id}`)));
-    return { wishlisted: false };
+    return { success: true, wishlisted: false, id: existing.id };
   }
 
   const wishlistRef = push(wishlistRoot);
@@ -180,27 +180,21 @@ export const toggleWishlist = async (contentId, title, imageUrl, folderId = null
       created_at: nowIso(),
     }
   });
-  return { wishlisted: true };
+  return { success: true, wishlisted: true, id: wishlistRef.key };
 };
 
-export const removeWishlistItem = async (contentId) => {
+export const removeWishlistItem = async (wishlistItemId) => {
   const user = await getCurrentUser();
-  const targetContentId = String(contentId || '').trim();
-  if (!targetContentId) return { removedCount: 0 };
+  const targetWishlistItemId = String(wishlistItemId || '').trim();
+  if (!targetWishlistItemId) return { removedCount: 0 };
 
-  const wishlists = snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlists'))));
-  const updates = {};
-  wishlists
-    .filter((item) => getTourContentId(item) === targetContentId)
-    .forEach((item) => {
-      updates[userPath(user.id, `wishlists/${item.id}`)] = null;
-    });
+  const targetRef = ref(realtimeDb, userPath(user.id, `wishlists/${targetWishlistItemId}`));
+  const snapshot = await get(targetRef);
+  if (!snapshot.exists()) return { removedCount: 0 };
 
-  if (Object.keys(updates).length) {
-    await update(ref(realtimeDb), updates);
-  }
+  await remove(targetRef);
 
-  return { removedCount: Object.keys(updates).length };
+  return { removedCount: 1 };
 };
 
 export const addWishlistToFolder = async (itemData = {}, folderId = null) => {

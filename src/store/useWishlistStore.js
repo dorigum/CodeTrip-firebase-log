@@ -64,16 +64,20 @@ const useWishlistStore = create((set, get) => ({
     try {
       const result = await wishlistApi.toggleWishlist(contentid, title, firstimage, folder_id, addr1);
       await get().syncWithServer();
-      return { success: true, wishlisted: result.wishlisted };
+      return {
+        success: result?.success === true,
+        wishlisted: result?.wishlisted === true,
+        id: result?.id || null,
+      };
     } catch (err) {
       console.error('Toggle wishlist failed:', err);
       return { success: false, wishlisted: false, error: err };
     }
   },
 
-  removeWishlistItem: async (contentId) => {
+  removeWishlistItem: async (wishlistItemId) => {
     try {
-      const result = await wishlistApi.removeWishlistItem(contentId);
+      const result = await wishlistApi.removeWishlistItem(wishlistItemId);
       await get().syncWithServer();
       return result.removedCount;
     } catch (err) {

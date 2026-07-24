@@ -110,9 +110,14 @@ const MyPage = () => {
   const handleConfirmRemoveWish = async () => {
     if (!wishDeleteTarget || wishDeletePending) return;
 
-    const contentId = wishDeleteTarget.contentid || wishDeleteTarget.contentId || wishDeleteTarget.content_id;
+    const wishlistItemId = wishDeleteTarget.id;
+    if (!wishlistItemId) {
+      showToast('삭제할 위시리스트 항목 정보를 찾지 못했습니다.');
+      return;
+    }
+
     setWishDeletePending(true);
-    const removedCount = await removeWishlistItem(contentId);
+    const removedCount = await removeWishlistItem(wishlistItemId);
     setWishDeletePending(false);
 
     if (removedCount > 0) {

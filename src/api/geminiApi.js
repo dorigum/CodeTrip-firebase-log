@@ -4,6 +4,7 @@ const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models
 const GEMINI_MAX_RETRIES = 2;
 const GEMINI_RETRY_BASE_DELAY_MS = 1000;
 const GEMINI_REQUEST_TIMEOUT_MS = 45000;
+const GEMINI_RESPONSE_BODY_TIMEOUT_MS = 45000;
 
 const sleep = (delayMs) => new Promise((resolve) => {
   setTimeout(resolve, delayMs);
@@ -12,6 +13,31 @@ const sleep = (delayMs) => new Promise((resolve) => {
 const isRetryableStatus = (status) => status === 408 || status === 429 || status >= 500;
 const isRetryableFetchError = (error) => (
   error?.name === 'AbortError' || error instanceof TypeError
+);
+
+const withTimeout = (promise, timeoutMs, errorMessage) => new Promise((resolve, reject) => {
+  const timeoutId = window.setTimeout(() => {
+    reject(new Error(errorMessage));
+  }, timeoutMs);
+
+  promise
+    .then(resolve)
+    .catch(reject)
+    .finally(() => {
+      window.clearTimeout(timeoutId);
+    });
+});
+
+const readResponseJson = (response) => withTimeout(
+  response.json(),
+  GEMINI_RESPONSE_BODY_TIMEOUT_MS,
+  'CodeTrip 여행 코스 응답을 읽는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+);
+
+const readResponseText = (response) => withTimeout(
+  response.text(),
+  GEMINI_RESPONSE_BODY_TIMEOUT_MS,
+  'CodeTrip 여행 코스 오류 응답을 읽는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
 );
 
 const fetchGeminiWithRetry = async (requestOptions) => {
@@ -208,10 +234,14 @@ const createGeminiError = async (response) => {
   let payload = null;
   let rawMessage = '';
   try {
-    payload = await response.json();
+    payload = await readResponseJson(response);
     rawMessage = payload?.error?.message || '';
   } catch {
-    rawMessage = await response.text();
+    try {
+      rawMessage = await readResponseText(response);
+    } catch (error) {
+      rawMessage = error?.message || '';
+    }
   }
 
   console.error('Gemini API error detail:', {
@@ -268,7 +298,7 @@ export const generateTripPlan = async (input) => {
     throw await createGeminiError(response);
   }
 
-  const data = await response.json();
+  const data = await readResponseJson(response);
   const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
   return validateTripPlan(parseGeminiJson(text));
 };
