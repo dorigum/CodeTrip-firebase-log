@@ -422,15 +422,15 @@ const AiPlanner = () => {
       await syncWithServer();
       if (result.savedPlaces > 0) {
         const documentOnlyMessage = result.documentOnlyPlaces > 0
-          ? ` 검증되지 않은 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관했습니다.`
+          ? ` / 미검증 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관`
           : '';
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 관광공사 검증 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.${documentOnlyMessage}`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다.\n관광공사 검증 여행지 ${result.savedPlaces}개 / 체크리스트 ${result.savedChecklist}개 저장${documentOnlyMessage}`,
           'success'
         );
       } else {
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 관광공사에서 확인되지 않은 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관했습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다.\n관광공사 미검증 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관했습니다.`,
           'success'
         );
       }

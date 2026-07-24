@@ -19,11 +19,11 @@ const Toast = ({ visible, text, type = 'error' }) => {
 
   return (
     <div
-      className={`fixed bottom-6 inset-x-0 mx-auto w-fit z-[200] flex items-center gap-2.5 px-5 py-3 rounded-xl shadow-xl text-sm font-mono font-bold transition-all duration-300 ${
+      className={`fixed bottom-6 inset-x-4 mx-auto w-fit max-w-[min(92vw,760px)] z-[200] flex items-start gap-2.5 px-5 py-3 rounded-xl shadow-xl text-sm font-mono font-bold leading-6 whitespace-pre-line transition-all duration-300 ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
       } ${toastStyle.className}`}
     >
-      <span className="material-symbols-outlined text-base">
+      <span className="material-symbols-outlined mt-0.5 text-base">
         {toastStyle.icon}
       </span>
       {text}

@@ -10,6 +10,32 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const REGION_MATCHERS = [
+  { key: '서울', aliases: ['서울', '서울특별시'] },
+  { key: '부산', aliases: ['부산', '부산광역시'] },
+  { key: '대구', aliases: ['대구', '대구광역시'] },
+  { key: '인천', aliases: ['인천', '인천광역시'] },
+  { key: '광주', aliases: ['광주', '광주광역시'] },
+  { key: '대전', aliases: ['대전', '대전광역시'] },
+  { key: '울산', aliases: ['울산', '울산광역시'] },
+  { key: '세종', aliases: ['세종', '세종특별자치시'] },
+  { key: '경기', aliases: ['경기', '경기도'] },
+  { key: '강원', aliases: ['강원', '강원도', '강원특별자치도'] },
+  { key: '충북', aliases: ['충북', '충청북도'] },
+  { key: '충남', aliases: ['충남', '충청남도'] },
+  { key: '전북', aliases: ['전북', '전라북도', '전북특별자치도'] },
+  { key: '전남', aliases: ['전남', '전라남도'] },
+  { key: '경북', aliases: ['경북', '경상북도'] },
+  { key: '경남', aliases: ['경남', '경상남도'] },
+  { key: '제주', aliases: ['제주', '제주도', '제주특별자치도'] },
+];
+
+const getRegionKey = (value) => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  return REGION_MATCHERS.find(({ aliases }) => aliases.some((alias) => text.includes(alias)))?.key || '';
+};
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -228,8 +254,22 @@ const MyPage = () => {
     } else if (selectedFolderId) {
       items = items.filter(item => String(item.folder_id) === String(selectedFolderId));
     }
-    return items;
-  }, [wishlistItems, selectedFolderId]);
+    const latestAiPlanRegion = aiTripPlans
+      .map((plan) => plan.generation_context?.regionName || plan.generationContext?.regionName)
+      .find(Boolean);
+    const expectedRegionKey = getRegionKey(latestAiPlanRegion);
+
+    return items.filter((item) => {
+      if (item.source === 'ai_generated' || item.aiSuggestedContentId) return false;
+
+      if (item.verified_at && expectedRegionKey) {
+        const itemRegionKey = getRegionKey(item.addr1 || item.address);
+        if (itemRegionKey && itemRegionKey !== expectedRegionKey) return false;
+      }
+
+      return true;
+    });
+  }, [aiTripPlans, wishlistItems, selectedFolderId]);
 
   const sortedWishList = useMemo(() => {
     return [...filteredItems].sort((a, b) => {
@@ -484,7 +524,7 @@ const MyPage = () => {
 
       {selectedAiPlan && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <article className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
+          <article className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-outline-variant/20 bg-slate-950 px-5 py-4 text-white">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
@@ -504,8 +544,8 @@ const MyPage = () => {
               </button>
             </div>
 
-            <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_260px]">
-              <div className="custom-scrollbar overflow-y-auto p-6 md:p-8">
+            <div className="custom-scrollbar grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_260px] lg:overflow-hidden">
+              <div className="p-5 md:p-8 lg:overflow-y-auto">
                 <p className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.22em] text-primary"># CodeTrip course document</p>
                 {editingAiPlan ? (
                   <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
@@ -527,8 +567,8 @@ const MyPage = () => {
                       <textarea
                         value={editAiPlanSummary}
                         onChange={(event) => setEditAiPlanSummary(event.target.value)}
-                        rows={4}
-                        className="w-full resize-none rounded-xl border border-outline-variant/30 bg-white px-4 py-3 text-sm leading-7 text-slate-600 outline-none transition focus:border-primary"
+                        rows={5}
+                        className="min-h-36 w-full resize-y rounded-xl border border-outline-variant/30 bg-white px-4 py-3 text-sm leading-7 text-slate-600 outline-none transition focus:border-primary"
                       />
                     </div>
                     <div className="flex justify-end gap-2">
@@ -610,7 +650,7 @@ const MyPage = () => {
                 </div>
               </div>
 
-              <aside className="border-t border-outline-variant/20 bg-slate-50 p-6 lg:border-l lg:border-t-0">
+              <aside className="border-t border-outline-variant/20 bg-slate-50 p-5 md:p-6 lg:border-l lg:border-t-0">
                 <p className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary">Course_Meta</p>
                 <dl className="mt-5 space-y-4 text-sm">
                   <div>

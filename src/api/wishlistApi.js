@@ -24,7 +24,40 @@ const getTourContentId = (item = {}) => {
   return contentId == null ? '' : String(contentId).trim();
 };
 
-const verifyTourPlace = async (item) => {
+const REGION_MATCHERS = [
+  { key: '서울', aliases: ['서울', '서울특별시'] },
+  { key: '부산', aliases: ['부산', '부산광역시'] },
+  { key: '대구', aliases: ['대구', '대구광역시'] },
+  { key: '인천', aliases: ['인천', '인천광역시'] },
+  { key: '광주', aliases: ['광주', '광주광역시'] },
+  { key: '대전', aliases: ['대전', '대전광역시'] },
+  { key: '울산', aliases: ['울산', '울산광역시'] },
+  { key: '세종', aliases: ['세종', '세종특별자치시'] },
+  { key: '경기', aliases: ['경기', '경기도'] },
+  { key: '강원', aliases: ['강원', '강원도', '강원특별자치도'] },
+  { key: '충북', aliases: ['충북', '충청북도'] },
+  { key: '충남', aliases: ['충남', '충청남도'] },
+  { key: '전북', aliases: ['전북', '전라북도', '전북특별자치도'] },
+  { key: '전남', aliases: ['전남', '전라남도'] },
+  { key: '경북', aliases: ['경북', '경상북도'] },
+  { key: '경남', aliases: ['경남', '경상남도'] },
+  { key: '제주', aliases: ['제주', '제주도', '제주특별자치도'] },
+];
+
+const getRegionKey = (value) => {
+  const text = toText(value);
+  if (!text) return '';
+
+  return REGION_MATCHERS.find(({ aliases }) => aliases.some((alias) => text.includes(alias)))?.key || '';
+};
+
+const matchesExpectedRegion = (address, expectedRegion) => {
+  const expectedKey = getRegionKey(expectedRegion);
+  if (!expectedKey) return true;
+  return getRegionKey(address) === expectedKey;
+};
+
+const verifyTourPlace = async (item, expectedRegion = '') => {
   const contentId = getTourContentId(item);
   if (!contentId) return null;
 
@@ -35,14 +68,18 @@ const verifyTourPlace = async (item) => {
 
     if (!detail || verifiedContentId !== contentId || !title) return null;
 
+    const addr1 = toText(
+      [detail.addr1, detail.addr2].map((value) => toText(value)).filter(Boolean).join(' '),
+      '정보 없음'
+    );
+
+    if (!matchesExpectedRegion(addr1, expectedRegion)) return null;
+
     return {
       contentId,
       title,
       imageUrl: toText(detail.firstimage || detail.firstimage2),
-      addr1: toText(
-        [detail.addr1, detail.addr2].map((value) => toText(value)).filter(Boolean).join(' '),
-        '정보 없음'
-      ),
+      addr1,
       contentTypeId: toText(detail.contenttypeid || detail.contentTypeId),
     };
   } catch (error) {
@@ -106,6 +143,11 @@ export const getWishlistDetails = async () => {
       firstimage: item.imageUrl || '',
       folder_id: item.folder_id || null,
       addr1: item.addr1 || '정보 없음',
+      source: item.source || null,
+      tourApiVerified: !!item.tourApiVerified,
+      aiSuggestedContentId: item.aiSuggestedContentId || null,
+      verified_at: item.verified_at || null,
+      created_at: toIso(item.created_at),
     }));
 };
 
@@ -348,6 +390,8 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
   const user = await getCurrentUser();
   const created_at = nowIso();
   const folderName = toText(plan?.saveGuide?.folderName || plan?.title, 'AI 여행 코스');
+  const generationContext = plan?.generationContext || plan?.generation_context || {};
+  const expectedRegion = toText(generationContext.regionName || plan?.regionName);
   const targetFolderId = options.folderId ? String(options.folderId) : null;
   const folderRef = targetFolderId
     ? ref(realtimeDb, userPath(user.id, `wishlistFolders/${targetFolderId}`))
@@ -375,7 +419,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     ).values()
   );
   const verificationResults = await Promise.all(
-    uniqueContentItems.map(async (item) => [getTourContentId(item), await verifyTourPlace(item)])
+    uniqueContentItems.map(async (item) => [getTourContentId(item), await verifyTourPlace(item, expectedRegion)])
   );
   const verifiedPlaceMap = new Map(
     verificationResults.filter(([, verifiedPlace]) => verifiedPlace)
@@ -416,7 +460,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     title: toText(plan?.title, folderName),
     summary: toText(plan?.summary),
     saveGuide: plan?.saveGuide || null,
-    generation_context: plan?.generationContext || plan?.generation_context || null,
+    generation_context: generationContext || null,
     tour_api_verification: {
       verified_places: verifiedPlaces.length,
       document_only_places: documentOnlyPlaces,
