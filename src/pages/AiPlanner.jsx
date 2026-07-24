@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { generateTripPlan } from '../api/geminiApi';
-import { getTravelList } from '../api/travelInfoApi';
+import { getDetailCommon, getTravelList } from '../api/travelInfoApi';
 import { saveAiTripToFolder } from '../api/wishlistApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
@@ -27,6 +27,77 @@ const DEFAULT_FORM = {
 
 const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
 
+const BROAD_REGION_TOUR_CODES = {
+  서울: '11',
+  서울특별시: '11',
+  부산: '26',
+  부산광역시: '26',
+  대구: '27',
+  대구광역시: '27',
+  인천: '28',
+  인천광역시: '28',
+  광주: '29',
+  광주광역시: '29',
+  대전: '30',
+  대전광역시: '30',
+  울산: '31',
+  울산광역시: '31',
+  경기: '41',
+  경기도: '41',
+  충북: '43',
+  충청북도: '43',
+  충남: '44',
+  충청남도: '44',
+  전북: '52',
+  전라북도: '52',
+  전남: '46',
+  전라남도: '46',
+  경북: '47',
+  경상북도: '47',
+  경남: '48',
+  경상남도: '48',
+  제주: '50',
+  제주도: '50',
+  제주특별자치도: '50',
+  강원: '51',
+  강원도: '51',
+  강원특별자치도: '51',
+  세종: '36110',
+  세종특별자치시: '36110',
+};
+
+const getBroadRegionTourCode = (regionName) => {
+  const normalized = String(regionName || '').trim();
+  return BROAD_REGION_TOUR_CODES[normalized] || '';
+};
+
+const getPlaceAreaKey = (place = {}) => {
+  const address = String(place.addr1 || place.address || '').trim();
+  if (!address) return String(place.title || place.placeName || '').trim();
+  return address.split(/\s+/).slice(0, 2).join(' ');
+};
+
+const diversifyPreferredPlaces = (places = [], limit = 12) => {
+  const buckets = new Map();
+  places.forEach((place) => {
+    const key = getPlaceAreaKey(place) || 'unknown';
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(place);
+  });
+
+  const result = [];
+  const areaLists = Array.from(buckets.values());
+  let index = 0;
+  while (result.length < limit && areaLists.some((list) => index < list.length)) {
+    areaLists.forEach((list) => {
+      if (result.length < limit && list[index]) result.push(list[index]);
+    });
+    index += 1;
+  }
+
+  return result;
+};
+
 const BUDGET_HELP = {
   낮음: '1일 1인 3만 원 이하, 무료/저가 관광지와 가성비 식사 중심',
   보통: '1일 1인 3만~8만 원, 일반 입장료·식사·카페 포함',
@@ -44,8 +115,133 @@ const PLAN_MODE = {
   FOLDER: 'folder',
 };
 
+const REGION_ALIASES = {
+  서울특별시: '서울',
+  부산광역시: '부산',
+  대구광역시: '대구',
+  인천광역시: '인천',
+  광주광역시: '광주',
+  대전광역시: '대전',
+  울산광역시: '울산',
+  세종특별자치시: '세종',
+  경기도: '경기',
+  강원특별자치도: '강원',
+  강원도: '강원',
+  충청북도: '충북',
+  충청남도: '충남',
+  전북특별자치도: '전북',
+  전라북도: '전북',
+  전라남도: '전남',
+  경상북도: '경북',
+  경상남도: '경남',
+  제주특별자치도: '제주',
+};
+
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+
+const getRegionFromText = (value) => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  const fullNameMatch = Object.entries(REGION_ALIASES)
+    .find(([fullName]) => text.includes(fullName));
+  if (fullNameMatch) return fullNameMatch[1];
+
+  return [...new Set(Object.values(REGION_ALIASES))]
+    .sort((a, b) => b.length - a.length)
+    .find((region) => text.includes(region)) || '';
+};
+
+const GENERIC_FOLDER_WORDS = new Set([
+  '여행', '투어', '코스', '일정', '폴더', '실내', '문화', '맛집',
+  '힐링', '가족', '친구', '혼자', '당일', '주말', '추천', '고양이',
+]);
+
+const getFolderLocality = (folder, places) => {
+  const folderTokens = String(folder?.name || '').match(/[가-힣A-Za-z0-9]+/g) || [];
+  const placeTitles = places.map((place) => String(place.title || ''));
+  const placeAddresses = places.map((place) => String(place.addr1 || place.address || ''));
+  const requiredMatches = Math.max(1, Math.ceil(places.length / 2));
+
+  return folderTokens.find((token) => {
+    if (token.length < 2 || GENERIC_FOLDER_WORDS.has(token) || getRegionFromText(token)) {
+      return false;
+    }
+
+    const titleMatches = placeTitles.filter((title) => title.includes(token)).length;
+    const addressMatches = placeAddresses.filter((address) => address.includes(token)).length;
+    return titleMatches >= requiredMatches || addressMatches > 0;
+  }) || '';
+};
+
+const isUsableAddress = (value) => {
+  const address = String(value || '').trim();
+  return address && address !== '정보' && address !== '정보 없음';
+};
+
+const getAdministrativeParts = (address) => {
+  const parts = String(address || '').trim().split(/\s+/);
+  return parts.filter((part, index) => (
+    index < 4 && /(?:특별시|광역시|특별자치시|특별자치도|도|시|군|구|읍|면|동)$/.test(part)
+  ));
+};
+
+const getAddressRegion = (places) => {
+  const addressParts = places
+    .map((place) => place.addr1 || place.address || '')
+    .filter(isUsableAddress)
+    .map(getAdministrativeParts)
+    .filter((parts) => parts.length > 0);
+
+  if (addressParts.length === 0) return '';
+
+  const commonParts = addressParts[0].filter((part, index) => (
+    addressParts.every((parts) => parts[index] === part)
+  ));
+  return commonParts.join(' ');
+};
+
+const hydratePlaceAddresses = async (places) => Promise.all(places.map(async (place) => {
+  if (isUsableAddress(place.addr1 || place.address)) return place;
+
+  const contentId = place.contentid || place.contentId;
+  if (!contentId) return place;
+
+  try {
+    const detail = await getDetailCommon(contentId);
+    return detail?.addr1 ? { ...place, addr1: detail.addr1 } : place;
+  } catch {
+    return place;
+  }
+}));
+
+const getFolderRegion = (folder, places) => {
+  const addressRegion = getAddressRegion(places);
+  if (addressRegion) {
+    const folderLocality = getFolderLocality(folder, places);
+    if (folderLocality && !addressRegion.includes(folderLocality)) {
+      return `${addressRegion} ${folderLocality}`;
+    }
+    return addressRegion;
+  }
+
+  const explicitRegion = folder?.region_name || folder?.regionName || folder?.region;
+  if (explicitRegion) return getRegionFromText(explicitRegion) || explicitRegion;
+
+  return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
+};
+
+const getFolderDurationDays = (folder) => {
+  if (!folder?.start_date) return null;
+  if (!folder.end_date) return 1;
+
+  const start = Date.parse(`${folder.start_date}T00:00:00Z`);
+  const end = Date.parse(`${folder.end_date}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+
+  return Math.min(5, Math.floor((end - start) / 86400000) + 1);
+};
 
 const normalizeTourCandidate = (item) => ({
   contentid: item.contentid,
@@ -74,16 +270,29 @@ const FieldLabel = ({ children }) => (
 
 const AiPlanner = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const showToast = useToast();
   const { isLoggedIn } = useAuthStore();
   const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
-  const [form, setForm] = useState(DEFAULT_FORM);
-  const [planningMode, setPlanningMode] = useState(PLAN_MODE.CUSTOM);
-  const [selectedFolderId, setSelectedFolderId] = useState('');
+  const regeneratePlan = location.state?.regeneratePlan || null;
+  const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
+  const regenerateFolderId = location.state?.folderId || regenerationContext.sourceFolderId || '';
+  const [form, setForm] = useState(() => ({
+    ...DEFAULT_FORM,
+    ...regenerationContext,
+  }));
+  const [planningMode, setPlanningMode] = useState(
+    regenerateFolderId ? PLAN_MODE.FOLDER : (regenerationContext.planningMode || PLAN_MODE.CUSTOM)
+  );
+  const [selectedFolderId, setSelectedFolderId] = useState(
+    regenerateFolderId ? String(regenerateFolderId) : ''
+  );
   const [selectedContentIds, setSelectedContentIds] = useState(new Set());
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const folderSelectionRequestRef = useRef(0);
+  const regenerationHydratedRef = useRef(false);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -104,7 +313,10 @@ const AiPlanner = () => {
     [wishlistItems, selectedContentIds]
   );
 
-  const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const updateForm = useCallback(
+    (key, value) => setForm((prev) => ({ ...prev, [key]: value })),
+    []
+  );
 
   const handleCompanionChange = (value) => {
     setForm((prev) => ({
@@ -114,7 +326,7 @@ const AiPlanner = () => {
     }));
 
     if (value === '혼자' && Number(form.peopleCount) > 1) {
-      showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.');
+      showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.', 'info');
     }
   };
 
@@ -122,7 +334,7 @@ const AiPlanner = () => {
     const nextCount = Math.max(1, Number(value) || 1);
     if (form.companionType === '혼자' && nextCount > 1) {
       updateForm('peopleCount', 1);
-      showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.');
+      showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.', 'info');
       return;
     }
 
@@ -134,15 +346,62 @@ const AiPlanner = () => {
     setPlan(null);
     setSelectedContentIds(new Set());
     if (mode === PLAN_MODE.CUSTOM) {
+      folderSelectionRequestRef.current += 1;
       setSelectedFolderId('');
     }
   };
 
-  const handleFolderChange = (folderId) => {
+  const handleFolderChange = useCallback(async (folderId) => {
+    const requestId = ++folderSelectionRequestRef.current;
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
+    const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
+    const folderDurationDays = getFolderDurationDays(selectedFolder);
+
     setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
-  };
+    setForm((prev) => ({
+      ...prev,
+      ...(folderDurationDays ? { durationDays: folderDurationDays } : {}),
+    }));
+
+    const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
+    if (requestId !== folderSelectionRequestRef.current) return;
+
+    const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
+    if (folderRegion) {
+      updateForm('regionName', folderRegion);
+    }
+  }, [folders, updateForm, wishlistItems]);
+
+  useEffect(() => {
+    if (!regeneratePlan || regenerationHydratedRef.current) return;
+
+    if (!regenerateFolderId) {
+      regenerationHydratedRef.current = true;
+      navigate('/ai-planner', { replace: true, state: null });
+      showToast('기존 코스의 생성 조건을 불러왔습니다. 조건을 확인한 뒤 다시 생성해주세요.', 'info');
+      return;
+    }
+
+    if (wishlistItems.length === 0 || folders.length === 0) return;
+    const sourceFolder = folders.find((folder) => String(folder.id) === String(regenerateFolderId));
+    if (!sourceFolder) return;
+
+    regenerationHydratedRef.current = true;
+    queueMicrotask(() => {
+      handleFolderChange(String(regenerateFolderId));
+    });
+    navigate('/ai-planner', { replace: true, state: null });
+    showToast('기존 코스와 위시리스트 폴더 조건을 불러왔습니다.', 'info');
+  }, [
+    folders,
+    handleFolderChange,
+    navigate,
+    regenerateFolderId,
+    regeneratePlan,
+    showToast,
+    wishlistItems,
+  ]);
 
   const handleGenerate = async () => {
     if (!form.regionName.trim()) {
@@ -173,13 +432,18 @@ const AiPlanner = () => {
       let preferredPlaces = selectedPlaces;
 
       if (planningMode === PLAN_MODE.CUSTOM) {
+        const broadRegionCode = getBroadRegionTourCode(form.regionName.trim());
         const { items } = await getTravelList({
-          keyword: form.regionName.trim(),
+          keyword: broadRegionCode ? '' : form.regionName.trim(),
+          regions: broadRegionCode ? [broadRegionCode] : [''],
           pageNo: 1,
-          numOfRows: 12,
+          numOfRows: broadRegionCode ? 30 : 18,
           sort: 'default',
         });
-        preferredPlaces = items.map(normalizeTourCandidate).filter((item) => item.contentid);
+        preferredPlaces = diversifyPreferredPlaces(
+          items.map(normalizeTourCandidate).filter((item) => item.contentid),
+          12
+        );
       }
 
       const result = await generateTripPlan({
@@ -192,7 +456,24 @@ const AiPlanner = () => {
         totalBudgetLabel: getTotalBudgetLabel(form.budgetLevel, form.peopleCount),
         preferredPlaces,
       });
-      setPlan(result);
+      setPlan({
+        ...result,
+        generationContext: {
+          planningMode,
+          sourceFolderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
+          regionName: form.regionName.trim(),
+          durationDays: Number(form.durationDays) || 1,
+          companionType: form.companionType,
+          peopleCount: Number(form.peopleCount) || 1,
+          budgetLevel: form.budgetLevel,
+          pace: form.pace,
+          weatherKeyword: form.weatherKeyword,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          travelStyle: form.travelStyle,
+          avoidKeywords: form.avoidKeywords,
+        },
+      });
       showToast(
         planningMode === PLAN_MODE.CUSTOM && preferredPlaces.length > 0
           ? `관광공사 등록 장소 ${preferredPlaces.length}개를 우선 반영해 CodeTrip 여행 코스를 생성했습니다.`
@@ -216,13 +497,16 @@ const AiPlanner = () => {
       });
       await syncWithServer();
       if (result.savedPlaces > 0) {
+        const documentOnlyMessage = result.documentOnlyPlaces > 0
+          ? ` / 미검증 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관`
+          : '';
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 여행지 ${result.savedPlaces}개와 체크리스트 ${result.savedChecklist}개가 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다.\n관광공사 검증 여행지 ${result.savedPlaces}개 / 체크리스트 ${result.savedChecklist}개 저장${documentOnlyMessage}`,
           'success'
         );
       } else {
         showToast(
-          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다. 추천 장소는 TourAPI ID가 없어 코스 데이터와 체크리스트로 저장됐습니다.`,
+          `CodeTrip 여행 코스를 "${result.folder.name}" 폴더로 저장했습니다.\n관광공사 미검증 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관했습니다.`,
           'success'
         );
       }
@@ -558,7 +842,13 @@ const AiPlanner = () => {
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="font-black text-slate-900">{item.placeName}</h4>
                               <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">{item.category}</span>
-                              {item.contentId && <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">TourAPI</span>}
+                              {item.tourApiVerified ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">TourAPI verified</span>
+                              ) : item.contentId ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-bold">TourAPI 후보</span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">AI 추천</span>
+                              )}
                             </div>
                             {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}
                             <p className="text-sm text-slate-600 mt-3 leading-6">{item.reason}</p>

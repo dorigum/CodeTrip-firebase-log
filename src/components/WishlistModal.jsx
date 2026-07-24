@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import useWishlistStore from '../store/useWishlistStore';
+import useToast from '../hooks/useToast';
 
 const WishlistModal = ({ isOpen, onClose, travelData }) => {
   const { folders, syncWithServer, createFolder, toggleWishlist } = useWishlistStore();
+  const showToast = useToast();
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -20,10 +22,15 @@ const WishlistModal = ({ isOpen, onClose, travelData }) => {
       contentid: travelData.contentid || travelData.content_id || travelData.contentId,
       title: travelData.title || travelData.facltNm,
       firstimage: travelData.firstimage || travelData.image_url || travelData.firstImage,
+      addr1: travelData.addr1 || travelData.address || travelData.addr,
       folder_id: folderId
     };
-    await toggleWishlist(travelInfo);
-    alert('위시리스트에 추가되었습니다!');
+    const result = await toggleWishlist(travelInfo);
+    if (!result.success || !result.wishlisted) {
+      showToast('위시리스트에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    showToast('위시리스트에 추가되었습니다.', 'success');
     onClose();
   };
 

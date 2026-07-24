@@ -1,6 +1,79 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.5-flash';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MAX_RETRIES = 2;
+const GEMINI_RETRY_BASE_DELAY_MS = 1000;
+const GEMINI_REQUEST_TIMEOUT_MS = 45000;
+const GEMINI_RESPONSE_BODY_TIMEOUT_MS = 45000;
+
+const sleep = (delayMs) => new Promise((resolve) => {
+  setTimeout(resolve, delayMs);
+});
+
+const isRetryableStatus = (status) => status === 408 || status === 429 || status >= 500;
+const isRetryableFetchError = (error) => (
+  error?.name === 'AbortError' || error instanceof TypeError
+);
+
+const withTimeout = (promise, timeoutMs, errorMessage) => new Promise((resolve, reject) => {
+  const timeoutId = window.setTimeout(() => {
+    reject(new Error(errorMessage));
+  }, timeoutMs);
+
+  promise
+    .then(resolve)
+    .catch(reject)
+    .finally(() => {
+      window.clearTimeout(timeoutId);
+    });
+});
+
+const readResponseJson = (response) => withTimeout(
+  response.json(),
+  GEMINI_RESPONSE_BODY_TIMEOUT_MS,
+  'CodeTrip 여행 코스 응답을 읽는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+);
+
+const readResponseText = (response) => withTimeout(
+  response.text(),
+  GEMINI_RESPONSE_BODY_TIMEOUT_MS,
+  'CodeTrip 여행 코스 오류 응답을 읽는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+);
+
+const fetchGeminiWithRetry = async (requestOptions) => {
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, GEMINI_REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(GEMINI_ENDPOINT, {
+        ...requestOptions,
+        signal: controller.signal,
+      });
+
+      if (response.ok || !isRetryableStatus(response.status) || attempt === GEMINI_MAX_RETRIES) {
+        return response;
+      }
+    } catch (error) {
+      if (!isRetryableFetchError(error) || attempt === GEMINI_MAX_RETRIES) {
+        if (error?.name === 'AbortError') {
+          throw new Error('CodeTrip 여행 코스 생성 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.');
+        }
+        throw new Error('CodeTrip 여행 코스 생성 서버에 연결하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.');
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+
+    const exponentialDelay = GEMINI_RETRY_BASE_DELAY_MS * (2 ** attempt);
+    const jitter = Math.floor(Math.random() * 250);
+    await sleep(exponentialDelay + jitter);
+  }
+
+  throw new Error('Gemini API 재시도 처리 중 예상하지 못한 오류가 발생했습니다.');
+};
 
 const SYSTEM_PROMPT = `당신은 한국 여행 코스를 설계하는 여행 큐레이션 어시스턴트입니다.
 사용자의 지역, 일정, 취향, 날씨, 동행 유형, 선택한 여행지 후보를 바탕으로 현실적인 여행 코스를 생성합니다.
@@ -25,8 +98,26 @@ const normalizePlace = (place) => ({
   contenttypeid: place.contenttypeid || place.contentTypeId || null,
 });
 
+const getRegionDiversityGuide = (regionName = '') => {
+  const region = String(regionName || '').trim();
+  if (['서울', '서울특별시'].includes(region)) {
+    return [
+      '서울처럼 넓은 시 단위 지역이 입력되면 특정 구에 고정하지 마세요.',
+      '성북구/성북동만 반복하지 말고, 사용자의 취향과 날씨에 맞춰 종로구, 중구, 마포구, 용산구, 성동구, 서대문구, 송파구, 강남구, 영등포구 등 여러 구를 후보로 고려하세요.',
+      '단, 하루 일정의 이동 부담이 커지지 않도록 실제 코스는 인접한 1~3개 권역 안에서 자연스럽게 묶어주세요.',
+      'title, summary, day theme에는 특정 구 이름을 단정적으로 반복하기보다 서울의 코스 성격이 드러나게 작성하세요.',
+    ].join('\n');
+  }
+
+  return [
+    '시/도 단위처럼 넓은 지역이 입력되면 특정 동네 하나에만 고정하지 말고, 후보 장소의 주소를 참고해 여러 시군구 또는 권역을 함께 고려하세요.',
+    '다만 실제 하루 코스는 이동 부담이 과하지 않도록 가까운 장소끼리 묶어주세요.',
+  ].join('\n');
+};
+
 export const buildTripPrompt = (input) => {
   const preferredPlaces = (input.preferredPlaces || []).map(normalizePlace).slice(0, 12);
+  const regionDiversityGuide = getRegionDiversityGuide(input.regionName);
 
   return `${SYSTEM_PROMPT}
 
@@ -51,6 +142,9 @@ export const buildTripPrompt = (input) => {
 
 [사용자가 선택한 여행지 후보]
 ${JSON.stringify(preferredPlaces, null, 2)}
+
+[지역 분산 및 권역 선택 규칙]
+${regionDiversityGuide}
 
 [응답 규칙]
 1. 반드시 JSON만 반환하세요.
@@ -140,10 +234,14 @@ const createGeminiError = async (response) => {
   let payload = null;
   let rawMessage = '';
   try {
-    payload = await response.json();
+    payload = await readResponseJson(response);
     rawMessage = payload?.error?.message || '';
   } catch {
-    rawMessage = await response.text();
+    try {
+      rawMessage = await readResponseText(response);
+    } catch (error) {
+      rawMessage = error?.message || '';
+    }
   }
 
   console.error('Gemini API error detail:', {
@@ -177,7 +275,7 @@ export const generateTripPlan = async (input) => {
     throw new Error('VITE_GEMINI_API_KEY가 설정되어 있지 않습니다.');
   }
 
-  const response = await fetch(GEMINI_ENDPOINT, {
+  const response = await fetchGeminiWithRetry({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -191,7 +289,6 @@ export const generateTripPlan = async (input) => {
         },
       ],
       generationConfig: {
-        temperature: 0.7,
         responseMimeType: 'application/json',
       },
     }),
@@ -201,7 +298,7 @@ export const generateTripPlan = async (input) => {
     throw await createGeminiError(response);
   }
 
-  const data = await response.json();
+  const data = await readResponseJson(response);
   const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
   return validateTripPlan(parseGeminiJson(text));
 };

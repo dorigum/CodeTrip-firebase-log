@@ -8,8 +8,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('remembered_email'));
   const [error, setError] = useState('');
-  const [, setIsLoading] = useState(false);
-  const { login } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, prepareLogin, cancelLogin } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,6 +18,7 @@ const Login = () => {
     
     try {
       setIsLoading(true);
+      prepareLogin();
       const data = await authApi.login({ email: email.trim(), password });
       
       // Handle Remember Me
@@ -33,6 +34,7 @@ const Login = () => {
       
       navigate('/');
     } catch (err) {
+      cancelLogin();
       setError(err.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
@@ -105,10 +107,13 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full py-4 bg-primary text-white font-headline font-bold rounded-2xl shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4"
+            disabled={isLoading}
+            className="w-full py-4 bg-primary text-white font-headline font-bold rounded-2xl shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:cursor-wait disabled:opacity-70 disabled:active:scale-100"
           >
-            <span className="material-symbols-outlined text-xl">login</span>
-            Sign In
+            <span className={`material-symbols-outlined text-xl ${isLoading ? 'animate-spin' : ''}`}>
+              {isLoading ? 'progress_activity' : 'login'}
+            </span>
+            {isLoading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 

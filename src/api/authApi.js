@@ -33,6 +33,10 @@ const authErrorMessage = (error, fallback) => {
     return 'Firebase API key 제한 설정으로 로그인이 차단되었습니다. Google Cloud에서 Firebase용 Browser key의 Identity Toolkit API 허용 여부를 확인해주세요.';
   }
 
+  if (error?.code === 'PERMISSION_DENIED' || /permission denied/i.test(error?.message || '')) {
+    return '로그인 인증 정보를 확인하지 못했습니다. 페이지를 새로고침한 후 다시 로그인해주세요.';
+  }
+
   switch (error?.code) {
     case 'auth/email-already-in-use':
       return '이미 가입된 이메일입니다. 로그인하거나 다른 이메일을 사용해 주세요.';

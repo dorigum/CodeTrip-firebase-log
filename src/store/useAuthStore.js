@@ -5,6 +5,7 @@ import { firebaseAuth, realtimeDb } from '../firebase';
 
 const AUTH_EXPIRES_AT_KEY = 'trip_auth_expires_at';
 const SESSION_DURATION_MS = 2 * 60 * 60 * 1000;
+const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
 
 const getStoredUser = () => {
   try {
@@ -27,9 +28,12 @@ const persistUser = (userData) => {
   return userData;
 };
 
-const storedUser = getStoredUser();
 let unsubscribeAuth = null;
 let sessionTimer = null;
+let sessionCheckInterval = null;
+let sessionVisibilityHandler = null;
+let sessionFocusHandler = null;
+let loginInProgress = false;
 
 const setSessionExpiry = () => {
   const expiresAt = Date.now() + SESSION_DURATION_MS;
@@ -37,30 +41,69 @@ const setSessionExpiry = () => {
   return expiresAt;
 };
 
-const clearSession = () => {
+const isSessionExpired = () => {
+  const expiresAt = Number(localStorage.getItem(AUTH_EXPIRES_AT_KEY) || 0);
+  return !expiresAt || Date.now() >= expiresAt;
+};
+
+const stopSessionMonitoring = () => {
   if (sessionTimer) {
     window.clearTimeout(sessionTimer);
     sessionTimer = null;
   }
+  if (sessionCheckInterval) {
+    window.clearInterval(sessionCheckInterval);
+    sessionCheckInterval = null;
+  }
+  if (sessionVisibilityHandler) {
+    document.removeEventListener('visibilitychange', sessionVisibilityHandler);
+    sessionVisibilityHandler = null;
+  }
+  if (sessionFocusHandler) {
+    window.removeEventListener('focus', sessionFocusHandler);
+    sessionFocusHandler = null;
+  }
+};
+
+const clearSession = () => {
+  stopSessionMonitoring();
   localStorage.removeItem('trip_user');
   localStorage.removeItem('trip_token');
   localStorage.removeItem(AUTH_EXPIRES_AT_KEY);
 };
 
-const isSessionExpired = () => {
-  const expiresAt = Number(localStorage.getItem(AUTH_EXPIRES_AT_KEY) || 0);
-  return !expiresAt || Date.now() > expiresAt;
+const expireSession = (set) => {
+  if (!isSessionExpired()) return false;
+  clearSession();
+  firebaseAuth.signOut().catch(() => {});
+  set({ user: null, isLoggedIn: false, isLoading: false });
+  return true;
+};
+
+const startSessionMonitoring = (set) => {
+  stopSessionMonitoring();
+
+  const checkExpiry = () => expireSession(set);
+  sessionCheckInterval = window.setInterval(checkExpiry, SESSION_CHECK_INTERVAL_MS);
+  sessionVisibilityHandler = () => {
+    if (document.visibilityState === 'visible') checkExpiry();
+  };
+  sessionFocusHandler = checkExpiry;
+
+  document.addEventListener('visibilitychange', sessionVisibilityHandler);
+  window.addEventListener('focus', sessionFocusHandler);
 };
 
 const scheduleSessionExpiry = (set, expiresAt = Number(localStorage.getItem(AUTH_EXPIRES_AT_KEY) || 0)) => {
-  if (sessionTimer) window.clearTimeout(sessionTimer);
+  startSessionMonitoring(set);
   const delay = Math.max(0, expiresAt - Date.now());
   sessionTimer = window.setTimeout(() => {
-    clearSession();
-    firebaseAuth.signOut().catch(() => {});
-    set({ user: null, isLoggedIn: false, isLoading: false });
+    expireSession(set);
   }, delay);
 };
+
+const storedUserCandidate = getStoredUser();
+if (storedUserCandidate && isSessionExpired()) clearSession();
 
 const buildAuthUser = async (authUser) => {
   const profileSnap = await get(ref(realtimeDb, `users/${authUser.uid}`));
@@ -74,15 +117,19 @@ const buildAuthUser = async (authUser) => {
 };
 
 const useAuthStore = create((set) => ({
-  user: storedUser,
-  isLoggedIn: !!storedUser,
+  user: null,
+  isLoggedIn: false,
   isLoading: true,
 
   initAuthListener: () => {
     if (unsubscribeAuth) return unsubscribeAuth;
 
-    unsubscribeAuth = onAuthStateChanged(firebaseAuth, async (authUser) => {
+    const stopAuthListener = onAuthStateChanged(firebaseAuth, async (authUser) => {
       if (!authUser) {
+        if (loginInProgress) {
+          set({ user: null, isLoggedIn: false, isLoading: true });
+          return;
+        }
         clearSession();
         set({ user: null, isLoggedIn: false, isLoading: false });
         return;
@@ -111,19 +158,40 @@ const useAuthStore = create((set) => ({
       }
     });
 
+    unsubscribeAuth = () => {
+      stopAuthListener();
+      stopSessionMonitoring();
+      unsubscribeAuth = null;
+    };
+
     return unsubscribeAuth;
   },
 
+  prepareLogin: () => {
+    loginInProgress = true;
+    setSessionExpiry();
+    set({ user: null, isLoggedIn: false, isLoading: true });
+  },
+
+  cancelLogin: () => {
+    loginInProgress = false;
+    firebaseAuth.signOut().catch(() => {});
+    clearSession();
+    set({ user: null, isLoggedIn: false, isLoading: false });
+  },
+
   login: (userData) => {
+    loginInProgress = false;
     const user = persistUser(userData);
     if (user) scheduleSessionExpiry(set, setSessionExpiry());
-    set({ user, isLoggedIn: !!user });
+    set({ user, isLoggedIn: !!user, isLoading: false });
   },
 
   logout: () => {
+    loginInProgress = false;
     firebaseAuth.signOut().catch(() => {});
     clearSession();
-    set({ user: null, isLoggedIn: false });
+    set({ user: null, isLoggedIn: false, isLoading: false });
   },
 
   setUser: (userData) => {

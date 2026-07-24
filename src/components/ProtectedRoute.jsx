@@ -8,8 +8,6 @@ const ProtectedRoute = ({ children, title = '회원 전용 페이지', descripti
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (isLoggedIn) return children;
-
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-outline">
@@ -18,6 +16,8 @@ const ProtectedRoute = ({ children, title = '회원 전용 페이지', descripti
       </div>
     );
   }
+
+  if (isLoggedIn) return children;
 
   return (
     <>

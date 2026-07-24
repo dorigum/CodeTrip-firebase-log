@@ -5,12 +5,14 @@ const normalizeWishlistItem = (itemData = {}) => {
   const contentid = itemData.contentid ?? itemData.contentId ?? itemData.content_id;
   const title = itemData.title ?? itemData.facltNm ?? '여행지';
   const firstimage = itemData.firstimage ?? itemData.imageUrl ?? itemData.image_url ?? itemData.firstImage ?? '';
+  const addr1 = itemData.addr1 ?? itemData.address ?? itemData.addr ?? '';
 
   return {
     ...itemData,
     contentid: contentid != null ? String(contentid) : '',
     title,
     firstimage,
+    addr1,
     folder_id: itemData.folder_id ?? null,
   };
 };
@@ -54,16 +56,33 @@ const useWishlistStore = create((set, get) => ({
   },
 
   toggleWishlist: async (itemData) => {
-    const { contentid, title, firstimage, folder_id } = normalizeWishlistItem(itemData);
-    if (!contentid) return false;
+    const { contentid, title, firstimage, addr1, folder_id } = normalizeWishlistItem(itemData);
+    if (!contentid) {
+      return { success: false, wishlisted: false, error: 'missing_content_id' };
+    }
 
     try {
-      const result = await wishlistApi.toggleWishlist(contentid, title, firstimage, folder_id);
+      const result = await wishlistApi.toggleWishlist(contentid, title, firstimage, folder_id, addr1);
       await get().syncWithServer();
-      return result.wishlisted;
+      return {
+        success: result?.success === true,
+        wishlisted: result?.wishlisted === true,
+        id: result?.id || null,
+      };
     } catch (err) {
       console.error('Toggle wishlist failed:', err);
-      return false;
+      return { success: false, wishlisted: false, error: err };
+    }
+  },
+
+  removeWishlistItem: async (wishlistItemId) => {
+    try {
+      const result = await wishlistApi.removeWishlistItem(wishlistItemId);
+      await get().syncWithServer();
+      return result.removedCount;
+    } catch (err) {
+      console.error('Remove wishlist failed:', err);
+      return 0;
     }
   },
 
@@ -122,6 +141,34 @@ const useWishlistStore = create((set, get) => ({
     } catch (err) {
       console.error('Fetch AI trip plans failed:', err);
       return [];
+    }
+  },
+
+  updateAiTripPlan: async (planId, values) => {
+    try {
+      return await wishlistApi.updateAiTripPlan(planId, values);
+    } catch (err) {
+      console.error('Update AI trip plan failed:', err);
+      return null;
+    }
+  },
+
+  deleteAiTripPlan: async (planId) => {
+    try {
+      await wishlistApi.deleteAiTripPlan(planId);
+      return true;
+    } catch (err) {
+      console.error('Delete AI trip plan failed:', err);
+      return false;
+    }
+  },
+
+  migrateLegacyAiCourseNotes: async (folderId, noteIds) => {
+    try {
+      return await wishlistApi.migrateLegacyAiCourseNotes(folderId, noteIds);
+    } catch (err) {
+      console.error('Migrate legacy AI course notes failed:', err);
+      return null;
     }
   },
 

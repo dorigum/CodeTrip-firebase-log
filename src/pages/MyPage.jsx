@@ -4,17 +4,21 @@ import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
+import ConfirmModal from '../components/ConfirmModal';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
-
+const DATE_MIN = '1000-01-01';
+const DATE_MAX = '9999-12-31';
+const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuthStore();
   
   const {
     wishlistItems, folders, loading, syncError,
-    initWishlist, toggleWishlist, createFolder, updateFolder, deleteFolder, moveItem,
-    fetchNotes, fetchAiTripPlans, addNote, toggleNote: toggleNoteAction, deleteNote: deleteNoteAction
+    initWishlist, removeWishlistItem, createFolder, updateFolder, deleteFolder, moveItem,
+    fetchNotes, fetchAiTripPlans, migrateLegacyAiCourseNotes, updateAiTripPlan, deleteAiTripPlan,
+    addNote, toggleNote: toggleNoteAction, deleteNote: deleteNoteAction
   } = useWishlistStore();
 
   const showToast = useToast();
@@ -33,19 +37,35 @@ const MyPage = () => {
   const [editFolderStart, setEditFolderStart] = useState('');
   const [editFolderEnd, setEditFolderEnd] = useState('');
   const [movingItemId, setMovingItemId] = useState(null);
+  const [selectedAiPlan, setSelectedAiPlan] = useState(null);
+  const [editingAiPlan, setEditingAiPlan] = useState(false);
+  const [editAiPlanTitle, setEditAiPlanTitle] = useState('');
+  const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
+  const [aiPlanPending, setAiPlanPending] = useState(false);
+  const [planDeleteTarget, setPlanDeleteTarget] = useState(null);
+  const [wishDeleteTarget, setWishDeleteTarget] = useState(null);
+  const [wishDeletePending, setWishDeletePending] = useState(false);
+  const [legacyMigrationOpen, setLegacyMigrationOpen] = useState(false);
+  const [legacyMigrationPending, setLegacyMigrationPending] = useState(false);
 
   // --- Note(Memo/Checklist) States ---
   const [notes, setNotes] = useState([]);
   const [aiTripPlans, setAiTripPlans] = useState([]);
   const [noteInput, setNoteInput] = useState('');
   const [noteType, setNoteType] = useState('CHECKLIST'); // 'CHECKLIST' or 'MEMO'
+  const legacyAiCourseNotes = useMemo(
+    () => notes.filter((note) => (
+      (note.type || 'CHECKLIST') === 'MEMO'
+      && String(note.content || '').trim().startsWith('[AI 여행 코스]')
+    )),
+    [notes]
+  );
   const visibleNotes = useMemo(
-    () => notes.filter((note) => {
-      const isLegacyAiCourseMemo = (note.type || 'CHECKLIST') === 'MEMO'
-        && String(note.content || '').trim().startsWith('[AI 여행 코스]');
-      return (note.type || 'CHECKLIST') === noteType && !isLegacyAiCourseMemo;
-    }),
-    [notes, noteType]
+    () => notes.filter((note) => (
+      (note.type || 'CHECKLIST') === noteType
+      && !legacyAiCourseNotes.some((legacyNote) => legacyNote.id === note.id)
+    )),
+    [notes, noteType, legacyAiCourseNotes]
   );
 
   // Authentication & Initial Data Load
@@ -81,11 +101,30 @@ const MyPage = () => {
     };
   }, [selectedFolderId, fetchNotes, fetchAiTripPlans]);
 
-  const handleRemoveWish = async (e, contentId) => {
+  const handleRemoveWish = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
-    if (window.confirm('위시리스트에서 삭제하시겠습니까?')) {
-      await toggleWishlist({ contentid: contentId });
+    setWishDeleteTarget(item);
+  };
+
+  const handleConfirmRemoveWish = async () => {
+    if (!wishDeleteTarget || wishDeletePending) return;
+
+    const wishlistItemId = wishDeleteTarget.id;
+    if (!wishlistItemId) {
+      showToast('삭제할 위시리스트 항목 정보를 찾지 못했습니다.');
+      return;
+    }
+
+    setWishDeletePending(true);
+    const removedCount = await removeWishlistItem(wishlistItemId);
+    setWishDeletePending(false);
+
+    if (removedCount > 0) {
+      setWishDeleteTarget(null);
+      showToast('위시리스트에서 삭제했습니다.', 'success');
+    } else {
+      showToast('삭제할 위시리스트 항목을 찾지 못했습니다.');
     }
   };
 
@@ -110,6 +149,35 @@ const MyPage = () => {
     setNotes(prev => prev.filter(n => n.id !== noteId));
   };
 
+  const handleMigrateLegacyAiCourses = async () => {
+    if (!selectedFolderId || legacyMigrationPending || legacyAiCourseNotes.length === 0) return;
+
+    setLegacyMigrationPending(true);
+    const result = await migrateLegacyAiCourseNotes(
+      selectedFolderId,
+      legacyAiCourseNotes.map((note) => note.id)
+    );
+
+    if (!result) {
+      showToast('기존 AI 코스 메모를 변환하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      setLegacyMigrationPending(false);
+      return;
+    }
+
+    const [noteData, planData] = await Promise.all([
+      fetchNotes(selectedFolderId),
+      fetchAiTripPlans(selectedFolderId),
+    ]);
+    setNotes(noteData);
+    setAiTripPlans(planData);
+    setLegacyMigrationPending(false);
+    setLegacyMigrationOpen(false);
+    showToast(
+      `기존 AI 코스 메모 ${result.migratedCount}개를 코스 문서로 변환했습니다.`,
+      'success'
+    );
+  };
+
   const openEditModal = (folder) => {
     setEditingFolder(folder);
     setEditFolderName(folder.name);
@@ -125,9 +193,37 @@ const MyPage = () => {
     setEditFolderEnd('');
   };
 
+  const isValidFolderDate = (value) => !value || (
+    FOUR_DIGIT_DATE_PATTERN.test(value)
+    && value >= DATE_MIN
+    && value <= DATE_MAX
+  );
+
+  const updateFolderDate = (value, setter) => {
+    if (!isValidFolderDate(value)) {
+      showToast('여행 일정의 연도는 4자리로 입력해주세요.');
+      return false;
+    }
+    setter(value);
+    return true;
+  };
+
+  const validateFolderSchedule = (startDate, endDate) => {
+    if (!isValidFolderDate(startDate) || !isValidFolderDate(endDate)) {
+      showToast('여행 일정의 연도는 4자리로 입력해주세요.');
+      return false;
+    }
+    if (startDate && endDate && endDate < startDate) {
+      showToast('종료일은 시작일보다 빠를 수 없습니다.');
+      return false;
+    }
+    return true;
+  };
+
   const handleUpdateFolder = async (e) => {
     e.preventDefault();
     if (!editFolderName.trim()) return;
+    if (!validateFolderSchedule(editFolderStart, editFolderEnd)) return;
     // 날짜 문자열을 그대로 서버에 전송 (타임존 변환 방지)
     await updateFolder(editingFolder.id, editFolderName.trim(), editFolderStart || null, editFolderEnd || null);
     closeEditModal();
@@ -136,6 +232,7 @@ const MyPage = () => {
   const handleCreateFolder = async (e) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
+    if (!validateFolderSchedule(newFolderStart, newFolderEnd)) return;
     // 날짜 문자열을 그대로 서버에 전송 (타임존 변환 방지)
     await createFolder(newFolderName.trim(), newFolderStart || null, newFolderEnd || null);
     setNewFolderName('');
@@ -151,7 +248,11 @@ const MyPage = () => {
     } else if (selectedFolderId) {
       items = items.filter(item => String(item.folder_id) === String(selectedFolderId));
     }
-    return items;
+
+    return items.filter((item) => {
+      if (item.source === 'ai_generated' || item.aiSuggestedContentId) return false;
+      return true;
+    });
   }, [wishlistItems, selectedFolderId]);
 
   const sortedWishList = useMemo(() => {
@@ -184,6 +285,14 @@ const MyPage = () => {
     }
     const d = new Date(dateStr);
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return 'N/A';
+
+    return `${formatDate(dateStr)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
   };
 
   const DAYS_KO = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -233,10 +342,106 @@ const MyPage = () => {
   const getPlanItems = (day) => (
     Array.isArray(day?.items) ? day.items : []
   ).filter(Boolean);
+  const getPlanDays = (plan) => (
+    Array.isArray(plan?.days) ? plan.days : []
+  ).filter(Boolean);
 
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
+  const getPlanSourceBadge = (item) => {
+    if (item.tourApiVerified) {
+      return { label: 'TourAPI verified', className: 'bg-primary/10 text-primary' };
+    }
+    if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) {
+      return { label: 'AI 추천', className: 'bg-slate-100 text-slate-500' };
+    }
+    return { label: 'TourAPI legacy', className: 'bg-amber-100 text-amber-700' };
+  };
+  const getPlanItemCount = (plan) => getPlanDays(plan)
+    .reduce((total, day) => total + getPlanItems(day).length, 0);
+
+  const openAiPlan = (plan) => {
+    setEditingAiPlan(false);
+    setSelectedAiPlan(plan);
+  };
+
+  const closeAiPlan = () => {
+    if (aiPlanPending) return;
+    setEditingAiPlan(false);
+    setSelectedAiPlan(null);
+  };
+
+  const startAiPlanEdit = () => {
+    setEditAiPlanTitle(selectedAiPlan?.title || selectedFolder?.name || '');
+    setEditAiPlanSummary(selectedAiPlan?.summary || '');
+    setEditingAiPlan(true);
+  };
+
+  const handleUpdateAiPlan = async () => {
+    if (!selectedAiPlan || aiPlanPending) return;
+    if (!editAiPlanTitle.trim()) {
+      showToast('코스 문서 제목을 입력해주세요.', 'info');
+      return;
+    }
+
+    setAiPlanPending(true);
+    const updated = await updateAiTripPlan(selectedAiPlan.id, {
+      title: editAiPlanTitle.trim(),
+      summary: editAiPlanSummary.trim(),
+    });
+    setAiPlanPending(false);
+
+    if (!updated) {
+      showToast('AI 여행 코스 문서를 수정하지 못했습니다.');
+      return;
+    }
+
+    const nextPlan = { ...selectedAiPlan, ...updated };
+    setSelectedAiPlan(nextPlan);
+    setAiTripPlans((prev) => prev.map((plan) => (
+      String(plan.id) === String(nextPlan.id) ? nextPlan : plan
+    )));
+    setEditingAiPlan(false);
+    showToast('AI 여행 코스 문서를 수정했습니다.', 'success');
+  };
+
+  const handleDeleteAiPlan = async () => {
+    if (!planDeleteTarget || aiPlanPending) return;
+
+    setAiPlanPending(true);
+    const deleted = await deleteAiTripPlan(planDeleteTarget.id);
+    setAiPlanPending(false);
+
+    if (!deleted) {
+      showToast('AI 여행 코스 문서를 삭제하지 못했습니다.');
+      return;
+    }
+
+    setAiTripPlans((prev) => prev.filter((plan) => String(plan.id) !== String(planDeleteTarget.id)));
+    if (String(selectedAiPlan?.id) === String(planDeleteTarget.id)) {
+      setSelectedAiPlan(null);
+      setEditingAiPlan(false);
+    }
+    setPlanDeleteTarget(null);
+    showToast('AI 여행 코스 문서를 삭제했습니다.', 'success');
+  };
+
+  const handleRegenerateAiPlan = () => {
+    if (!selectedAiPlan) return;
+    navigate('/ai-planner', {
+      state: {
+        regeneratePlan: selectedAiPlan,
+        folderId: selectedFolderId,
+      },
+    });
+  };
+
+  const handleSelectFolder = (folderId) => {
+    setSelectedAiPlan(null);
+    setEditingAiPlan(false);
+    setSelectedFolderId(folderId);
+  };
 
   if (!isLoggedIn) return null;
 
@@ -258,9 +463,9 @@ const MyPage = () => {
               <div>
                 <label className="block text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-1.5">travel_schedule</label>
                 <div className="flex items-center gap-2">
-                  <input type="date" value={newFolderStart} onChange={(e) => { setNewFolderStart(e.target.value); if (newFolderEnd && e.target.value > newFolderEnd) setNewFolderEnd(''); }} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
+                  <input type="date" min={DATE_MIN} max={DATE_MAX} value={newFolderStart} onChange={(e) => { if (updateFolderDate(e.target.value, setNewFolderStart) && newFolderEnd && e.target.value > newFolderEnd) setNewFolderEnd(''); }} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
                   <span className="text-slate-400 font-mono text-xs shrink-0">~</span>
-                  <input type="date" value={newFolderEnd} min={newFolderStart || undefined} onChange={(e) => setNewFolderEnd(e.target.value)} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
+                  <input type="date" value={newFolderEnd} min={newFolderStart || DATE_MIN} max={DATE_MAX} onChange={(e) => updateFolderDate(e.target.value, setNewFolderEnd)} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
                 </div>
                 {newFolderStart && <p className="text-[10px] font-mono text-primary mt-2">{formatScheduleShort(newFolderStart, newFolderEnd)}</p>}
               </div>
@@ -288,9 +493,9 @@ const MyPage = () => {
               <div>
                 <label className="block text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-1.5">travel_schedule</label>
                 <div className="flex items-center gap-2">
-                  <input type="date" value={editFolderStart} onChange={(e) => { setEditFolderStart(e.target.value); if (editFolderEnd && e.target.value > editFolderEnd) setEditFolderEnd(''); }} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
+                  <input type="date" min={DATE_MIN} max={DATE_MAX} value={editFolderStart} onChange={(e) => { if (updateFolderDate(e.target.value, setEditFolderStart) && editFolderEnd && e.target.value > editFolderEnd) setEditFolderEnd(''); }} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
                   <span className="text-slate-400 font-mono text-xs shrink-0">~</span>
-                  <input type="date" value={editFolderEnd} min={editFolderStart || undefined} onChange={(e) => setEditFolderEnd(e.target.value)} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
+                  <input type="date" value={editFolderEnd} min={editFolderStart || DATE_MIN} max={DATE_MAX} onChange={(e) => updateFolderDate(e.target.value, setEditFolderEnd)} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-mono outline-none focus:border-primary transition-all" />
                 </div>
                 {editFolderStart && <p className="text-[10px] font-mono text-primary mt-2">{formatScheduleShort(editFolderStart, editFolderEnd)}</p>}
               </div>
@@ -303,11 +508,243 @@ const MyPage = () => {
         </div>
       )}
 
+      {selectedAiPlan && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <article className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant/20 bg-slate-950 px-5 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-red-400" />
+                  <span className="h-3 w-3 rounded-full bg-amber-300" />
+                  <span className="h-3 w-3 rounded-full bg-emerald-400" />
+                </div>
+                <span className="font-label text-[11px] font-bold uppercase tracking-[0.22em] text-white/60">AI_COURSE_DETAIL.md</span>
+              </div>
+              <button
+                type="button"
+                onClick={closeAiPlan}
+                className="material-symbols-outlined rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white"
+                aria-label="AI 코스 상세 닫기"
+              >
+                close
+              </button>
+            </div>
+
+            <div className="custom-scrollbar grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_260px] lg:overflow-hidden">
+              <div className="p-5 md:p-8 lg:overflow-y-auto">
+                <p className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.22em] text-primary"># CodeTrip course document</p>
+                {editingAiPlan ? (
+                  <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                        Course_title
+                      </label>
+                      <input
+                        type="text"
+                        value={editAiPlanTitle}
+                        onChange={(event) => setEditAiPlanTitle(event.target.value)}
+                        className="w-full rounded-xl border border-outline-variant/30 bg-white px-4 py-3 font-headline text-lg font-bold text-slate-950 outline-none transition focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                        Course_summary
+                      </label>
+                      <textarea
+                        value={editAiPlanSummary}
+                        onChange={(event) => setEditAiPlanSummary(event.target.value)}
+                        rows={5}
+                        className="min-h-36 w-full resize-y rounded-xl border border-outline-variant/30 bg-white px-4 py-3 text-sm leading-7 text-slate-600 outline-none transition focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingAiPlan(false)}
+                        disabled={aiPlanPending}
+                        className="h-10 rounded-xl px-4 text-xs font-bold text-slate-500 transition hover:bg-white disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUpdateAiPlan}
+                        disabled={aiPlanPending}
+                        className="h-10 rounded-xl bg-primary px-4 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                      >
+                        {aiPlanPending ? 'Saving...' : 'Save_changes'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="font-headline text-3xl font-bold text-slate-950">{selectedAiPlan.title || selectedFolder?.name}</h2>
+                    {selectedAiPlan.summary && (
+                      <blockquote className="mt-5 border-l-4 border-primary bg-primary/5 px-5 py-4 text-sm leading-7 text-slate-600">
+                        {selectedAiPlan.summary}
+                      </blockquote>
+                    )}
+                  </>
+                )}
+
+                {selectedAiPlan.legacy_content && (
+                  <section className="mt-8 overflow-hidden rounded-2xl border border-outline-variant/20">
+                    <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
+                      <p className="font-mono text-xs font-bold text-primary">## LEGACY_COURSE_CONTENT</p>
+                    </div>
+                    <div className="whitespace-pre-wrap px-5 py-5 text-sm leading-8 text-slate-600">
+                      {selectedAiPlan.legacy_content}
+                    </div>
+                  </section>
+                )}
+
+                <div className="mt-8 space-y-6">
+                  {getPlanDays(selectedAiPlan).map((day, dayIndex) => (
+                    <section key={`${selectedAiPlan.id}-detail-${day.day || dayIndex}`} className="rounded-2xl border border-outline-variant/20">
+                      <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
+                        <p className="font-mono text-xs font-bold text-primary">## DAY_{day.day || dayIndex + 1}</p>
+                        <h3 className="mt-1 font-headline text-xl font-bold text-slate-950">{day.theme || day.title || '추천 일정'}</h3>
+                      </div>
+                      <div className="divide-y divide-outline-variant/10">
+                        {getPlanItems(day).map((item, itemIndex) => (
+                          <div key={`${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`} className="grid gap-4 px-5 py-5 md:grid-cols-[86px_minmax(0,1fr)]">
+                            <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
+                                {(item.category || item.cat3Name || item.type) && (
+                                  <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
+                                    {item.category || item.cat3Name || item.type}
+                                  </span>
+                                )}
+                                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
+                                  {getPlanSourceBadge(item).label}
+                                </span>
+                              </div>
+                              {getPlanAddress(item) && (
+                                <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
+                              )}
+                              {getPlanNote(item) && (
+                                <p className="mt-3 text-sm leading-7 text-slate-600">{getPlanNote(item)}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
+
+              <aside className="border-t border-outline-variant/20 bg-slate-50 p-5 md:p-6 lg:border-l lg:border-t-0">
+                <p className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary">Course_Meta</p>
+                <dl className="mt-5 space-y-4 text-sm">
+                  <div>
+                    <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Folder</dt>
+                    <dd className="mt-1 font-bold text-slate-900">{selectedFolder?.name || 'UNKNOWN'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Created</dt>
+                    <dd className="mt-1 font-bold text-slate-900">{formatDateTime(selectedAiPlan.created_at)}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Days</dt>
+                    <dd className="mt-1 font-bold text-slate-900">{getPlanDays(selectedAiPlan).length}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Places</dt>
+                    <dd className="mt-1 font-bold text-slate-900">{getPlanItemCount(selectedAiPlan)}</dd>
+                  </div>
+                </dl>
+                <div className="mt-8 space-y-2">
+                  <button
+                    type="button"
+                    onClick={startAiPlanEdit}
+                    disabled={editingAiPlan || aiPlanPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-base">edit</span>
+                    Edit_document
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateAiPlan}
+                    disabled={aiPlanPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-base">refresh</span>
+                    Regenerate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlanDeleteTarget(selectedAiPlan)}
+                    disabled={aiPlanPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white text-xs font-bold uppercase tracking-wider text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                    Delete_document
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeAiPlan}
+                    className="h-11 w-full rounded-xl bg-primary text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                  >
+                    Return_to_folder
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </article>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={Boolean(planDeleteTarget)}
+        title="AI 여행 코스 문서를 삭제할까요?"
+        description="코스 문서만 삭제됩니다. 같은 폴더에 저장된 여행지, 체크리스트와 메모는 유지됩니다."
+        confirmText={aiPlanPending ? '삭제 중...' : '코스 문서 삭제'}
+        cancelText="취소"
+        icon="delete"
+        tone="danger"
+        onConfirm={handleDeleteAiPlan}
+        onCancel={() => {
+          if (!aiPlanPending) setPlanDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={Boolean(wishDeleteTarget)}
+        title="위시리스트에서 삭제할까요?"
+        description={`"${wishDeleteTarget?.title || '선택한 여행지'}" 카드를 현재 위시리스트에서 삭제합니다. AI 코스 문서와 체크리스트는 유지됩니다.`}
+        confirmText={wishDeletePending ? '삭제 중...' : '위시리스트 삭제'}
+        cancelText="취소"
+        icon="heart_minus"
+        tone="danger"
+        onConfirm={handleConfirmRemoveWish}
+        onCancel={() => {
+          if (!wishDeletePending) setWishDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={legacyMigrationOpen}
+        title="기존 AI 코스 메모를 변환할까요?"
+        description={`일반 메모에 저장된 AI 여행 코스 ${legacyAiCourseNotes.length}개를 별도의 코스 문서로 옮깁니다. 원문과 기존 생성일은 코스 문서에 그대로 보존됩니다.`}
+        confirmText={legacyMigrationPending ? '변환 중...' : '코스 문서로 변환'}
+        cancelText="나중에"
+        icon="upgrade"
+        tone="primary"
+        onConfirm={handleMigrateLegacyAiCourses}
+        onCancel={() => {
+          if (!legacyMigrationPending) setLegacyMigrationOpen(false);
+        }}
+      />
+
       <main className="p-10 flex flex-col lg:flex-row gap-8 max-w-[1600px] mx-auto">
         <aside className="w-full lg:w-72 flex flex-col gap-6 flex-shrink-0">
           <PageHeader
             label="wishlist.workspace"
-            title={`${user?.name || 'user'} wishlist`}
+            title={`${user?.name || 'user'}님의 위시리스트`}
             description="저장한 여행지와 폴더별 메모를 관리합니다."
             compact
           />
@@ -320,7 +757,7 @@ const MyPage = () => {
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="opacity-40">TOTAL_NODES:</span>
+                <span className="opacity-40">SAVED_PLACES:</span>
                 <span className="text-emerald-400 font-bold">{stats.total}</span>
               </div>
               <div className="flex justify-between items-center">
@@ -333,7 +770,7 @@ const MyPage = () => {
               </div>
               {stats.topFolder?.count > 0 && (
                 <div className="flex justify-between items-start border-t border-white/5 pt-2.5 mt-1">
-                  <span className="opacity-40 shrink-0">TOP_FOLDER:</span>
+                  <span className="opacity-40 shrink-0">MOST_SAVED_FOLDER:</span>
                   <span className="text-yellow-400 font-bold text-right ml-2 truncate">
                     {stats.topFolder.name}
                     <span className="opacity-50 font-normal"> ({stats.topFolder.count})</span>
@@ -345,22 +782,25 @@ const MyPage = () => {
 
           <section className="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10 shadow-sm">
             <div className="flex items-center justify-between border-b border-outline-variant/15 pb-3 mb-4">
-              <span className="font-label text-xs font-bold uppercase tracking-wider">FOLDERS</span>
+              <div className="flex items-center gap-2">
+                <span className="font-label text-xs font-bold uppercase tracking-wider">FOLDERS</span>
+                <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{folders.length}</span>
+              </div>
               <button onClick={() => setShowFolderModal(true)} className="material-symbols-outlined text-primary text-sm bg-primary/10 w-6 h-6 rounded flex items-center justify-center">add</button>
             </div>
             
             <nav className="flex flex-col gap-1">
-              <button onClick={() => setSelectedFolderId(null)} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${!selectedFolderId ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
-                <span className="font-mono uppercase">ALL_NODES</span>
+              <button onClick={() => handleSelectFolder(null)} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${!selectedFolderId ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
+                <span className="font-mono uppercase">ALL_PLACES</span>
                 <span className="opacity-60 font-mono text-[11px]">{wishlistItems.length}</span>
               </button>
-              <button onClick={() => setSelectedFolderId('UNCATEGORIZED')} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${selectedFolderId === 'UNCATEGORIZED' ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
+              <button onClick={() => handleSelectFolder('UNCATEGORIZED')} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${selectedFolderId === 'UNCATEGORIZED' ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
                 <span className="font-mono uppercase">UNCATEGORIZED</span>
                 <span className="opacity-60 font-mono text-[11px]">{wishlistItems.filter(i => !i.folder_id).length}</span>
               </button>
               <div className="h-2" />
               {folders.map(folder => (
-                <button key={folder.id} onClick={() => setSelectedFolderId(folder.id)} className={`flex justify-between items-start px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight group transition-all ${selectedFolderId === folder.id ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
+                <button key={folder.id} onClick={() => handleSelectFolder(folder.id)} className={`flex justify-between items-start px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight group transition-all ${selectedFolderId === folder.id ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
                   <div className="flex-1 min-w-0 text-left">
                     <span className="block truncate uppercase">{folder.name}</span>
                     {folder.start_date && (
@@ -493,16 +933,62 @@ const MyPage = () => {
             </div>
           </div>
 
+          {selectedFolder && legacyAiCourseNotes.length > 0 && (
+            <section className="mb-6 flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined mt-0.5 text-amber-600">history</span>
+                <div>
+                  <p className="font-headline text-sm font-bold text-amber-950">이전 방식으로 저장된 AI 코스가 있습니다.</p>
+                  <p className="mt-1 text-xs leading-5 text-amber-800">
+                    일반 메모 {legacyAiCourseNotes.length}개를 코스 문서로 변환하면 일정과 메모를 분리해서 관리할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLegacyMigrationOpen(true)}
+                className="h-10 shrink-0 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white transition hover:bg-amber-700"
+              >
+                Convert_to_course
+              </button>
+            </section>
+          )}
+
           {selectedFolder && aiTripPlans.length > 0 && (
             <section className="mb-8 space-y-4">
-              {aiTripPlans.map((plan) => (
+              {aiTripPlans.map((plan, planIndex) => {
+                const sequence = aiTripPlans.length - planIndex;
+                const documentName = `AI_COURSE_${String(sequence).padStart(2, '0')}.md`;
+
+                return (
                 <article key={plan.id} className="overflow-hidden rounded-2xl border border-outline-variant/20 bg-white shadow-sm">
-                  <div className="flex items-center justify-between border-b border-outline-variant/15 bg-slate-50 px-5 py-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-3 border-b border-outline-variant/15 bg-slate-50 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="material-symbols-outlined text-primary text-lg">terminal</span>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">AI_COURSE.md</span>
+                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{documentName}</span>
+                      <span className={`rounded-full px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        plan.source === 'legacy_wishlist_note'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-primary/10 text-primary'
+                      }`}>
+                        {plan.source === 'legacy_wishlist_note' ? 'Legacy_import' : 'Saved_course'}
+                      </span>
                     </div>
-                    <span className="font-mono text-[10px] text-slate-400">{formatDate(plan.created_at)}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {planIndex === 0 && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-700">
+                          Latest
+                        </span>
+                      )}
+                      <span className="font-mono text-[10px] text-slate-400">{formatDateTime(plan.created_at)}</span>
+                      <button
+                        type="button"
+                        onClick={() => openAiPlan(plan)}
+                        className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                      >
+                        View_Markdown
+                      </button>
+                    </div>
                   </div>
 
                   <div className="p-5 md:p-6">
@@ -511,16 +997,25 @@ const MyPage = () => {
                         CodeTrip generated course
                       </p>
                       <h4 className="font-headline text-2xl font-bold text-slate-950">{plan.title || selectedFolder.name}</h4>
+                      <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {getPlanDays(plan).length} days · {getPlanItemCount(plan)} places
+                      </p>
                       {plan.summary && (
                         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{plan.summary}</p>
                       )}
                     </div>
 
                     <div className="space-y-4">
-                      {plan.days.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-outline-variant/30 px-4 py-8 text-center font-mono text-xs text-slate-400">// no_course_items</p>
+                      {getPlanDays(plan).length === 0 ? (
+                        plan.legacy_content ? (
+                          <div className="rounded-xl border border-outline-variant/20 bg-slate-50 px-5 py-4">
+                            <p className="line-clamp-4 whitespace-pre-wrap text-sm leading-7 text-slate-600">{plan.legacy_content}</p>
+                          </div>
+                        ) : (
+                          <p className="rounded-xl border border-dashed border-outline-variant/30 px-4 py-8 text-center font-mono text-xs text-slate-400">// no_course_items</p>
+                        )
                       ) : (
-                        plan.days.map((day, dayIndex) => (
+                        getPlanDays(plan).map((day, dayIndex) => (
                           <section key={`${plan.id}-day-${day.day || dayIndex}`} className="rounded-xl border border-outline-variant/20 bg-slate-50/70">
                             <div className="flex items-center justify-between border-b border-outline-variant/15 px-4 py-3">
                               <div>
@@ -542,6 +1037,9 @@ const MyPage = () => {
                                           {item.category || item.cat3Name || item.type}
                                         </span>
                                       )}
+                                      <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
+                                        {getPlanSourceBadge(item).label}
+                                      </span>
                                     </div>
                                     {getPlanAddress(item) && (
                                       <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
@@ -559,7 +1057,8 @@ const MyPage = () => {
                     </div>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </section>
           )}
 
@@ -579,12 +1078,13 @@ const MyPage = () => {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               {sortedWishList.map((item) => {
                 const itemId = item.contentid || item.content_id;
+                const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;
                 const itemTitle = item.title || '여행지';
                 const itemImage = item.firstimage || item.image_url || FALLBACK_IMAGE;
 
                 return (
-                  <div key={itemId} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
-                    {movingItemId === itemId && (
+                  <div key={itemKey} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
+                    {movingItemId === itemKey && (
                       <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 flex flex-col">
                         <div className="flex justify-between mb-4 border-b pb-2"><span className="text-[10px] font-bold font-mono text-primary">MOVE_TO_FOLDER</span><button onClick={() => setMovingItemId(null)} className="material-symbols-outlined text-xs">close</button></div>
                         <div className="flex-1 overflow-y-auto space-y-1">
@@ -604,8 +1104,8 @@ const MyPage = () => {
                     <div className="relative h-48">
                       <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
                       <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <button onClick={(e) => handleRemoveWish(e, itemId)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
-                        <button onClick={() => setMovingItemId(itemId)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
+                        <button onClick={(e) => handleRemoveWish(e, item)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
+                        <button onClick={() => setMovingItemId(itemKey)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
                       </div>
                     </div>
                     <div className="p-5">
