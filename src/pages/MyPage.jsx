@@ -43,7 +43,7 @@ const MyPage = () => {
   
   const {
     wishlistItems, folders, loading, syncError,
-    initWishlist, toggleWishlist, createFolder, updateFolder, deleteFolder, moveItem,
+    initWishlist, removeWishlistItem, createFolder, updateFolder, deleteFolder, moveItem,
     fetchNotes, fetchAiTripPlans, migrateLegacyAiCourseNotes, updateAiTripPlan, deleteAiTripPlan,
     addNote, toggleNote: toggleNoteAction, deleteNote: deleteNoteAction
   } = useWishlistStore();
@@ -70,6 +70,8 @@ const MyPage = () => {
   const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
   const [aiPlanPending, setAiPlanPending] = useState(false);
   const [planDeleteTarget, setPlanDeleteTarget] = useState(null);
+  const [wishDeleteTarget, setWishDeleteTarget] = useState(null);
+  const [wishDeletePending, setWishDeletePending] = useState(false);
   const [legacyMigrationOpen, setLegacyMigrationOpen] = useState(false);
   const [legacyMigrationPending, setLegacyMigrationPending] = useState(false);
 
@@ -126,11 +128,25 @@ const MyPage = () => {
     };
   }, [selectedFolderId, fetchNotes, fetchAiTripPlans]);
 
-  const handleRemoveWish = async (e, contentId) => {
+  const handleRemoveWish = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
-    if (window.confirm('위시리스트에서 삭제하시겠습니까?')) {
-      await toggleWishlist({ contentid: contentId });
+    setWishDeleteTarget(item);
+  };
+
+  const handleConfirmRemoveWish = async () => {
+    if (!wishDeleteTarget || wishDeletePending) return;
+
+    const contentId = wishDeleteTarget.contentid || wishDeleteTarget.contentId || wishDeleteTarget.content_id;
+    setWishDeletePending(true);
+    const removedCount = await removeWishlistItem(contentId);
+    setWishDeletePending(false);
+
+    if (removedCount > 0) {
+      setWishDeleteTarget(null);
+      showToast('위시리스트에서 삭제했습니다.', 'success');
+    } else {
+      showToast('삭제할 위시리스트 항목을 찾지 못했습니다.');
     }
   };
 
@@ -727,6 +743,20 @@ const MyPage = () => {
       />
 
       <ConfirmModal
+        open={Boolean(wishDeleteTarget)}
+        title="위시리스트에서 삭제할까요?"
+        description={`"${wishDeleteTarget?.title || '선택한 여행지'}" 카드를 현재 위시리스트에서 삭제합니다. AI 코스 문서와 체크리스트는 유지됩니다.`}
+        confirmText={wishDeletePending ? '삭제 중...' : '위시리스트 삭제'}
+        cancelText="취소"
+        icon="heart_minus"
+        tone="danger"
+        onConfirm={handleConfirmRemoveWish}
+        onCancel={() => {
+          if (!wishDeletePending) setWishDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmModal
         open={legacyMigrationOpen}
         title="기존 AI 코스 메모를 변환할까요?"
         description={`일반 메모에 저장된 AI 여행 코스 ${legacyAiCourseNotes.length}개를 별도의 코스 문서로 옮깁니다. 원문과 기존 생성일은 코스 문서에 그대로 보존됩니다.`}
@@ -744,7 +774,7 @@ const MyPage = () => {
         <aside className="w-full lg:w-72 flex flex-col gap-6 flex-shrink-0">
           <PageHeader
             label="wishlist.workspace"
-            title={`${user?.name || 'user'} wishlist`}
+            title={`${user?.name || 'user'}님의 위시리스트`}
             description="저장한 여행지와 폴더별 메모를 관리합니다."
             compact
           />
@@ -757,7 +787,7 @@ const MyPage = () => {
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="opacity-40">TOTAL_NODES:</span>
+                <span className="opacity-40">SAVED_PLACES:</span>
                 <span className="text-emerald-400 font-bold">{stats.total}</span>
               </div>
               <div className="flex justify-between items-center">
@@ -770,7 +800,7 @@ const MyPage = () => {
               </div>
               {stats.topFolder?.count > 0 && (
                 <div className="flex justify-between items-start border-t border-white/5 pt-2.5 mt-1">
-                  <span className="opacity-40 shrink-0">TOP_FOLDER:</span>
+                  <span className="opacity-40 shrink-0">MOST_SAVED_FOLDER:</span>
                   <span className="text-yellow-400 font-bold text-right ml-2 truncate">
                     {stats.topFolder.name}
                     <span className="opacity-50 font-normal"> ({stats.topFolder.count})</span>
@@ -782,13 +812,16 @@ const MyPage = () => {
 
           <section className="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10 shadow-sm">
             <div className="flex items-center justify-between border-b border-outline-variant/15 pb-3 mb-4">
-              <span className="font-label text-xs font-bold uppercase tracking-wider">FOLDERS</span>
+              <div className="flex items-center gap-2">
+                <span className="font-label text-xs font-bold uppercase tracking-wider">FOLDERS</span>
+                <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{folders.length}</span>
+              </div>
               <button onClick={() => setShowFolderModal(true)} className="material-symbols-outlined text-primary text-sm bg-primary/10 w-6 h-6 rounded flex items-center justify-center">add</button>
             </div>
             
             <nav className="flex flex-col gap-1">
               <button onClick={() => handleSelectFolder(null)} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${!selectedFolderId ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
-                <span className="font-mono uppercase">ALL_NODES</span>
+                <span className="font-mono uppercase">ALL_PLACES</span>
                 <span className="opacity-60 font-mono text-[11px]">{wishlistItems.length}</span>
               </button>
               <button onClick={() => handleSelectFolder('UNCATEGORIZED')} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${selectedFolderId === 'UNCATEGORIZED' ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
@@ -1100,7 +1133,7 @@ const MyPage = () => {
                     <div className="relative h-48">
                       <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
                       <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <button onClick={(e) => handleRemoveWish(e, itemId)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
+                        <button onClick={(e) => handleRemoveWish(e, item)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
                         <button onClick={() => setMovingItemId(itemId)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
                       </div>
                     </div>

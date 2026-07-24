@@ -136,26 +136,31 @@ const isLegacyAiCourseNote = (note) => (
 export const getWishlistDetails = async () => {
   const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlists'))))
-    .map((item) => ({
-      contentid: String(item.contentId),
-      contentId: String(item.contentId),
-      title: item.title || '여행지',
-      firstimage: item.imageUrl || '',
-      folder_id: item.folder_id || null,
-      addr1: item.addr1 || '정보 없음',
-      source: item.source || null,
-      tourApiVerified: !!item.tourApiVerified,
-      aiSuggestedContentId: item.aiSuggestedContentId || null,
-      verified_at: item.verified_at || null,
-      created_at: toIso(item.created_at),
-    }));
+    .map((item) => {
+      const contentId = getTourContentId(item);
+
+      return {
+        contentid: contentId,
+        contentId,
+        title: item.title || '여행지',
+        firstimage: item.imageUrl || item.firstimage || '',
+        folder_id: item.folder_id || null,
+        addr1: item.addr1 || item.address || '정보 없음',
+        source: item.source || null,
+        tourApiVerified: !!item.tourApiVerified,
+        aiSuggestedContentId: item.aiSuggestedContentId || null,
+        verified_at: item.verified_at || null,
+        created_at: toIso(item.created_at),
+      };
+    })
+    .filter((item) => item.contentId);
 };
 
 export const toggleWishlist = async (contentId, title, imageUrl, folderId = null, addr1 = '') => {
   const user = await getCurrentUser();
   const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
   const wishlists = snapshotToArray(await get(wishlistRoot));
-  const existing = wishlists.find((item) => item.contentId === String(contentId));
+  const existing = wishlists.find((item) => getTourContentId(item) === String(contentId));
 
   if (existing) {
     await remove(ref(realtimeDb, userPath(user.id, `wishlists/${existing.id}`)));
@@ -177,6 +182,26 @@ export const toggleWishlist = async (contentId, title, imageUrl, folderId = null
   return { wishlisted: true };
 };
 
+export const removeWishlistItem = async (contentId) => {
+  const user = await getCurrentUser();
+  const targetContentId = String(contentId || '').trim();
+  if (!targetContentId) return { removedCount: 0 };
+
+  const wishlists = snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlists'))));
+  const updates = {};
+  wishlists
+    .filter((item) => getTourContentId(item) === targetContentId)
+    .forEach((item) => {
+      updates[userPath(user.id, `wishlists/${item.id}`)] = null;
+    });
+
+  if (Object.keys(updates).length) {
+    await update(ref(realtimeDb), updates);
+  }
+
+  return { removedCount: Object.keys(updates).length };
+};
+
 export const addWishlistToFolder = async (itemData = {}, folderId = null) => {
   const user = await getCurrentUser();
   const contentId = itemData.contentid ?? itemData.contentId ?? itemData.content_id;
@@ -184,7 +209,7 @@ export const addWishlistToFolder = async (itemData = {}, folderId = null) => {
 
   const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
   const wishlists = snapshotToArray(await get(wishlistRoot));
-  const existing = wishlists.find((item) => item.contentId === String(contentId));
+  const existing = wishlists.find((item) => getTourContentId(item) === String(contentId));
   const payload = {
     user_id: user.id,
     contentId: String(contentId),
@@ -281,7 +306,7 @@ export const moveItem = async (contentId, folderId) => {
   const wishlists = snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'wishlists'))));
   const updates = {};
   wishlists
-    .filter((item) => item.contentId === String(contentId))
+    .filter((item) => getTourContentId(item) === String(contentId))
     .forEach((item) => { updates[userPath(user.id, `wishlists/${item.id}/folder_id`)] = folderId || null; });
   if (Object.keys(updates).length) await update(ref(realtimeDb), updates);
   return { success: true };
@@ -490,7 +515,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
   const wishlists = snapshotToArray(await get(wishlistRoot));
   verifiedPlaces.forEach((place) => {
     const contentId = place.contentId;
-    const existing = wishlists.find((wishlist) => wishlist.contentId === contentId);
+    const existing = wishlists.find((wishlist) => getTourContentId(wishlist) === contentId);
     const wishlistId = existing?.id || push(wishlistRoot).key;
     updates[userPath(user.id, `wishlists/${wishlistId}`)] = compactObject({
       user_id: user.id,

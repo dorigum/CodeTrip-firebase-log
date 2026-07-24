@@ -69,6 +69,17 @@ const useWishlistStore = create((set, get) => ({
     }
   },
 
+  removeWishlistItem: async (contentId) => {
+    try {
+      const result = await wishlistApi.removeWishlistItem(contentId);
+      await get().syncWithServer();
+      return result.removedCount;
+    } catch (err) {
+      console.error('Remove wishlist failed:', err);
+      return 0;
+    }
+  },
+
   createFolder: async (name, startDate, endDate) => {
     try {
       const folder = await wishlistApi.createFolder(name, startDate, endDate);

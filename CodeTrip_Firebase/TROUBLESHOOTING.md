@@ -274,6 +274,72 @@ npm run build
 
 - **상세 기록**: [2026-07-24 개발 로그](project-log/2026-07-24.md)
 
+## 10. 위시리스트 카드 삭제가 일부 항목에서 동작하지 않은 문제
+
+- **발생일**: 2026-07-24
+- **영향 범위**: 마이페이지 위시리스트 카드 삭제, 위시리스트 통계 표시
+- **요약**: 위시리스트 데이터의 관광공사 ID 필드명이 `contentId`, `contentid`, `content_id`로 혼재되어 일부 카드 삭제 대상이 제대로 매칭되지 않던 문제를 삭제 전용 로직과 ID 정규화로 보완
+
+### 증상
+
+마이페이지 위시리스트 카드에서 하트 삭제 버튼을 눌러도 일부 카드가 삭제되지 않았습니다. 특히 AI 코스 저장 구조 보완 이전에 생성된 카드나 서로 다른 저장 경로를 거친 카드에서 문제가 발생할 수 있었습니다.
+
+또한 삭제 확인 메시지가 브라우저 기본 confirm으로 표시되어 현재 프로젝트의 모달/토스트 UI 톤과 맞지 않았습니다.
+
+### 원인
+
+위시리스트 항목은 저장 시점과 저장 경로에 따라 관광공사 ID 필드명이 다음처럼 달라질 수 있었습니다.
+
+```text
+contentId
+contentid
+content_id
+```
+
+기존 삭제 로직은 특정 필드명만 기준으로 항목을 찾았습니다. 따라서 화면에는 카드가 표시되지만 삭제 API에서는 같은 항목으로 인식하지 못하는 경우가 생겼습니다.
+
+### 해결
+
+- `getTourContentId` 기준으로 위시리스트 항목의 ID를 정규화
+- `toggleWishlist` 삭제 재사용 대신 `removeWishlistItem` 삭제 전용 API 추가
+- 같은 `contentId` 계열 값을 가진 위시리스트 항목을 찾아 Firebase update로 제거
+- 삭제 후 Zustand 스토어를 다시 동기화해 화면 카운트와 카드 목록 갱신
+- 삭제 확인 UI를 브라우저 기본 confirm에서 `ConfirmModal`로 교체
+
+### 라벨 혼동 보완
+
+테스트 과정에서 `ALL_NODES`가 폴더 개수처럼 보일 수 있다는 혼동이 확인되어 라벨도 함께 정리했습니다.
+
+```text
+TOTAL_NODES       → SAVED_PLACES
+ALL_NODES         → ALL_PLACES
+TOP_FOLDER        → MOST_SAVED_FOLDER
+FOLDERS 제목 옆   → 실제 폴더 개수 배지 추가
+```
+
+`ALL_PLACES`는 전체 저장 여행지 카드 수이며, 폴더 개수는 `FOLDERS` 값과 폴더 헤더 배지로 별도 표시합니다.
+
+### 검증 결과
+
+```text
+npx eslint src/api/wishlistApi.js src/store/useWishlistStore.js src/pages/MyPage.jsx
+- 오류 및 경고 없음
+
+npm run build
+- Vite 프로덕션 빌드 성공
+- 기존 500kB 초과 번들 경고만 유지
+
+git diff --check
+- 공백 오류 없음
+```
+
+### 수동 확인
+
+- 위시리스트 카드 삭제 정상 작동 확인
+- 삭제 확인 모달이 프로젝트 톤으로 표시되는 것 확인
+- 삭제 후 Realtime Database에 해당 카드가 남지 않는 것 확인
+- 기존에 문제가 되었던 서울 카드 데이터가 Realtime Database에 남아 있지 않은 것 확인
+
 ## 💡 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
