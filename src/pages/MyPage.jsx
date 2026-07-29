@@ -54,6 +54,7 @@ const MyPage = () => {
   const [notes, setNotes] = useState([]);
   const [aiTripPlans, setAiTripPlans] = useState([]);
   const [noteInput, setNoteInput] = useState('');
+  const [aiPlanMemoInput, setAiPlanMemoInput] = useState('');
   const [noteType, setNoteType] = useState('CHECKLIST'); // 'CHECKLIST' or 'MEMO'
   const legacyAiCourseNotes = useMemo(
     () => notes.filter((note) => (
@@ -82,6 +83,17 @@ const MyPage = () => {
   const selectedAiPlanChecklistDone = useMemo(
     () => selectedAiPlanChecklist.filter((note) => note.is_completed).length,
     [selectedAiPlanChecklist]
+  );
+  const selectedAiPlanMemos = useMemo(
+    () => {
+      if (!selectedAiPlan?.folder_id) return [];
+      return notes.filter((note) => (
+        String(note.folder_id) === String(selectedAiPlan.folder_id)
+        && (note.type || 'CHECKLIST') === 'MEMO'
+        && !String(note.content || '').trim().startsWith('[AI 여행 코스]')
+      ));
+    },
+    [notes, selectedAiPlan]
   );
 
   // Authentication & Initial Data Load
@@ -151,6 +163,18 @@ const MyPage = () => {
     if (newNote) {
       setNotes(prev => [...prev, newNote]);
       setNoteInput('');
+    }
+  };
+
+  const handleAddAiPlanMemo = async (e) => {
+    e.preventDefault();
+    if (!aiPlanMemoInput.trim() || !selectedAiPlan?.folder_id) return;
+
+    const newNote = await addNote(selectedAiPlan.folder_id, aiPlanMemoInput.trim(), 'MEMO');
+    if (newNote) {
+      setNotes(prev => [...prev, newNote]);
+      setAiPlanMemoInput('');
+      showToast('코스 메모를 추가했습니다.', 'success');
     }
   };
 
@@ -366,6 +390,24 @@ const MyPage = () => {
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
   const getPlanContentId = (item) => item.contentId || item.contentid || item.content_id || '';
+  const getCourseSummaryPreview = (plan) => {
+    const rawText = String(plan?.summary || plan?.legacy_content || '').replace(/\s+/g, ' ').trim();
+    if (!rawText) return '';
+
+    const title = String(plan?.title || '').trim();
+    const withoutTitle = title && rawText.startsWith(title)
+      ? rawText.slice(title.length).trim()
+      : rawText;
+    const scheduleStartIndex = withoutTitle.search(/\bDay\s*\d|오전\s*\d|오후\s*\d|\d{1,2}:\d{2}/i);
+    const summarySource = scheduleStartIndex > 60
+      ? withoutTitle.slice(0, scheduleStartIndex).trim()
+      : withoutTitle;
+    const sentences = summarySource.match(/[^.!?。]+[.!?。]?/g) || [summarySource];
+    const summary = sentences.slice(0, 2).join(' ').trim();
+
+    if (summary.length <= 180) return summary;
+    return `${summary.slice(0, 180).replace(/\s+\S*$/, '')}...`;
+  };
   const getPlanSourceType = (item) => {
     if (item.tourApiVerified) return 'verified';
     if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) return 'suggested';
@@ -401,6 +443,7 @@ const MyPage = () => {
     setEditingAiPlan(false);
     setSelectedAiPlanDayIndex(0);
     setExpandedAiPlanItems({});
+    setAiPlanMemoInput('');
     setSelectedAiPlan(plan);
   };
 
@@ -409,6 +452,7 @@ const MyPage = () => {
     setEditingAiPlan(false);
     setSelectedAiPlanDayIndex(0);
     setExpandedAiPlanItems({});
+    setAiPlanMemoInput('');
     setSelectedAiPlan(null);
   };
 
@@ -619,9 +663,9 @@ const MyPage = () => {
                 ) : (
                   <>
                     <h2 className="font-headline text-3xl font-bold text-slate-950">{selectedAiPlan.title || selectedFolder?.name}</h2>
-                    {selectedAiPlan.summary && (
+                    {getCourseSummaryPreview(selectedAiPlan) && (
                       <blockquote className="mt-5 border-l-4 border-primary bg-primary/5 px-5 py-4 text-sm leading-7 text-slate-600">
-                        {selectedAiPlan.summary}
+                        {getCourseSummaryPreview(selectedAiPlan)}
                       </blockquote>
                     )}
                   </>
@@ -883,6 +927,55 @@ const MyPage = () => {
                             {note.content}
                           </span>
                         </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="mt-6 rounded-2xl border border-outline-variant/20 bg-white p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Course_Memo</p>
+                      <p className="mt-1 text-[11px] leading-5 text-slate-400">같은 폴더의 메모와 연결됩니다.</p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 font-mono text-[10px] font-bold text-slate-500">
+                      {selectedAiPlanMemos.length}
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleAddAiPlanMemo} className="mb-3 flex gap-2">
+                    <input
+                      type="text"
+                      value={aiPlanMemoInput}
+                      onChange={(event) => setAiPlanMemoInput(event.target.value)}
+                      placeholder="코스 메모 작성..."
+                      className="min-w-0 flex-1 rounded-xl border border-outline-variant/20 bg-slate-50 px-3 py-2 text-[11px] outline-none transition focus:border-primary"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!aiPlanMemoInput.trim()}
+                      className="material-symbols-outlined flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-base text-white transition hover:brightness-110 disabled:bg-slate-200 disabled:text-slate-400"
+                      aria-label="코스 메모 추가"
+                    >
+                      keyboard_return
+                    </button>
+                  </form>
+
+                  {selectedAiPlanMemos.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-outline-variant/30 px-3 py-4 text-center font-mono text-[10px] text-slate-300">
+                      // no_course_memo
+                    </p>
+                  ) : (
+                    <div className="max-h-44 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                      {selectedAiPlanMemos.map((memo) => (
+                        <div key={memo.id} className="rounded-xl border border-outline-variant/10 bg-slate-50 px-3 py-2">
+                          <p className="text-[11px] leading-5 text-slate-600">{memo.content}</p>
+                          {memo.created_at && (
+                            <p className="mt-1 font-mono text-[9px] text-slate-300">
+                              {new Date(memo.created_at).toLocaleDateString('ko-KR').replace(/\s/g, '')}
+                            </p>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
