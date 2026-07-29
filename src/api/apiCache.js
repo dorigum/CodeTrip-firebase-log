@@ -1,4 +1,4 @@
-import { get, ref, set } from 'firebase/database';
+import { get, ref } from 'firebase/database';
 import { firebaseAuth, realtimeDb } from '../firebase';
 
 const memoryCache = new Map();
@@ -63,16 +63,6 @@ const readRemote = async (cacheKey) => {
   return snapshot.exists() ? snapshot.val() : null;
 };
 
-const writeRemote = async (cacheKey, entry) => {
-  if (!canUseRemoteCache()) return;
-
-  try {
-    await set(ref(realtimeDb, `apiCache/${cacheKey}`), entry);
-  } catch (error) {
-    console.warn('Failed to write API cache:', error);
-  }
-};
-
 export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fetcher }) => {
   const cacheKey = makeCacheKey({ scope, service, params });
   const now = Date.now();
@@ -107,7 +97,6 @@ export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fet
     };
     memoryCache.set(cacheKey, nextEntry);
     writeLocal(cacheKey, nextEntry);
-    writeRemote(cacheKey, nextEntry);
     return data;
   } catch (error) {
     const staleEntry = remoteEntry || localEntry || memoryEntry;

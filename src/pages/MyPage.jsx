@@ -5,7 +5,7 @@ import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
 import ConfirmModal from '../components/ConfirmModal';
-import { getPlanContentId, getPlanSourceBadge, getPlanSourceType } from '../utils/aiPlanSource';
+import { canOpenPlanDetail, getPlanContentId, getPlanSourceBadge, getPlanSourceType } from '../utils/aiPlanSource';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
 const DATE_MIN = '1000-01-01';
@@ -56,6 +56,7 @@ const MyPage = () => {
   const [aiTripPlans, setAiTripPlans] = useState([]);
   const [noteInput, setNoteInput] = useState('');
   const [aiPlanMemoInput, setAiPlanMemoInput] = useState('');
+  const [aiPlanMemoPending, setAiPlanMemoPending] = useState(false);
   const [noteType, setNoteType] = useState('CHECKLIST'); // 'CHECKLIST' or 'MEMO'
   const legacyAiCourseNotes = useMemo(
     () => notes.filter((note) => (
@@ -169,13 +170,18 @@ const MyPage = () => {
 
   const handleAddAiPlanMemo = async (e) => {
     e.preventDefault();
-    if (!aiPlanMemoInput.trim() || !selectedAiPlan?.folder_id) return;
+    if (!aiPlanMemoInput.trim() || !selectedAiPlan?.folder_id || aiPlanMemoPending) return;
 
-    const newNote = await addNote(selectedAiPlan.folder_id, aiPlanMemoInput.trim(), 'MEMO');
-    if (newNote) {
-      setNotes(prev => [...prev, newNote]);
-      setAiPlanMemoInput('');
-      showToast('코스 메모를 추가했습니다.', 'success');
+    setAiPlanMemoPending(true);
+    try {
+      const newNote = await addNote(selectedAiPlan.folder_id, aiPlanMemoInput.trim(), 'MEMO');
+      if (newNote) {
+        setNotes(prev => [...prev, newNote]);
+        setAiPlanMemoInput('');
+        showToast('코스 메모를 추가했습니다.', 'success');
+      }
+    } finally {
+      setAiPlanMemoPending(false);
     }
   };
 
@@ -737,12 +743,11 @@ const MyPage = () => {
                                 const itemKey = `${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`;
                                 const isExpanded = Boolean(expandedAiPlanItems[itemKey]);
                                 const sourceBadge = getPlanSourceBadge(item);
-                                const sourceType = getPlanSourceType(item);
                                 const contentId = getPlanContentId(item);
                                 const address = getPlanAddress(item);
                                 const note = getPlanNote(item);
                                 const tip = item.tip && item.tip !== note ? item.tip : '';
-                                const hasDetailLink = contentId && sourceType !== 'suggested';
+                                const hasDetailLink = canOpenPlanDetail(item);
 
                                 return (
                                   <article key={itemKey} className="bg-white">
@@ -942,11 +947,12 @@ const MyPage = () => {
                       value={aiPlanMemoInput}
                       onChange={(event) => setAiPlanMemoInput(event.target.value)}
                       placeholder="코스 메모 작성..."
+                      disabled={aiPlanMemoPending}
                       className="min-w-0 flex-1 rounded-xl border border-outline-variant/20 bg-slate-50 px-3 py-2 text-[11px] outline-none transition focus:border-primary"
                     />
                     <button
                       type="submit"
-                      disabled={!aiPlanMemoInput.trim()}
+                      disabled={!aiPlanMemoInput.trim() || aiPlanMemoPending}
                       className="material-symbols-outlined flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-base text-white transition hover:brightness-110 disabled:bg-slate-200 disabled:text-slate-400"
                       aria-label="코스 메모 추가"
                     >

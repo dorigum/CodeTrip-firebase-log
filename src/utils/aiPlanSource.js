@@ -7,6 +7,9 @@ export const getPlanSourceType = (item = {}) => {
   return 'candidate';
 };
 
+export const canOpenPlanDetail = (item = {}) =>
+  getPlanSourceType(item) === 'verified' && !!getPlanContentId(item);
+
 export const getPlanSourceBadge = (item = {}) => {
   const sourceType = getPlanSourceType(item);
 

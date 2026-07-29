@@ -96,7 +96,7 @@
     "apiCache": {
       ".read": "auth != null",
       "$cacheKey": {
-        ".write": "auth != null",
+        ".write": false,
         ".validate": "newData.hasChildren(['data', 'expiresAt', 'updatedAt']) && newData.child('expiresAt').isNumber() && newData.child('updatedAt').isNumber()"
       }
     }

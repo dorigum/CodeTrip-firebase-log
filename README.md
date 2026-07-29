@@ -39,7 +39,8 @@ React / Vite
 
 서버 API 의존도를 줄이고, 브라우저에서 Firebase Web SDK와 공공데이터 API를 직접 사용하는 구조입니다.
 공공데이터, 날씨, 위치명 조회는 `apiCache` 공통 레이어를 통해 메모리, localStorage, Realtime Database 캐시를 함께 사용합니다.
-Realtime Database 공유 캐시는 로그인 사용자만 접근하며, 비회원 공개 화면에서는 메모리/localStorage 캐시와 외부 API 직접 호출 흐름으로 동작합니다.
+Realtime Database 공유 캐시는 로그인 사용자 읽기 전용으로 제한하며, 클라이언트 직접 쓰기는 허용하지 않습니다.
+비회원 공개 화면에서는 메모리/localStorage 캐시와 외부 API 직접 호출 흐름으로 동작합니다.
 
 ## ✨ 주요 기능
 
