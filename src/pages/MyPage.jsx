@@ -67,6 +67,20 @@ const MyPage = () => {
     )),
     [notes, noteType, legacyAiCourseNotes]
   );
+  const selectedAiPlanChecklist = useMemo(
+    () => {
+      if (!selectedAiPlan?.folder_id) return [];
+      return notes.filter((note) => (
+        String(note.folder_id) === String(selectedAiPlan.folder_id)
+        && (note.type || 'CHECKLIST') === 'CHECKLIST'
+      ));
+    },
+    [notes, selectedAiPlan]
+  );
+  const selectedAiPlanChecklistDone = useMemo(
+    () => selectedAiPlanChecklist.filter((note) => note.is_completed).length,
+    [selectedAiPlanChecklist]
+  );
 
   // Authentication & Initial Data Load
   useEffect(() => {
@@ -656,6 +670,43 @@ const MyPage = () => {
                     <dd className="mt-1 font-bold text-slate-900">{getPlanItemCount(selectedAiPlan)}</dd>
                   </div>
                 </dl>
+
+                <section className="mt-6 rounded-2xl border border-primary/15 bg-white p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Course_Checklist</p>
+                      <p className="mt-1 text-[11px] leading-5 text-slate-400">같은 폴더의 체크리스트와 연결됩니다.</p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-2 py-1 font-mono text-[10px] font-bold text-primary">
+                      {selectedAiPlanChecklistDone}/{selectedAiPlanChecklist.length}
+                    </span>
+                  </div>
+
+                  {selectedAiPlanChecklist.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-outline-variant/30 px-3 py-4 text-center font-mono text-[10px] text-slate-300">
+                      // no_checklist_items
+                    </p>
+                  ) : (
+                    <div className="max-h-52 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                      {selectedAiPlanChecklist.map((note) => (
+                        <button
+                          key={note.id}
+                          type="button"
+                          onClick={() => handleToggleNote(note.id)}
+                          className="flex w-full items-start gap-2 rounded-xl border border-outline-variant/10 bg-slate-50 px-3 py-2 text-left transition hover:border-primary/30 hover:bg-primary/5"
+                        >
+                          <span className={`material-symbols-outlined mt-0.5 text-base ${note.is_completed ? 'text-emerald-500' : 'text-slate-300'}`}>
+                            {note.is_completed ? 'check_box' : 'check_box_outline_blank'}
+                          </span>
+                          <span className={`min-w-0 flex-1 text-[11px] leading-5 ${note.is_completed ? 'text-slate-300 line-through' : 'text-slate-600'}`}>
+                            {note.content}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
                 <div className="mt-8 space-y-2">
                   <button
                     type="button"

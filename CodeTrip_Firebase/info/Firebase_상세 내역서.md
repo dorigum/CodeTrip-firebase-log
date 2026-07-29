@@ -8,7 +8,7 @@
 배포 방식: Firebase Hosting 정적 배포  
 인증 방식: Firebase Authentication  
 데이터 저장소: Firebase Realtime Database  
-배포 URL: `https://newagent-9c2a8.web.app`
+배포 URL: `https://dorigum-codetrip.web.app`
 
 ---
 
@@ -46,7 +46,7 @@ Firebase 전환 후에는 별도 Express 서버 없이 브라우저에서 Fireba
 ```text
 Project ID: newagent-9c2a8
 Project Name: CodeTrip
-Hosting URL: https://newagent-9c2a8.web.app
+Hosting URL: https://dorigum-codetrip.web.app
 Realtime Database URL: https://newagent-9c2a8.firebaseio.com
 ```
 
@@ -623,7 +623,7 @@ firebase deploy --only hosting
 배포 완료 후 접속:
 
 ```text
-https://newagent-9c2a8.web.app
+https://dorigum-codetrip.web.app
 ```
 
 ### 배포 확인 체크리스트
@@ -655,4 +655,3 @@ Realtime Database는 단순 구조와 빠른 실시간 동기화에는 적합하
 ### Firestore 미사용
 
 현재는 프로젝트 상황상 Realtime Database를 사용합니다. 향후 결제 설정이나 Firestore Native DB 구성이 가능해지면 게시판, 알림, 위시리스트 등 일부 기능을 Firestore 컬렉션 구조로 이전할 수 있습니다.
-
