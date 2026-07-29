@@ -843,11 +843,11 @@ const AiPlanner = () => {
                               <h4 className="font-black text-slate-900">{item.placeName}</h4>
                               <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">{item.category}</span>
                               {item.tourApiVerified ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">TourAPI verified</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">공식 여행지</span>
                               ) : item.contentId ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-bold">TourAPI 후보</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-700 font-bold">공식 후보</span>
                               ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">AI 추천</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">코스 추천</span>
                               )}
                             </div>
                             {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}

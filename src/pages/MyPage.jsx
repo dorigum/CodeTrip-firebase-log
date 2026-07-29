@@ -363,17 +363,29 @@ const MyPage = () => {
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
+  const getPlanSourceType = (item) => {
+    if (item.tourApiVerified) return 'verified';
+    if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) return 'suggested';
+    return 'candidate';
+  };
   const getPlanSourceBadge = (item) => {
-    if (item.tourApiVerified) {
-      return { label: 'TourAPI verified', className: 'bg-primary/10 text-primary' };
+    const sourceType = getPlanSourceType(item);
+    if (sourceType === 'verified') {
+      return { label: '공식 여행지', className: 'bg-primary/10 text-primary ring-1 ring-primary/15' };
     }
-    if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) {
-      return { label: 'AI 추천', className: 'bg-slate-100 text-slate-500' };
+    if (sourceType === 'suggested') {
+      return { label: '코스 추천', className: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200' };
     }
-    return { label: 'TourAPI legacy', className: 'bg-amber-100 text-amber-700' };
+    return { label: '공식 후보', className: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' };
   };
   const getPlanItemCount = (plan) => getPlanDays(plan)
     .reduce((total, day) => total + getPlanItems(day).length, 0);
+  const getPlanSourceCounts = (plan) => getPlanDays(plan).reduce((acc, day) => {
+    getPlanItems(day).forEach((item) => {
+      acc[getPlanSourceType(item)] += 1;
+    });
+    return acc;
+  }, { verified: 0, candidate: 0, suggested: 0 });
 
   const openAiPlan = (plan) => {
     setEditingAiPlan(false);
@@ -601,6 +613,30 @@ const MyPage = () => {
                   </>
                 )}
 
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {(() => {
+                    const sourceCounts = getPlanSourceCounts(selectedAiPlan);
+                    return (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary ring-1 ring-primary/15">
+                          <span className="material-symbols-outlined text-sm">verified</span>
+                          공식 여행지 {sourceCounts.verified}
+                        </span>
+                        {sourceCounts.candidate > 0 && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200">
+                            <span className="material-symbols-outlined text-sm">travel_explore</span>
+                            공식 후보 {sourceCounts.candidate}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-slate-200">
+                          <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                          코스 추천 {sourceCounts.suggested}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+
                 {selectedAiPlan.legacy_content && (
                   <section className="mt-8 overflow-hidden rounded-2xl border border-outline-variant/20">
                     <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
@@ -670,6 +706,33 @@ const MyPage = () => {
                     <dd className="mt-1 font-bold text-slate-900">{getPlanItemCount(selectedAiPlan)}</dd>
                   </div>
                 </dl>
+
+                <section className="mt-6 rounded-2xl border border-outline-variant/20 bg-white p-4">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Course_Source</p>
+                  <div className="mt-3 space-y-2">
+                    {(() => {
+                      const sourceCounts = getPlanSourceCounts(selectedAiPlan);
+                      return (
+                        <>
+                          <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2">
+                            <span className="text-[11px] font-bold text-primary">공식 여행지</span>
+                            <span className="font-mono text-[11px] font-bold text-primary">{sourceCounts.verified}</span>
+                          </div>
+                          {sourceCounts.candidate > 0 && (
+                            <div className="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2">
+                              <span className="text-[11px] font-bold text-amber-700">공식 후보</span>
+                              <span className="font-mono text-[11px] font-bold text-amber-700">{sourceCounts.candidate}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between rounded-xl bg-slate-100 px-3 py-2">
+                            <span className="text-[11px] font-bold text-slate-500">코스 추천</span>
+                            <span className="font-mono text-[11px] font-bold text-slate-500">{sourceCounts.suggested}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </section>
 
                 <section className="mt-6 rounded-2xl border border-primary/15 bg-white p-4">
                   <div className="mb-3 flex items-start justify-between gap-3">
