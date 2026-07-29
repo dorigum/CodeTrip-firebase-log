@@ -760,11 +760,15 @@ const MyPage = () => {
                                 const hasDetailLink = contentId && sourceType !== 'suggested';
 
                                 return (
-                                  <article key={itemKey} className="bg-white/70 transition hover:bg-primary/5">
+                                  <article key={itemKey} className="bg-white">
                                     <button
                                       type="button"
                                       onClick={() => toggleAiPlanItem(itemKey)}
-                                      className="grid w-full grid-cols-[64px_minmax(0,1fr)_28px] gap-3 px-5 py-4 text-left md:grid-cols-[86px_minmax(0,1fr)_32px]"
+                                      className={`group grid w-full grid-cols-[64px_minmax(0,1fr)_28px] gap-3 border-l-4 px-5 py-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/20 md:grid-cols-[86px_minmax(0,1fr)_32px] ${
+                                        isExpanded
+                                          ? 'border-primary/30 bg-slate-50/80'
+                                          : 'border-transparent bg-white hover:bg-slate-50/80'
+                                      }`}
                                       aria-expanded={isExpanded}
                                     >
                                       <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
@@ -786,7 +790,11 @@ const MyPage = () => {
                                           </p>
                                         )}
                                       </div>
-                                      <span className="material-symbols-outlined flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-lg text-slate-500">
+                                      <span className={`material-symbols-outlined flex h-7 w-7 items-center justify-center rounded-full text-lg transition ${
+                                        isExpanded
+                                          ? 'bg-primary/10 text-primary'
+                                          : 'bg-slate-100 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary'
+                                      }`}>
                                         {isExpanded ? 'expand_less' : 'expand_more'}
                                       </span>
                                     </button>
@@ -829,7 +837,7 @@ const MyPage = () => {
                                               </Link>
                                             </>
                                           ) : (
-                                            <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold leading-5 text-slate-500">
+                                            <span className="rounded-xl border border-primary/10 bg-primary/5 px-3 py-2 text-[11px] font-bold leading-5 text-slate-600">
                                               문서 전용 추천 장소입니다. 관광공사 검증 여행지 카드로는 저장되지 않습니다.
                                             </span>
                                           )}

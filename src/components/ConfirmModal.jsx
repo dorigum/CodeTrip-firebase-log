@@ -10,6 +10,7 @@ const ConfirmModal = ({
   tone = 'danger',
   onConfirm,
   onCancel,
+  onClose,
 }) => {
   if (!open) return null;
 
@@ -36,7 +37,7 @@ const ConfirmModal = ({
           </div>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={onClose || onCancel}
             className="material-symbols-outlined rounded-lg p-1 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
             aria-label="닫기"
           >
