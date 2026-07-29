@@ -135,6 +135,17 @@ export const getRegions = async () => {
   return normalizeItems(data?.response?.body?.items?.item);
 };
 
+export const getSubRegions = async (lDongRegnCd) => {
+  if (!lDongRegnCd) return [];
+  const data = await fetchTourApi('ldongCode2', { numOfRows: 100, pageNo: 1, lDongRegnCd }, CACHE_TTL.regions);
+  return normalizeItems(data?.response?.body?.items?.item)
+    .map((item) => ({
+      code: String(item.lDongSignguCd || item.signguCode || item.code || '').trim(),
+      name: String(item.lDongSignguNm || item.signguName || item.name || '').trim(),
+    }))
+    .filter((item) => item.code && item.name);
+};
+
 export const getTravelInfo = async ({ pageNo = 1, numOfRows = 10, contentTypeId, lDongRegnCd } = {}) => {
   const data = await fetchTourApi('areaBasedList2', { pageNo, numOfRows, contentTypeId, lDongRegnCd, arrange: 'O' }, CACHE_TTL.list);
   const body = data?.response?.body || {};
@@ -152,12 +163,13 @@ const matchesFestivalKeyword = (item, keyword) => {
   ].some((value) => String(value || '').toLowerCase().includes(normalizedKeyword));
 };
 
-export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'default', lDongRegnCd, keyword = '' } = {}) => {
+export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'default', lDongRegnCd, lDongSignguCd, keyword = '' } = {}) => {
   const todayKey = toDateKey();
   const eventStartDate = `${todayKey.slice(0, 4)}0101`;
+  const festivalParams = { eventStartDate, lDongRegnCd, lDongSignguCd, arrange: 'O' };
   const firstPageData = await fetchTourApi(
     'searchFestival2',
-    { pageNo: 1, numOfRows: FESTIVAL_POOL_PAGE_SIZE, eventStartDate, lDongRegnCd, arrange: 'O' },
+    { pageNo: 1, numOfRows: FESTIVAL_POOL_PAGE_SIZE, ...festivalParams },
     CACHE_TTL.festival
   );
   const firstBody = firstPageData?.response?.body || {};
@@ -171,7 +183,7 @@ export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'defau
       Array.from({ length: totalRawPages - 1 }, (_, index) => index + 2).map((festivalPage) =>
         fetchTourApi(
           'searchFestival2',
-          { pageNo: festivalPage, numOfRows: FESTIVAL_POOL_PAGE_SIZE, eventStartDate, lDongRegnCd, arrange: 'O' },
+          { pageNo: festivalPage, numOfRows: FESTIVAL_POOL_PAGE_SIZE, ...festivalParams },
           CACHE_TTL.festival
         )
       )

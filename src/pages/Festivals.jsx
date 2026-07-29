@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getFestivalList } from '../api/travelApi';
+import { getSubRegions } from '../api/travelInfoApi';
 import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
@@ -19,6 +20,7 @@ const Festivals = () => {
   const page = parseInt(searchParams.get('page')) || 1;
   const sortOrder = searchParams.get('sort') || 'default';
   const regionCode = searchParams.get('region') || '';
+  const subRegionCode = searchParams.get('sigungu') || '';
   const keyword = searchParams.get('keyword')?.trim() || '';
 
   const { isLoggedIn } = useAuthStore();
@@ -28,22 +30,64 @@ const Festivals = () => {
   const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
   const [selectedTravel, setSelectedTravel] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [subRegions, setSubRegions] = useState([]);
+  const [subRegionLoading, setSubRegionLoading] = useState(false);
 
-  const makeFestivalParams = useCallback(({ nextPage = page, nextSort = sortOrder, nextRegion = regionCode, nextKeyword = keyword } = {}) => {
+  const makeFestivalParams = useCallback(({
+    nextPage = page,
+    nextSort = sortOrder,
+    nextRegion = regionCode,
+    nextSubRegion = subRegionCode,
+    nextKeyword = keyword,
+  } = {}) => {
     const params = {
       page: String(nextPage),
       sort: nextSort,
     };
     if (nextRegion) params.region = nextRegion;
+    if (nextSubRegion) params.sigungu = nextSubRegion;
     if (nextKeyword) params.keyword = nextKeyword;
     return params;
-  }, [page, sortOrder, regionCode, keyword]);
+  }, [page, sortOrder, regionCode, subRegionCode, keyword]);
+
+  useEffect(() => {
+    if (!regionCode) {
+      setSubRegions([]);
+      return;
+    }
+
+    let ignore = false;
+    const fetchSubRegionOptions = async () => {
+      setSubRegionLoading(true);
+      try {
+        const items = await getSubRegions(regionCode);
+        if (!ignore) setSubRegions(items);
+      } catch (error) {
+        console.error('Fetch festival sub regions failed:', error);
+        if (!ignore) setSubRegions([]);
+      } finally {
+        if (!ignore) setSubRegionLoading(false);
+      }
+    };
+
+    fetchSubRegionOptions();
+    return () => {
+      ignore = true;
+    };
+  }, [regionCode]);
+
+  useEffect(() => {
+    if (!subRegionCode || subRegionLoading) return;
+    if (subRegions.length > 0 && !subRegions.some((subRegion) => subRegion.code === subRegionCode)) {
+      setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: '' }));
+    }
+  }, [subRegionCode, subRegions, subRegionLoading, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     const fetchFestivals = async () => {
       setLoading(true);
       try {
-        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode, keyword);
+        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode, keyword, subRegionCode);
         setFestivals(data.items || []);
         setTotalPages(data.totalPages || 0);
         if (data.totalPages > 0 && page > data.totalPages) {
@@ -57,7 +101,7 @@ const Festivals = () => {
       }
     };
     fetchFestivals();
-  }, [page, sortOrder, regionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
+  }, [page, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (isLoggedIn && !wishlistInitialized) {
@@ -75,7 +119,11 @@ const Festivals = () => {
   };
 
   const handleRegionChange = (newRegion) => {
-    setSearchParams(makeFestivalParams({ nextPage: 1, nextRegion: newRegion }));
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextRegion: newRegion, nextSubRegion: '' }));
+  };
+
+  const handleSubRegionChange = (newSubRegion) => {
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: newSubRegion }));
   };
 
   const handleClearKeyword = () => {
@@ -132,6 +180,21 @@ const Festivals = () => {
                 {DEFAULT_REGIONS.map((region) => (
                   <option key={region.code || 'all'} value={region.code}>
                     {region.code ? `REGION_${region.name}` : 'REGION_ALL'}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={subRegionCode}
+                onChange={(e) => handleSubRegionChange(e.target.value)}
+                disabled={!regionCode || subRegionLoading || subRegions.length === 0}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <option value="">
+                  {regionCode ? (subRegionLoading ? 'CITY_LOADING' : 'CITY_ALL') : 'CITY_DISABLED'}
+                </option>
+                {subRegions.map((subRegion) => (
+                  <option key={subRegion.code} value={subRegion.code}>
+                    CITY_{subRegion.name}
                   </option>
                 ))}
               </select>
