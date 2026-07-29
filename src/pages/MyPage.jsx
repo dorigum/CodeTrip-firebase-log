@@ -39,6 +39,7 @@ const MyPage = () => {
   const [movingItemId, setMovingItemId] = useState(null);
   const [selectedAiPlan, setSelectedAiPlan] = useState(null);
   const [selectedAiPlanDayIndex, setSelectedAiPlanDayIndex] = useState(0);
+  const [expandedAiPlanItems, setExpandedAiPlanItems] = useState({});
   const [editingAiPlan, setEditingAiPlan] = useState(false);
   const [editAiPlanTitle, setEditAiPlanTitle] = useState('');
   const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
@@ -388,9 +389,17 @@ const MyPage = () => {
     return acc;
   }, { verified: 0, candidate: 0, suggested: 0 });
 
+  const toggleAiPlanItem = (itemKey) => {
+    setExpandedAiPlanItems((prev) => ({
+      ...prev,
+      [itemKey]: !prev[itemKey],
+    }));
+  };
+
   const openAiPlan = (plan) => {
     setEditingAiPlan(false);
     setSelectedAiPlanDayIndex(0);
+    setExpandedAiPlanItems({});
     setSelectedAiPlan(plan);
   };
 
@@ -398,6 +407,7 @@ const MyPage = () => {
     if (aiPlanPending) return;
     setEditingAiPlan(false);
     setSelectedAiPlanDayIndex(0);
+    setExpandedAiPlanItems({});
     setSelectedAiPlan(null);
   };
 
@@ -559,8 +569,8 @@ const MyPage = () => {
               </button>
             </div>
 
-            <div className="custom-scrollbar grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_260px] lg:overflow-hidden">
-              <div className="p-5 md:p-8 lg:overflow-y-auto">
+            <div className="custom-scrollbar grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div className="p-5 md:p-8">
                 <p className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.22em] text-primary"># CodeTrip course document</p>
                 {editingAiPlan ? (
                   <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
@@ -669,7 +679,10 @@ const MyPage = () => {
                               <button
                                 key={`${selectedAiPlan.id}-day-tab-${day.day || dayIndex}`}
                                 type="button"
-                                onClick={() => setSelectedAiPlanDayIndex(dayIndex)}
+                                onClick={() => {
+                                  setSelectedAiPlanDayIndex(dayIndex);
+                                  setExpandedAiPlanItems({});
+                                }}
                                 className={`flex min-w-[104px] flex-1 flex-col items-start rounded-xl px-4 py-3 text-left transition ${
                                   activeDayIndex === dayIndex
                                     ? 'bg-primary text-white shadow-sm'
@@ -690,30 +703,74 @@ const MyPage = () => {
                               <h3 className="mt-1 font-headline text-xl font-bold text-slate-950">{day.theme || day.title || '추천 일정'}</h3>
                             </div>
                             <div className="divide-y divide-outline-variant/10">
-                              {getPlanItems(day).map((item, itemIndex) => (
-                                <div key={`${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`} className="grid gap-4 px-5 py-5 md:grid-cols-[86px_minmax(0,1fr)]">
-                                  <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
-                                  <div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <h4 className="font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
-                                      {(item.category || item.cat3Name || item.type) && (
-                                        <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
-                                          {item.category || item.cat3Name || item.type}
-                                        </span>
-                                      )}
-                                      <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
-                                        {getPlanSourceBadge(item).label}
+                              {getPlanItems(day).map((item, itemIndex) => {
+                                const itemKey = `${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`;
+                                const isExpanded = Boolean(expandedAiPlanItems[itemKey]);
+                                const sourceBadge = getPlanSourceBadge(item);
+                                const address = getPlanAddress(item);
+                                const note = getPlanNote(item);
+                                const tip = item.tip && item.tip !== note ? item.tip : '';
+
+                                return (
+                                  <article key={itemKey} className="bg-white/70 transition hover:bg-primary/5">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleAiPlanItem(itemKey)}
+                                      className="grid w-full grid-cols-[64px_minmax(0,1fr)_28px] gap-3 px-5 py-4 text-left md:grid-cols-[86px_minmax(0,1fr)_32px]"
+                                      aria-expanded={isExpanded}
+                                    >
+                                      <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
+                                      <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <h4 className="line-clamp-1 font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
+                                          {(item.category || item.cat3Name || item.type) && (
+                                            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
+                                              {item.category || item.cat3Name || item.type}
+                                            </span>
+                                          )}
+                                          <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${sourceBadge.className}`}>
+                                            {sourceBadge.label}
+                                          </span>
+                                        </div>
+                                        {!isExpanded && (address || note) && (
+                                          <p className="mt-2 line-clamp-1 text-xs text-slate-400">
+                                            {address || note}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <span className="material-symbols-outlined flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-lg text-slate-500">
+                                        {isExpanded ? 'expand_less' : 'expand_more'}
                                       </span>
-                                    </div>
-                                    {getPlanAddress(item) && (
-                                      <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
+                                    </button>
+
+                                    {isExpanded && (
+                                      <div className="space-y-4 border-t border-outline-variant/10 bg-white px-5 pb-5 pt-4 md:ml-[86px] md:pl-0">
+                                        {address && (
+                                          <div>
+                                            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Address</p>
+                                            <p className="mt-1 text-sm leading-6 text-slate-600">{address}</p>
+                                          </div>
+                                        )}
+                                        {note && (
+                                          <div>
+                                            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Reason</p>
+                                            <p className="mt-1 text-sm leading-7 text-slate-600">{note}</p>
+                                          </div>
+                                        )}
+                                        {tip && (
+                                          <div className="rounded-xl bg-primary/5 px-4 py-3">
+                                            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Tip</p>
+                                            <p className="mt-1 text-sm leading-7 text-slate-600">{tip}</p>
+                                          </div>
+                                        )}
+                                        {!address && !note && !tip && (
+                                          <p className="font-mono text-xs text-slate-400">// no_extra_place_detail</p>
+                                        )}
+                                      </div>
                                     )}
-                                    {getPlanNote(item) && (
-                                      <p className="mt-3 text-sm leading-7 text-slate-600">{getPlanNote(item)}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                  </article>
+                                );
+                              })}
                             </div>
                           </section>
                         ))}
