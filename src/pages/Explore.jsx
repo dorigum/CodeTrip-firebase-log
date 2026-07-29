@@ -14,6 +14,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834
 const Explore = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryKeyword = new URLSearchParams(location.search).get('keyword')?.trim() || '';
   const [searchTerm] = useState('');
   const [regionOpen, setRegionOpen] = useState(true);
   const [themeOpen, setThemeOpen] = useState(true);
@@ -28,7 +29,7 @@ const Explore = () => {
     selectedRegions, toggleRegion,
     selectedThemes, toggleTheme,
     posts, loading, totalCount, currentPage,
-    keyword, clearKeyword,
+    keyword, setKeyword, clearKeyword,
     sort, setSort,
     initialized, fetchError,
     applyFilter, changePage, applyFavoriteRegions, resetFilter,
@@ -153,6 +154,15 @@ const Explore = () => {
     }
   }, [isLoggedIn, wishlistInitialized]);
 
+  useEffect(() => {
+    if (queryKeyword && queryKeyword !== keyword) {
+      setKeyword(queryKeyword);
+    }
+    if (!queryKeyword && keyword) {
+      clearKeyword();
+    }
+  }, [queryKeyword, keyword, setKeyword, clearKeyword]);
+
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
@@ -177,7 +187,10 @@ const Explore = () => {
             <span className="text-outline">// searching:</span>
             <span className="text-primary font-bold">"{keyword}"</span>
             <button
-              onClick={clearKeyword}
+              onClick={() => {
+                clearKeyword();
+                navigate('/explore');
+              }}
               className="ml-1 text-outline hover:text-on-surface transition-colors flex items-center"
             >
               <span className="material-symbols-outlined text-sm">close</span>

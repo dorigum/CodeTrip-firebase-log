@@ -19,6 +19,7 @@ const Festivals = () => {
   const page = parseInt(searchParams.get('page')) || 1;
   const sortOrder = searchParams.get('sort') || 'default';
   const regionCode = searchParams.get('region') || '';
+  const keyword = searchParams.get('keyword')?.trim() || '';
 
   const { isLoggedIn } = useAuthStore();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
@@ -28,20 +29,21 @@ const Festivals = () => {
   const [selectedTravel, setSelectedTravel] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const makeFestivalParams = useCallback(({ nextPage = page, nextSort = sortOrder, nextRegion = regionCode } = {}) => {
+  const makeFestivalParams = useCallback(({ nextPage = page, nextSort = sortOrder, nextRegion = regionCode, nextKeyword = keyword } = {}) => {
     const params = {
       page: String(nextPage),
       sort: nextSort,
     };
     if (nextRegion) params.region = nextRegion;
+    if (nextKeyword) params.keyword = nextKeyword;
     return params;
-  }, [page, sortOrder, regionCode]);
+  }, [page, sortOrder, regionCode, keyword]);
 
   useEffect(() => {
     const fetchFestivals = async () => {
       setLoading(true);
       try {
-        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode);
+        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode, keyword);
         setFestivals(data.items || []);
         setTotalPages(data.totalPages || 0);
         if (data.totalPages > 0 && page > data.totalPages) {
@@ -55,7 +57,7 @@ const Festivals = () => {
       }
     };
     fetchFestivals();
-  }, [page, sortOrder, regionCode, showToast, setSearchParams, makeFestivalParams]);
+  }, [page, sortOrder, regionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (isLoggedIn && !wishlistInitialized) {
@@ -74,6 +76,10 @@ const Festivals = () => {
 
   const handleRegionChange = (newRegion) => {
     setSearchParams(makeFestivalParams({ nextPage: 1, nextRegion: newRegion }));
+  };
+
+  const handleClearKeyword = () => {
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextKeyword: '' }));
   };
 
   const handleHeartToggle = async (e, post) => {
@@ -141,6 +147,18 @@ const Festivals = () => {
             </div>
           )}
         />
+        {keyword && (
+          <div className="mt-4 inline-flex items-center gap-3 bg-surface-container-low border border-primary/20 rounded-lg px-4 py-2 font-mono text-sm">
+            <span className="text-outline">// searching_festivals:</span>
+            <span className="text-primary font-bold">"{keyword}"</span>
+            <button
+              onClick={handleClearKeyword}
+              className="ml-1 text-outline hover:text-on-surface transition-colors flex items-center"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 리스트 섹션 */}

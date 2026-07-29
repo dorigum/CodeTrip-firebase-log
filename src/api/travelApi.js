@@ -151,9 +151,15 @@ export const getSpontaneousTravel = async (weatherKeyword = DEFAULT_KEYWORD, wea
   };
 };
 
-export const getFestivalList = async (page = 1, limit = 8, sort = 'default', region = '') => {
-  const data = await getFestivalInfo({ pageNo: page, numOfRows: limit, sort, lDongRegnCd: region || undefined });
-  return { ...data, page, limit, sort, region };
+export const getFestivalList = async (page = 1, limit = 8, sort = 'default', region = '', keyword = '') => {
+  const data = await getFestivalInfo({
+    pageNo: page,
+    numOfRows: limit,
+    sort,
+    lDongRegnCd: region || undefined,
+    keyword,
+  });
+  return { ...data, page, limit, sort, region, keyword };
 };
 
 export const getWeatherRecommendations = async (keyword) => {

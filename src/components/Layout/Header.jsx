@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
-import useExploreStore from '../../store/useExploreStore';
 import useWishlistStore from '../../store/useWishlistStore';
 import { getNotifications, markAllRead, markOneRead, deleteOneNotification, deleteReadNotifications } from '../../api/notificationApi';
 import useToast from '../../hooks/useToast';
@@ -15,9 +14,9 @@ const formatDate = (str) => {
 
 const Header = () => {
   const { user, logout, isLoggedIn, isLoading } = useAuthStore();
-  const { setKeyword } = useExploreStore();
   const { clearWishlist } = useWishlistStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchInput, setSearchInput] = useState('');
 
   const showToast = useToast();
@@ -101,26 +100,33 @@ const Header = () => {
     }
   };
 
-  const handleSearchKeyDown = (e) => {
-    if (e.key !== 'Enter') return;
-    if (!searchInput.trim()) {
-      alert('검색어를 입력해 주세요.');
+  const navigateToSearch = (keyword) => {
+    const targetPath = location.pathname.startsWith('/festivals') ? '/festivals' : '/explore';
+    const params = new URLSearchParams(targetPath === '/festivals' ? location.search : '');
+    params.set('keyword', keyword);
+    params.set('page', '1');
+    navigate(`${targetPath}?${params.toString()}`);
+  };
+
+  const submitSearch = (keyword) => {
+    const kw = keyword.trim();
+    if (!kw) {
+      showToast('검색어를 입력해주세요.');
       return;
     }
-    const kw = searchInput.trim();
     addSearch(kw);
-    setKeyword(kw);
     setSearchInput('');
     setSearchFocused(false);
-    navigate('/explore');
+    navigateToSearch(kw);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    submitSearch(searchInput);
   };
 
   const handleRecentClick = (keyword) => {
-    addSearch(keyword);
-    setKeyword(keyword);
-    setSearchInput('');
-    setSearchFocused(false);
-    navigate('/explore');
+    submitSearch(keyword);
   };
 
   const handleLogout = () => {

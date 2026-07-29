@@ -141,7 +141,18 @@ export const getTravelInfo = async ({ pageNo = 1, numOfRows = 10, contentTypeId,
   return { items: normalizeItems(body.items?.item), totalCount: Number(body.totalCount || 0) };
 };
 
-export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'default', lDongRegnCd } = {}) => {
+const matchesFestivalKeyword = (item, keyword) => {
+  const normalizedKeyword = String(keyword || '').trim().toLowerCase();
+  if (!normalizedKeyword) return true;
+  return [
+    item.title,
+    item.addr1,
+    item.addr2,
+    item.overview,
+  ].some((value) => String(value || '').toLowerCase().includes(normalizedKeyword));
+};
+
+export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'default', lDongRegnCd, keyword = '' } = {}) => {
   const todayKey = toDateKey();
   const eventStartDate = `${todayKey.slice(0, 4)}0101`;
   const firstPageData = await fetchTourApi(
@@ -172,7 +183,9 @@ export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'defau
     });
   }
 
-  const filteredItems = rawItems.filter((item) => isActiveOrUpcomingFestival(item, todayKey));
+  const filteredItems = rawItems.filter((item) =>
+    isActiveOrUpcomingFestival(item, todayKey) && matchesFestivalKeyword(item, keyword)
+  );
   const sortedItems = sortFestivalItems(filteredItems, sort, todayKey);
   const startIndex = (pageNo - 1) * numOfRows;
   const items = sortedItems.slice(startIndex, startIndex + numOfRows);
