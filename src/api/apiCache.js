@@ -1,5 +1,5 @@
-import { get, ref, set } from 'firebase/database';
-import { realtimeDb } from '../firebase';
+import { get, ref } from 'firebase/database';
+import { firebaseAuth, realtimeDb } from '../firebase';
 
 const memoryCache = new Map();
 const LOCAL_PREFIX = 'codetrip_api_cache_';
@@ -54,17 +54,13 @@ const writeLocal = (cacheKey, entry) => {
   }
 };
 
+const canUseRemoteCache = () => !!firebaseAuth.currentUser;
+
 const readRemote = async (cacheKey) => {
+  if (!canUseRemoteCache()) return null;
+
   const snapshot = await get(ref(realtimeDb, `apiCache/${cacheKey}`));
   return snapshot.exists() ? snapshot.val() : null;
-};
-
-const writeRemote = async (cacheKey, entry) => {
-  try {
-    await set(ref(realtimeDb, `apiCache/${cacheKey}`), entry);
-  } catch (error) {
-    console.warn('Failed to write API cache:', error);
-  }
 };
 
 export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fetcher }) => {
@@ -101,7 +97,6 @@ export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fet
     };
     memoryCache.set(cacheKey, nextEntry);
     writeLocal(cacheKey, nextEntry);
-    writeRemote(cacheKey, nextEntry);
     return data;
   } catch (error) {
     const staleEntry = remoteEntry || localEntry || memoryEntry;

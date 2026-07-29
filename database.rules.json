@@ -94,9 +94,9 @@
       }
     },
     "apiCache": {
-      ".read": true,
       "$cacheKey": {
-        ".write": true,
+        ".read": "auth != null",
+        ".write": false,
         ".validate": "newData.hasChildren(['data', 'expiresAt', 'updatedAt']) && newData.child('expiresAt').isNumber() && newData.child('updatedAt').isNumber()"
       }
     }

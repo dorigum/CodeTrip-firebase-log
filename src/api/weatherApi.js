@@ -1,7 +1,12 @@
 import axios from 'axios';
+import { cachedApiRequest } from './apiCache';
 
 const WEATHER_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 const SEOUL = '\uC11C\uC6B8';
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+const WEATHER_CACHE_TTL = HOUR;
+const LOCATION_CACHE_TTL = 30 * DAY;
 const KEYWORDS = {
   travel: '\uC5EC\uD589',
   scenery: '\uD48D\uACBD',
@@ -13,25 +18,38 @@ const KEYWORDS = {
   indoorDate: '\uC2E4\uB0B4\uB370\uC774\uD2B8',
 };
 
+const roundCoordinate = (value, precision = 2) => Number(Number(value).toFixed(precision));
+
 export const getWeather = async (lat = 37.5665, lon = 126.9780) => {
+  const latitude = roundCoordinate(lat, 2);
+  const longitude = roundCoordinate(lon, 2);
+
   try {
-    const response = await axios.get(WEATHER_BASE_URL, {
-      params: {
-        latitude: lat,
-        longitude: lon,
-        current: 'temperature_2m,weathercode,cloudcover,precipitation',
-        timezone: 'Asia/Seoul',
-        models: 'jma_seamless',
+    return await cachedApiRequest({
+      scope: 'weather',
+      service: 'openMeteoCurrent',
+      params: { latitude, longitude },
+      ttlMs: WEATHER_CACHE_TTL,
+      fetcher: async () => {
+        const response = await axios.get(WEATHER_BASE_URL, {
+          params: {
+            latitude,
+            longitude,
+            current: 'temperature_2m,weathercode,cloudcover,precipitation',
+            timezone: 'Asia/Seoul',
+            models: 'jma_seamless',
+          },
+        });
+        const current = response.data.current;
+        const effectiveCode = refineWeatherCode(current.weathercode, current.cloudcover, current.precipitation);
+        const parsed = parseWeatherCode(effectiveCode);
+        return {
+          temp: Math.round(current.temperature_2m),
+          ...parsed,
+          keywords: [parsed.keyword],
+        };
       },
     });
-    const current = response.data.current;
-    const effectiveCode = refineWeatherCode(current.weathercode, current.cloudcover, current.precipitation);
-    const parsed = parseWeatherCode(effectiveCode);
-    return {
-      temp: Math.round(current.temperature_2m),
-      ...parsed,
-      keywords: [parsed.keyword],
-    };
   } catch {
     return { temp: 24, label: 'Sunny', icon: 'sunny', keywords: [KEYWORDS.travel], location: SEOUL };
   }
@@ -45,16 +63,27 @@ const refineWeatherCode = (code, cloudcover, precipitation) => {
 };
 
 export const getLocationName = async (lat, lon) => {
+  const latitude = roundCoordinate(lat, 3);
+  const longitude = roundCoordinate(lon, 3);
+
   try {
-    const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-      params: { lat, lon, format: 'json', addressdetails: 1 },
-      headers: { 'Accept-Language': 'ko-KR' },
+    return await cachedApiRequest({
+      scope: 'location',
+      service: 'nominatimReverse',
+      params: { latitude, longitude },
+      ttlMs: LOCATION_CACHE_TTL,
+      fetcher: async () => {
+        const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+          params: { lat: latitude, lon: longitude, format: 'json', addressdetails: 1 },
+          headers: { 'Accept-Language': 'ko-KR' },
+        });
+        const addr = response.data.address || {};
+        return {
+          city: addr.city || addr.town || addr.village || addr.borough || SEOUL,
+          state: addr.province || addr.city || addr.region || SEOUL,
+        };
+      },
     });
-    const addr = response.data.address || {};
-    return {
-      city: addr.city || addr.town || addr.village || addr.borough || SEOUL,
-      state: addr.province || addr.city || addr.region || SEOUL,
-    };
   } catch {
     return { city: SEOUL, state: SEOUL };
   }

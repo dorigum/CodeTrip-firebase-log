@@ -2,7 +2,7 @@
 
 CodeTrip은 공공 여행 데이터, 날씨 정보, 사용자 선호 지역, 위시리스트 폴더, 커뮤니티 기능을 결합한 여행 큐레이션 웹 애플리케이션입니다.
 
-현재 이 저장소는 기존 Express/MySQL 기반 구조에서 Firebase 기반 무료 배포 구조로 전환한 뒤, 공모전 제출용으로 데이터 구조와 배포 문서를 재정비한 버전입니다.
+현재 이 저장소는 기존 Express/MySQL 기반 구조에서 Firebase 기반 배포 구조로 전환한 뒤, 공모전 제출용으로 데이터 구조, Gemini 기반 AI 여행 코스 생성, API 캐시 전략, 배포 문서를 재정비한 버전입니다.
 
 ## 🚀 배포 정보
 
@@ -24,6 +24,7 @@ CodeTrip은 공공 여행 데이터, 날씨 정보, 사용자 선호 지역, 위
 - Korea Tourism Organization TourAPI
 - Open-Meteo Weather API
 - Kakao Maps SDK
+- Gemini API
 
 ## 🔥 Firebase 실행 구조
 
@@ -33,10 +34,13 @@ React / Vite
   -> Firebase Authentication
   -> Firebase Realtime Database
   -> Public Data API
+  -> Gemini API
 ```
 
 서버 API 의존도를 줄이고, 브라우저에서 Firebase Web SDK와 공공데이터 API를 직접 사용하는 구조입니다.
-이전 Express/MySQL 기반 문서는 `documents/archive-pre-firebase/`에 보관합니다.
+공공데이터, 날씨, 위치명 조회는 `apiCache` 공통 레이어를 통해 메모리, localStorage, Realtime Database 캐시를 함께 사용합니다.
+Realtime Database 공유 캐시는 로그인 사용자 읽기 전용으로 제한하며, 클라이언트 직접 쓰기는 허용하지 않습니다.
+비회원 공개 화면에서는 메모리/localStorage 캐시와 외부 API 직접 호출 흐름으로 동작합니다.
 
 ## ✨ 주요 기능
 
@@ -53,6 +57,17 @@ React / Vite
 - Open-Meteo 날씨 데이터를 기반으로 추천 키워드 생성
 - 사용자의 선호 지역과 현재 날씨를 반영한 여행지 추천
 - 선호 지역이 없을 경우 기본 지역 기반 추천 fallback
+- 날씨 API는 좌표 반올림 기반 1시간 캐시를 적용해 반복 호출 최소화
+- 위치명 역지오코딩 API는 좌표 반올림 기반 30일 캐시를 적용해 동일 지역 반복 조회 최소화
+
+### 🧠 AI 여행 코스 생성
+
+- 설정한 조건으로 새 여행 코스 생성
+- 위시리스트 폴더 기반 여행 코스 생성
+- 관광공사 검증 장소와 AI 추천 장소 구분 저장
+- 검증된 장소는 위시리스트 카드로 저장하고, 검증되지 않은 추천 장소는 AI 코스 문서에만 보관
+- AI 코스 문서 상세 보기, 제목/요약 수정, 재생성, 삭제 지원
+- 기존 AI 메모를 AI 코스 문서로 변환하는 마이그레이션 흐름 지원
 
 ### 💾 위시리스트와 여행 폴더
 
@@ -132,7 +147,7 @@ CodeTrip-firebase-log-work/
 │  └─ main.jsx
 ├─ public/
 ├─ dist/
-├─ documents/
+├─ CodeTrip_Firebase/
 │  ├─ PROJECT_LOG.md
 │  ├─ TROUBLESHOOTING.md
 │  ├─ info/
@@ -201,6 +216,17 @@ apiCache/{cacheKey}
   data
   expiresAt
   updatedAt
+```
+
+주요 캐시 정책은 다음과 같습니다.
+
+```text
+TourAPI 여행지 목록: 12시간
+TourAPI 키워드 검색: 6시간
+TourAPI 상세/이미지: 14일
+TourAPI 지역 코드: 30일
+Open-Meteo 현재 날씨: 1시간
+Nominatim 위치명 역지오코딩: 30일
 ```
 
 ## 🔑 환경 변수
@@ -301,12 +327,17 @@ Hosting 배포 대상은 `firebase.json`의 Hosting 설정에 따라 `dist/`입�
 
 - 로컬 개발 서버에서 회원가입, 로그인, 로그아웃 정상 동작 확인
 - 위시리스트 저장, 폴더 생성, 체크리스트와 메모 생성 정상 동작 확인
+- AI 여행 코스 생성, 폴더 저장, 상세 문서 보기, 수정, 재생성, 삭제 정상 동작 확인
+- 관광공사 검증 장소와 AI 추천 장소 분리 저장 확인
+- 같은 조건으로 AI 코스를 여러 번 저장해도 기존 폴더 카드가 이동하지 않는 것 확인
+- 위시리스트 폴더별 여행지 필터링 정상 동작 확인
+- 날씨/위치명 API 캐시 적용 후 `npm run lint`, `npm run build` 성공 확인
 - 게시글 목록, 작성, 상세 보기, 수정, 삭제 정상 동작 확인
 - 게시글 댓글, 좋아요, 내 활동 조회 정상 동작 확인
 - Realtime Database Rules 반영 후 권한 오류 수정 확인
 - `npm run build` 성공
 - `npm run lint` error 0개 확인
-- 기존 React Hook warning 12개는 남아 있으나, Firebase 데이터 구조 변경으로 인한 신규 lint error는 없음
+- 기존 React Hook warning 10개는 남아 있으나, Firebase 데이터 구조 변경으로 인한 신규 lint error는 없음
 - `npx firebase-tools deploy --only hosting,database`로 Firebase Hosting과 Realtime Database Rules 배포 완료
 - Firebase Hosting 배포 URL 접속 확인: https://dorigum-codetrip.web.app
 
@@ -336,13 +367,14 @@ Hosting 배포 대상은 `firebase.json`의 Hosting 설정에 따라 `dist/`입�
 
 CodeTrip 프로젝트는 모든 설계 및 작업 일지를 도큐멘테이션하여 관리하고 있습니다. 아래 링크에서 상세 내용을 확인하실 수 있습니다.
 
-- 📝 [PROJECT LOG (전체 문서 통합 인덱스)](documents/PROJECT_LOG.md)
+- 📝 [PROJECT LOG (전체 문서 통합 인덱스)](CodeTrip_Firebase/PROJECT_LOG.md)
 - 📋 [DATABASE DESIGN (Firebase Realtime DB 보안 룰)](database.rules.json)
-- 📋 [PROJECT SPECIFICATION (Firebase 상세 내역서)](documents/info/Firebase_상세%20내역서.md)
-- 🏗️ [GEMINI PROMPT DESIGN (Gemini 여행 일정 프롬프트 설계)](documents/info/Gemini_프롬프트_설계.md)
-- 🚨 [TROUBLESHOOTING (Firebase 인증 복원 및 API 캐시 에러 색인)](documents/TROUBLESHOOTING.md)
-- 🚀 [DEPLOYMENT GUIDE (Firebase Hosting 배포 가이드)](documents/guides/Project_Firebase_배포.md)
-- 🎯 [RUN GUIDE (로컬 개발 서버 실행 가이드)](documents/guides/Guide.md)
+- 📋 [PROJECT SPECIFICATION (Firebase 상세 내역서)](CodeTrip_Firebase/info/Firebase_상세%20내역서.md)
+- 🏗️ [GEMINI PROMPT DESIGN (Gemini 여행 일정 프롬프트 설계)](CodeTrip_Firebase/info/Gemini_프롬프트_설계.md)
+- 🚨 [TROUBLESHOOTING (Firebase 인증 복원 및 API 캐시 에러 색인)](CodeTrip_Firebase/TROUBLESHOOTING.md)
+- 🚀 [DEPLOYMENT GUIDE (Firebase Hosting 배포 가이드)](CodeTrip_Firebase/guides/Project_Firebase_배포.md)
+- 🎯 [RUN GUIDE (로컬 개발 서버 실행 가이드)](CodeTrip_Firebase/guides/Guide.md)
+- ✅ [SUBMISSION CHECKLIST (공모전 제출 전 확인 목록)](CodeTrip_Firebase/guides/Contest_Submission_Checklist.md)
 
 ---
-*Last Updated: 2026-07-22*
+*Last Updated: 2026-07-29*

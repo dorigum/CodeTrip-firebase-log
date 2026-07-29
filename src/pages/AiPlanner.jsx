@@ -7,6 +7,7 @@ import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
+import { getPlanSourceBadge } from '../utils/aiPlanSource';
 
 const STYLE_OPTIONS = ['실내', '문화', '맛집', '자연', '힐링', '카페', '사진', '역사'];
 const AVOID_OPTIONS = ['장거리 이동', '등산', '혼잡한 장소', '야외 위주', '비싼 코스'];
@@ -835,27 +836,27 @@ const AiPlanner = () => {
                       <span className="material-symbols-outlined text-primary/60">route</span>
                     </header>
                     <div className="divide-y divide-outline-variant/20">
-                      {(day.items || []).map((item, index) => (
-                        <div key={`${day.day}-${item.order || index}`} className="p-4 grid grid-cols-[68px_1fr] gap-4">
-                          <div className="text-xs font-black text-primary font-mono">{item.time || '--:--'}</div>
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="font-black text-slate-900">{item.placeName}</h4>
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">{item.category}</span>
-                              {item.tourApiVerified ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary font-bold">TourAPI verified</span>
-                              ) : item.contentId ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-bold">TourAPI 후보</span>
-                              ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">AI 추천</span>
-                              )}
+                      {(day.items || []).map((item, index) => {
+                        const sourceBadge = getPlanSourceBadge(item);
+
+                        return (
+                          <div key={`${day.day}-${item.order || index}`} className="p-4 grid grid-cols-[68px_1fr] gap-4">
+                            <div className="text-xs font-black text-primary font-mono">{item.time || '--:--'}</div>
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-black text-slate-900">{item.placeName}</h4>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">{item.category}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${sourceBadge.className}`}>
+                                  {sourceBadge.label}
+                                </span>
+                              </div>
+                              {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}
+                              <p className="text-sm text-slate-600 mt-3 leading-6">{item.reason}</p>
+                              {item.tip && <p className="text-xs text-slate-400 mt-2 font-mono">// {item.tip}</p>}
                             </div>
-                            {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}
-                            <p className="text-sm text-slate-600 mt-3 leading-6">{item.reason}</p>
-                            {item.tip && <p className="text-xs text-slate-400 mt-2 font-mono">// {item.tip}</p>}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </article>
                 ))}

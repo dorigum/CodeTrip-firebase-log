@@ -5,6 +5,7 @@ import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
 import ConfirmModal from '../components/ConfirmModal';
+import { canOpenPlanDetail, getPlanContentId, getPlanSourceBadge, getPlanSourceType } from '../utils/aiPlanSource';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
 const DATE_MIN = '1000-01-01';
@@ -38,6 +39,8 @@ const MyPage = () => {
   const [editFolderEnd, setEditFolderEnd] = useState('');
   const [movingItemId, setMovingItemId] = useState(null);
   const [selectedAiPlan, setSelectedAiPlan] = useState(null);
+  const [selectedAiPlanDayIndex, setSelectedAiPlanDayIndex] = useState(0);
+  const [expandedAiPlanItems, setExpandedAiPlanItems] = useState({});
   const [editingAiPlan, setEditingAiPlan] = useState(false);
   const [editAiPlanTitle, setEditAiPlanTitle] = useState('');
   const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
@@ -52,6 +55,8 @@ const MyPage = () => {
   const [notes, setNotes] = useState([]);
   const [aiTripPlans, setAiTripPlans] = useState([]);
   const [noteInput, setNoteInput] = useState('');
+  const [aiPlanMemoInput, setAiPlanMemoInput] = useState('');
+  const [aiPlanMemoPending, setAiPlanMemoPending] = useState(false);
   const [noteType, setNoteType] = useState('CHECKLIST'); // 'CHECKLIST' or 'MEMO'
   const legacyAiCourseNotes = useMemo(
     () => notes.filter((note) => (
@@ -66,6 +71,31 @@ const MyPage = () => {
       && !legacyAiCourseNotes.some((legacyNote) => legacyNote.id === note.id)
     )),
     [notes, noteType, legacyAiCourseNotes]
+  );
+  const selectedAiPlanChecklist = useMemo(
+    () => {
+      if (!selectedAiPlan?.folder_id) return [];
+      return notes.filter((note) => (
+        String(note.folder_id) === String(selectedAiPlan.folder_id)
+        && (note.type || 'CHECKLIST') === 'CHECKLIST'
+      ));
+    },
+    [notes, selectedAiPlan]
+  );
+  const selectedAiPlanChecklistDone = useMemo(
+    () => selectedAiPlanChecklist.filter((note) => note.is_completed).length,
+    [selectedAiPlanChecklist]
+  );
+  const selectedAiPlanMemos = useMemo(
+    () => {
+      if (!selectedAiPlan?.folder_id) return [];
+      return notes.filter((note) => (
+        String(note.folder_id) === String(selectedAiPlan.folder_id)
+        && (note.type || 'CHECKLIST') === 'MEMO'
+        && !String(note.content || '').trim().startsWith('[AI 여행 코스]')
+      ));
+    },
+    [notes, selectedAiPlan]
   );
 
   // Authentication & Initial Data Load
@@ -135,6 +165,23 @@ const MyPage = () => {
     if (newNote) {
       setNotes(prev => [...prev, newNote]);
       setNoteInput('');
+    }
+  };
+
+  const handleAddAiPlanMemo = async (e) => {
+    e.preventDefault();
+    if (!aiPlanMemoInput.trim() || !selectedAiPlan?.folder_id || aiPlanMemoPending) return;
+
+    setAiPlanMemoPending(true);
+    try {
+      const newNote = await addNote(selectedAiPlan.folder_id, aiPlanMemoInput.trim(), 'MEMO');
+      if (newNote) {
+        setNotes(prev => [...prev, newNote]);
+        setAiPlanMemoInput('');
+        showToast('코스 메모를 추가했습니다.', 'success');
+      }
+    } finally {
+      setAiPlanMemoPending(false);
     }
   };
 
@@ -349,26 +396,54 @@ const MyPage = () => {
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
-  const getPlanSourceBadge = (item) => {
-    if (item.tourApiVerified) {
-      return { label: 'TourAPI verified', className: 'bg-primary/10 text-primary' };
-    }
-    if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) {
-      return { label: 'AI 추천', className: 'bg-slate-100 text-slate-500' };
-    }
-    return { label: 'TourAPI legacy', className: 'bg-amber-100 text-amber-700' };
+  const getCourseSummaryPreview = (plan) => {
+    const rawText = String(plan?.summary || plan?.legacy_content || '').replace(/\s+/g, ' ').trim();
+    if (!rawText) return '';
+
+    const title = String(plan?.title || '').trim();
+    const withoutTitle = title && rawText.startsWith(title)
+      ? rawText.slice(title.length).trim()
+      : rawText;
+    const scheduleStartIndex = withoutTitle.search(/\bDay\s*\d|오전\s*\d|오후\s*\d|\d{1,2}:\d{2}/i);
+    const summarySource = scheduleStartIndex > 60
+      ? withoutTitle.slice(0, scheduleStartIndex).trim()
+      : withoutTitle;
+    const sentences = summarySource.match(/[^.!?。]+[.!?。]?/g) || [summarySource];
+    const summary = sentences.slice(0, 2).join(' ').trim();
+
+    if (summary.length <= 180) return summary;
+    return `${summary.slice(0, 180).replace(/\s+\S*$/, '')}...`;
   };
   const getPlanItemCount = (plan) => getPlanDays(plan)
     .reduce((total, day) => total + getPlanItems(day).length, 0);
+  const getPlanSourceCounts = (plan) => getPlanDays(plan).reduce((acc, day) => {
+    getPlanItems(day).forEach((item) => {
+      acc[getPlanSourceType(item)] += 1;
+    });
+    return acc;
+  }, { verified: 0, candidate: 0, suggested: 0 });
+
+  const toggleAiPlanItem = (itemKey) => {
+    setExpandedAiPlanItems((prev) => ({
+      ...prev,
+      [itemKey]: !prev[itemKey],
+    }));
+  };
 
   const openAiPlan = (plan) => {
     setEditingAiPlan(false);
+    setSelectedAiPlanDayIndex(0);
+    setExpandedAiPlanItems({});
+    setAiPlanMemoInput('');
     setSelectedAiPlan(plan);
   };
 
   const closeAiPlan = () => {
     if (aiPlanPending) return;
     setEditingAiPlan(false);
+    setSelectedAiPlanDayIndex(0);
+    setExpandedAiPlanItems({});
+    setAiPlanMemoInput('');
     setSelectedAiPlan(null);
   };
 
@@ -530,8 +605,8 @@ const MyPage = () => {
               </button>
             </div>
 
-            <div className="custom-scrollbar grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_260px] lg:overflow-hidden">
-              <div className="p-5 md:p-8 lg:overflow-y-auto">
+            <div className="custom-scrollbar grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div className="p-5 md:p-8">
                 <p className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.22em] text-primary"># CodeTrip course document</p>
                 {editingAiPlan ? (
                   <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
@@ -579,13 +654,37 @@ const MyPage = () => {
                 ) : (
                   <>
                     <h2 className="font-headline text-3xl font-bold text-slate-950">{selectedAiPlan.title || selectedFolder?.name}</h2>
-                    {selectedAiPlan.summary && (
+                    {getCourseSummaryPreview(selectedAiPlan) && (
                       <blockquote className="mt-5 border-l-4 border-primary bg-primary/5 px-5 py-4 text-sm leading-7 text-slate-600">
-                        {selectedAiPlan.summary}
+                        {getCourseSummaryPreview(selectedAiPlan)}
                       </blockquote>
                     )}
                   </>
                 )}
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {(() => {
+                    const sourceCounts = getPlanSourceCounts(selectedAiPlan);
+                    return (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary ring-1 ring-primary/15">
+                          <span className="material-symbols-outlined text-sm">verified</span>
+                          공식 여행지 {sourceCounts.verified}
+                        </span>
+                        {sourceCounts.candidate > 0 && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200">
+                            <span className="material-symbols-outlined text-sm">travel_explore</span>
+                            공식 후보 {sourceCounts.candidate}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-slate-200">
+                          <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                          코스 추천 {sourceCounts.suggested}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
 
                 {selectedAiPlan.legacy_content && (
                   <section className="mt-8 overflow-hidden rounded-2xl border border-outline-variant/20">
@@ -599,40 +698,151 @@ const MyPage = () => {
                 )}
 
                 <div className="mt-8 space-y-6">
-                  {getPlanDays(selectedAiPlan).map((day, dayIndex) => (
-                    <section key={`${selectedAiPlan.id}-detail-${day.day || dayIndex}`} className="rounded-2xl border border-outline-variant/20">
-                      <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
-                        <p className="font-mono text-xs font-bold text-primary">## DAY_{day.day || dayIndex + 1}</p>
-                        <h3 className="mt-1 font-headline text-xl font-bold text-slate-950">{day.theme || day.title || '추천 일정'}</h3>
-                      </div>
-                      <div className="divide-y divide-outline-variant/10">
-                        {getPlanItems(day).map((item, itemIndex) => (
-                          <div key={`${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`} className="grid gap-4 px-5 py-5 md:grid-cols-[86px_minmax(0,1fr)]">
-                            <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
-                            <div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h4 className="font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
-                                {(item.category || item.cat3Name || item.type) && (
-                                  <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
-                                    {item.category || item.cat3Name || item.type}
-                                  </span>
-                                )}
-                                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
-                                  {getPlanSourceBadge(item).label}
-                                </span>
-                              </div>
-                              {getPlanAddress(item) && (
-                                <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
-                              )}
-                              {getPlanNote(item) && (
-                                <p className="mt-3 text-sm leading-7 text-slate-600">{getPlanNote(item)}</p>
-                              )}
-                            </div>
+                  {(() => {
+                    const planDays = getPlanDays(selectedAiPlan);
+                    const activeDayIndex = Math.min(selectedAiPlanDayIndex, Math.max(planDays.length - 1, 0));
+                    const visiblePlanDays = planDays.length <= 1
+                      ? planDays.map((day, dayIndex) => ({ day, dayIndex }))
+                      : planDays
+                        .map((day, dayIndex) => ({ day, dayIndex }))
+                        .filter(({ dayIndex }) => dayIndex === activeDayIndex);
+
+                    return (
+                      <>
+                        {planDays.length > 1 && (
+                          <div className="flex gap-2 overflow-x-auto rounded-2xl border border-outline-variant/20 bg-slate-50 p-2 custom-scrollbar">
+                            {planDays.map((day, dayIndex) => (
+                              <button
+                                key={`${selectedAiPlan.id}-day-tab-${day.day || dayIndex}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAiPlanDayIndex(dayIndex);
+                                  setExpandedAiPlanItems({});
+                                }}
+                                className={`flex min-w-[104px] flex-1 flex-col items-start rounded-xl px-4 py-3 text-left transition ${
+                                  activeDayIndex === dayIndex
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'bg-white text-slate-500 hover:bg-primary/5 hover:text-primary'
+                                }`}
+                              >
+                                <span className="font-label text-[10px] font-bold uppercase tracking-[0.18em]">Day {day.day || dayIndex + 1}</span>
+                                <span className="mt-1 line-clamp-1 text-xs font-bold">{day.theme || day.title || '추천 일정'}</span>
+                              </button>
+                            ))}
                           </div>
+                        )}
+
+                        {visiblePlanDays.map(({ day, dayIndex }) => (
+                          <section key={`${selectedAiPlan.id}-detail-${day.day || dayIndex}`} className="rounded-2xl border border-outline-variant/20">
+                            <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
+                              <p className="font-mono text-xs font-bold text-primary">## DAY_{day.day || dayIndex + 1}</p>
+                              <h3 className="mt-1 font-headline text-xl font-bold text-slate-950">{day.theme || day.title || '추천 일정'}</h3>
+                            </div>
+                            <div className="divide-y divide-outline-variant/10">
+                              {getPlanItems(day).map((item, itemIndex) => {
+                                const itemKey = `${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`;
+                                const isExpanded = Boolean(expandedAiPlanItems[itemKey]);
+                                const sourceBadge = getPlanSourceBadge(item);
+                                const contentId = getPlanContentId(item);
+                                const address = getPlanAddress(item);
+                                const note = getPlanNote(item);
+                                const tip = item.tip && item.tip !== note ? item.tip : '';
+                                const hasDetailLink = canOpenPlanDetail(item);
+
+                                return (
+                                  <article key={itemKey} className="bg-white">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleAiPlanItem(itemKey)}
+                                      className={`group grid w-full grid-cols-[64px_minmax(0,1fr)_28px] gap-3 border-l-4 px-5 py-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/20 md:grid-cols-[86px_minmax(0,1fr)_32px] ${
+                                        isExpanded
+                                          ? 'border-primary/30 bg-slate-50/80'
+                                          : 'border-transparent bg-white hover:bg-slate-50/80'
+                                      }`}
+                                      aria-expanded={isExpanded}
+                                    >
+                                      <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
+                                      <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <h4 className="line-clamp-1 font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
+                                          {(item.category || item.cat3Name || item.type) && (
+                                            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
+                                              {item.category || item.cat3Name || item.type}
+                                            </span>
+                                          )}
+                                          <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${sourceBadge.className}`}>
+                                            {sourceBadge.label}
+                                          </span>
+                                        </div>
+                                        {!isExpanded && (address || note) && (
+                                          <p className="mt-2 line-clamp-1 text-xs text-slate-400">
+                                            {address || note}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <span className={`material-symbols-outlined flex h-7 w-7 items-center justify-center rounded-full text-lg transition ${
+                                        isExpanded
+                                          ? 'bg-primary/10 text-primary'
+                                          : 'bg-slate-100 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary'
+                                      }`}>
+                                        {isExpanded ? 'expand_less' : 'expand_more'}
+                                      </span>
+                                    </button>
+
+                                    {isExpanded && (
+                                      <div className="space-y-4 border-t border-outline-variant/10 bg-white px-5 pb-5 pt-4 md:ml-[86px] md:pl-0">
+                                        {address && (
+                                          <div>
+                                            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Address</p>
+                                            <p className="mt-1 text-sm leading-6 text-slate-600">{address}</p>
+                                          </div>
+                                        )}
+                                        {note && (
+                                          <div>
+                                            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Reason</p>
+                                            <p className="mt-1 text-sm leading-7 text-slate-600">{note}</p>
+                                          </div>
+                                        )}
+                                        {tip && (
+                                          <div className="rounded-xl bg-primary/5 px-4 py-3">
+                                            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Tip</p>
+                                            <p className="mt-1 text-sm leading-7 text-slate-600">{tip}</p>
+                                          </div>
+                                        )}
+                                        {!address && !note && !tip && (
+                                          <p className="font-mono text-xs text-slate-400">// no_extra_place_detail</p>
+                                        )}
+                                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                                          {hasDetailLink ? (
+                                            <>
+                                              <span className="rounded-full bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
+                                                저장 여행지 카드와 연결됨
+                                              </span>
+                                              <Link
+                                                to={`/explore/${contentId}`}
+                                                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/15 bg-white px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-primary transition hover:bg-primary hover:text-white"
+                                              >
+                                                <span className="material-symbols-outlined text-base">open_in_new</span>
+                                                View_Data
+                                              </Link>
+                                            </>
+                                          ) : (
+                                            <span className="rounded-xl border border-primary/10 bg-primary/5 px-3 py-2 text-[11px] font-bold leading-5 text-slate-600">
+                                              문서 전용 추천 장소입니다. 관광공사 검증 여행지 카드로는 저장되지 않습니다.
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          </section>
                         ))}
-                      </div>
-                    </section>
-                  ))}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -656,6 +866,120 @@ const MyPage = () => {
                     <dd className="mt-1 font-bold text-slate-900">{getPlanItemCount(selectedAiPlan)}</dd>
                   </div>
                 </dl>
+
+                <section className="mt-6 rounded-2xl border border-outline-variant/20 bg-white p-4">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Course_Source</p>
+                  <div className="mt-3 space-y-2">
+                    {(() => {
+                      const sourceCounts = getPlanSourceCounts(selectedAiPlan);
+                      return (
+                        <>
+                          <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2">
+                            <span className="text-[11px] font-bold text-primary">공식 여행지</span>
+                            <span className="font-mono text-[11px] font-bold text-primary">{sourceCounts.verified}</span>
+                          </div>
+                          {sourceCounts.candidate > 0 && (
+                            <div className="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2">
+                              <span className="text-[11px] font-bold text-amber-700">공식 후보</span>
+                              <span className="font-mono text-[11px] font-bold text-amber-700">{sourceCounts.candidate}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between rounded-xl bg-slate-100 px-3 py-2">
+                            <span className="text-[11px] font-bold text-slate-500">코스 추천</span>
+                            <span className="font-mono text-[11px] font-bold text-slate-500">{sourceCounts.suggested}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </section>
+
+                <section className="mt-6 rounded-2xl border border-primary/15 bg-white p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Course_Checklist</p>
+                      <p className="mt-1 text-[11px] leading-5 text-slate-400">같은 폴더의 체크리스트와 연결됩니다.</p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-2 py-1 font-mono text-[10px] font-bold text-primary">
+                      {selectedAiPlanChecklistDone}/{selectedAiPlanChecklist.length}
+                    </span>
+                  </div>
+
+                  {selectedAiPlanChecklist.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-outline-variant/30 px-3 py-4 text-center font-mono text-[10px] text-slate-300">
+                      // no_checklist_items
+                    </p>
+                  ) : (
+                    <div className="max-h-52 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                      {selectedAiPlanChecklist.map((note) => (
+                        <button
+                          key={note.id}
+                          type="button"
+                          onClick={() => handleToggleNote(note.id)}
+                          className="flex w-full items-start gap-2 rounded-xl border border-outline-variant/10 bg-slate-50 px-3 py-2 text-left transition hover:border-primary/30 hover:bg-primary/5"
+                        >
+                          <span className={`material-symbols-outlined mt-0.5 text-base ${note.is_completed ? 'text-emerald-500' : 'text-slate-300'}`}>
+                            {note.is_completed ? 'check_box' : 'check_box_outline_blank'}
+                          </span>
+                          <span className={`min-w-0 flex-1 text-[11px] leading-5 ${note.is_completed ? 'text-slate-300 line-through' : 'text-slate-600'}`}>
+                            {note.content}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="mt-6 rounded-2xl border border-outline-variant/20 bg-white p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Course_Memo</p>
+                      <p className="mt-1 text-[11px] leading-5 text-slate-400">같은 폴더의 메모와 연결됩니다.</p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 font-mono text-[10px] font-bold text-slate-500">
+                      {selectedAiPlanMemos.length}
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleAddAiPlanMemo} className="mb-3 flex gap-2">
+                    <input
+                      type="text"
+                      value={aiPlanMemoInput}
+                      onChange={(event) => setAiPlanMemoInput(event.target.value)}
+                      placeholder="코스 메모 작성..."
+                      disabled={aiPlanMemoPending}
+                      className="min-w-0 flex-1 rounded-xl border border-outline-variant/20 bg-slate-50 px-3 py-2 text-[11px] outline-none transition focus:border-primary"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!aiPlanMemoInput.trim() || aiPlanMemoPending}
+                      className="material-symbols-outlined flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-base text-white transition hover:brightness-110 disabled:bg-slate-200 disabled:text-slate-400"
+                      aria-label="코스 메모 추가"
+                    >
+                      keyboard_return
+                    </button>
+                  </form>
+
+                  {selectedAiPlanMemos.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-outline-variant/30 px-3 py-4 text-center font-mono text-[10px] text-slate-300">
+                      // no_course_memo
+                    </p>
+                  ) : (
+                    <div className="max-h-44 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                      {selectedAiPlanMemos.map((memo) => (
+                        <div key={memo.id} className="rounded-xl border border-outline-variant/10 bg-slate-50 px-3 py-2">
+                          <p className="text-[11px] leading-5 text-slate-600">{memo.content}</p>
+                          {memo.created_at && (
+                            <p className="mt-1 font-mono text-[9px] text-slate-300">
+                              {new Date(memo.created_at).toLocaleDateString('ko-KR').replace(/\s/g, '')}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
                 <div className="mt-8 space-y-2">
                   <button
                     type="button"

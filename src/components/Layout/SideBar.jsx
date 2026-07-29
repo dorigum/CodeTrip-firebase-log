@@ -410,6 +410,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           setAccessConfirmOpen(false);
           navigate('/login');
         }}
+        onClose={() => setAccessConfirmOpen(false)}
         onCancel={() => {
           setAccessConfirmOpen(false);
           navigate('/');

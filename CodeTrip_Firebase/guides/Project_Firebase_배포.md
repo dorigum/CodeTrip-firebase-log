@@ -1,12 +1,8 @@
-
-
-
-
 # CodeTrip Firebase 배포 전환 문서
 
-> 작성일: 2026-05-02  
-> 대상 브랜치: `firebase`  
-> 배포 URL: https://newagent-9c2a8.web.app  
+> 작성일: 2026-05-02
+> 대상 브랜치: `main`
+> 배포 URL: https://dorigum-codetrip.web.app
 > Realtime Database URL: `https://newagent-9c2a8.firebaseio.com`
 
 ---
@@ -15,7 +11,7 @@
 
 이 문서는 CodeTrip 프로젝트를 기존 Express/MySQL 기반 구조에서 Firebase 기반 무료 배포 구조로 전환한 작업 내역을 정리합니다.
 
-기존 `main` 브랜치는 팀 협업용 코드 흐름을 유지하고, Firebase 배포 버전은 별도 `firebase` 브랜치에서 관리합니다. 따라서 본 문서는 `firebase` 브랜치 기준의 배포, 설정, 데이터 구조, 운영 방법을 설명합니다.
+현재 CodeTrip은 개인 단독 작업 기준으로 관리하며, Firebase 배포 가능한 기준 브랜치는 `main`입니다. 위험도가 있는 변경이나 장기 실험은 짧은 `feature/...` 브랜치에서 작업한 뒤 `main`으로 병합합니다.
 
 ---
 
@@ -96,7 +92,7 @@ firebase.json
 ```text
 Firebase Project ID: newagent-9c2a8
 Firebase Project Name: CodeTrip
-Hosting URL: https://newagent-9c2a8.web.app
+Hosting URL: https://dorigum-codetrip.web.app
 Realtime Database URL: https://newagent-9c2a8.firebaseio.com
 ```
 
@@ -388,7 +384,8 @@ Firebase 무료 배포 버전에서는 서버를 제거했으므로 브라우저
 
 - 첫 요청 또는 캐시 만료 이후에는 외부 API 호출이 발생합니다.
 - 서버 프록시가 없으므로 API 키를 완전히 숨길 수는 없습니다.
-- `apiCache`는 비로그인 사용자도 읽고 쓸 수 있게 열어 두었습니다. 소규모 시연용 구조이며, 실제 운영 서비스라면 Cloud Functions 또는 Cloud Run 프록시로 이전하는 것이 안전합니다.
+- `apiCache`는 반올림 좌표 기반 위치명 캐시 등 사용 흔적이 포함될 수 있으므로 로그인 사용자만 읽을 수 있도록 제한하고, 클라이언트 쓰기는 차단합니다.
+- 비회원 공개 페이지에서는 Realtime Database 공유 캐시를 호출하지 않고, 메모리/localStorage 캐시 또는 외부 API 직접 호출 fallback을 사용합니다.
 
 ---
 
@@ -513,7 +510,7 @@ boardComments: 누구나 읽기, 로그인 사용자만 쓰기
 travelComments: 누구나 읽기, 로그인 사용자만 쓰기
 wishlists: 로그인 사용자만 읽기, 본인 데이터만 쓰기
 wishlistFolders: 로그인 사용자만 읽기, 본인 데이터만 쓰기
-apiCache: 누구나 읽기/쓰기, expiresAt/updatedAt 숫자 필드 검증
+apiCache: 로그인 사용자만 읽기, 클라이언트 쓰기 차단
 wishlistNotes: 로그인 사용자만 읽기, 본인 데이터만 쓰기
 notifications: 로그인 사용자만 읽기, 본인 데이터만 쓰기
 ```
@@ -578,10 +575,10 @@ SPA 라우팅을 위해 모든 경로를 `/index.html`로 rewrite합니다.
 
 ## 11. 배포 절차
 
-Firebase 배포 버전은 반드시 `firebase` 브랜치에서 작업합니다.
+Firebase 배포는 `main` 브랜치 기준으로 진행합니다. 기능 브랜치에서 작업한 경우 PR 또는 셀프 리뷰 후 `main`으로 병합한 뒤 배포합니다.
 
 ```bash
-git switch firebase
+git switch main
 npm run build
 npx firebase-tools deploy --only hosting,database
 ```
@@ -589,7 +586,7 @@ npx firebase-tools deploy --only hosting,database
 배포 성공 시 확인할 URL:
 
 ```text
-https://newagent-9c2a8.web.app
+https://dorigum-codetrip.web.app
 ```
 
 Realtime Database 데이터 확인:
@@ -617,59 +614,59 @@ npx firebase-tools deploy --only hosting,database
 
 ```text
 npm run build: 성공
-npm run lint: 오류 없음, 기존 React Hook warning 12개 확인
+npm run lint: 오류 없음, 기존 React Hook warning 10개 확인
 firebase deploy: Hosting + Realtime Database rules 배포 성공
 ```
 
 배포 완료 메시지:
 
 ```text
-Hosting URL: https://newagent-9c2a8.web.app
+Hosting URL: https://dorigum-codetrip.web.app
 ```
 
 ---
 
 ## 13. Git 브랜치 운영
 
-### 13.1 브랜치 분리 이유
+### 13.1 브랜치 운영 기준
 
-`main` 브랜치는 팀 협업용 기존 코드 흐름을 유지합니다.  
-Firebase 배포 버전은 개인 배포 목적이므로 `firebase` 브랜치에서만 관리합니다.
+현재 저장소는 개인 단독 작업 기준으로 관리합니다.
+Firebase 배포 가능한 기준 브랜치는 `main`입니다.
 
 ```text
 main
-  팀 협업용, 기존 Express/MySQL 구조 유지
+  Firebase 배포 기준 브랜치
 
-firebase
-  개인 배포용, Firebase Auth + Realtime Database 구조
+feature/...
+  위험도가 있는 기능, 실험, 문서 정리 작업을 분리하는 짧은 작업 브랜치
 ```
 
-### 13.2 작업 커밋
+### 13.2 작업 커밋 기준
 
-Firebase 전환 커밋:
+커밋 메시지는 날짜와 태그를 포함해 작성합니다.
 
 ```text
-b921ebf 260502 feat: Firebase Realtime Database 전환
+yymmdd 태그: 작업한 내용
 ```
 
-### 13.3 PR 상태
-
-PR:
+예시:
 
 ```text
-#16 260502 feat: Firebase Realtime Database 전환
-base: main
-compare: firebase
+260729 feat: 날씨 및 위치 API 캐시 적용
 ```
 
-이 PR은 main에 병합하지 않고 draft 상태로 유지하는 것을 권장합니다.
+### 13.3 PR 사용 기준
 
-주의:
+PR은 필수 절차가 아니며, 다음 상황에서 선택적으로 사용합니다.
 
 ```text
-Merge pull request 버튼을 누르면 firebase 작업이 main에 병합됩니다.
-main을 건드리지 않으려면 병합하지 않습니다.
+변경 범위가 큰 기능 작업
+CodeRabbit 리뷰가 필요한 작업
+main 병합 전 셀프 리뷰가 필요한 작업
+공모전 제출 전 최종 점검
 ```
+
+일반적인 소규모 수정은 `main`에서 바로 진행할 수 있습니다.
 
 ---
 
@@ -785,11 +782,15 @@ Cloud Functions
 
 1. 기존 Firebase 데이터가 있는 경우 마이그레이션 스크립트 작성
 2. 게시글 목록 검색/정렬용 인덱스 추가 검토
-3. 공공데이터 API 호출 캐싱 전략 보완
+3. 공공데이터, 날씨, 위치명 API 캐시 정책 지속 점검
 4. Firebase Storage 또는 압축 이미지 정책 개선
 5. Cloud Functions 도입 가능 시 알림 fan-out 재설계
 6. Firebase Hosting preview channel 도입
-7. CI/CD에서 `firebase` 브랜치만 자동 배포하도록 분리
+7. Gemini API 호출을 Firebase Functions로 이전
+8. Gemini API key를 Functions Secret으로 관리
+9. 최종 제출 빌드에서 프론트엔드 `VITE_GEMINI_API_KEY` 제거 확인
+
+Gemini API key가 프론트엔드 번들에 포함된 상태는 최종 제출 배포 차단 조건으로 봅니다. 제출 직전에는 Blaze 전환, Functions endpoint 구성, Functions Secret 등록, AI 코스 생성/저장 회귀 테스트를 완료한 뒤 배포합니다.
 
 ---
 
@@ -904,26 +905,27 @@ npm run build 성공
 npm run lint 성공, error 0개
 ```
 
-### Firebase 브랜치 작업 흐름
+### 작업 브랜치 흐름
 
 ```bash
-git switch firebase
+git switch feature/작업명
 
 # 작업
 npm run build
-npx firebase-tools deploy --only hosting,database
 
 git add -A
-git commit -m "260502 fix: ..."
-git push origin firebase
+git commit -m "260729 feat: ..."
+git push origin feature/작업명
 ```
+
+배포가 필요한 경우 `main` 병합 후 Firebase Hosting 배포를 진행합니다.
 
 ---
 
 ## 19. 결론
 
-Firebase 전환 버전은 CodeTrip을 무료로 배포하고 시연하기 위한 개인 배포 브랜치입니다.  
-`main` 브랜치의 팀 협업용 Express/MySQL 구조와 병합하지 않고, `firebase` 브랜치에서 별도 운영하는 것이 가장 안전합니다.
+Firebase 전환 버전은 CodeTrip을 공모전 제출과 시연에 맞게 운영하기 위한 기준 구조입니다.
+현재는 `main` 브랜치를 Firebase 배포 기준으로 두고, 실험성 작업만 `feature/...` 브랜치로 분리하는 방식이 가장 단순하고 안전합니다.
 
 ---
 
@@ -947,7 +949,7 @@ hosting release complete
 ### 배포 URL
 
 ```text
-https://newagent-9c2a8.web.app
+https://dorigum-codetrip.web.app
 ```
 
 ### 배포 범위
