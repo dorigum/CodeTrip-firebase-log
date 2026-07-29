@@ -365,6 +365,7 @@ const MyPage = () => {
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
+  const getPlanContentId = (item) => item.contentId || item.contentid || item.content_id || '';
   const getPlanSourceType = (item) => {
     if (item.tourApiVerified) return 'verified';
     if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) return 'suggested';
@@ -707,9 +708,12 @@ const MyPage = () => {
                                 const itemKey = `${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`;
                                 const isExpanded = Boolean(expandedAiPlanItems[itemKey]);
                                 const sourceBadge = getPlanSourceBadge(item);
+                                const sourceType = getPlanSourceType(item);
+                                const contentId = getPlanContentId(item);
                                 const address = getPlanAddress(item);
                                 const note = getPlanNote(item);
                                 const tip = item.tip && item.tip !== note ? item.tip : '';
+                                const hasDetailLink = contentId && sourceType !== 'suggested';
 
                                 return (
                                   <article key={itemKey} className="bg-white/70 transition hover:bg-primary/5">
@@ -766,6 +770,26 @@ const MyPage = () => {
                                         {!address && !note && !tip && (
                                           <p className="font-mono text-xs text-slate-400">// no_extra_place_detail</p>
                                         )}
+                                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                                          {hasDetailLink ? (
+                                            <>
+                                              <span className="rounded-full bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
+                                                저장 여행지 카드와 연결됨
+                                              </span>
+                                              <Link
+                                                to={`/explore/${contentId}`}
+                                                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/15 bg-white px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-primary transition hover:bg-primary hover:text-white"
+                                              >
+                                                <span className="material-symbols-outlined text-base">open_in_new</span>
+                                                View_Data
+                                              </Link>
+                                            </>
+                                          ) : (
+                                            <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold leading-5 text-slate-500">
+                                              문서 전용 추천 장소입니다. 관광공사 검증 여행지 카드로는 저장되지 않습니다.
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                   </article>
