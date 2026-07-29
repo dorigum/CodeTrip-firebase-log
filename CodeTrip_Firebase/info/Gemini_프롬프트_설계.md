@@ -537,7 +537,7 @@ Gemini API 오류 메시지 간소화 처리
 ```text
 npm run lint 성공
 lint error 0개
-기존 React Hook warning 12개 유지
+기존 React Hook warning 10개 유지
 
 npm run build 성공
 기존과 동일하게 일부 chunk size warning 발생

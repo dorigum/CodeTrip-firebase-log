@@ -5,6 +5,7 @@ import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
 import ConfirmModal from '../components/ConfirmModal';
+import { getPlanContentId, getPlanSourceBadge, getPlanSourceType } from '../utils/aiPlanSource';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
 const DATE_MIN = '1000-01-01';
@@ -389,7 +390,6 @@ const MyPage = () => {
   const getPlanPlaceName = (item) => item.placeName || item.title || item.name || '추천 장소';
   const getPlanAddress = (item) => item.address || item.addr1 || item.location || '';
   const getPlanNote = (item) => item.reason || item.description || item.tip || item.memo || item.note || '';
-  const getPlanContentId = (item) => item.contentId || item.contentid || item.content_id || '';
   const getCourseSummaryPreview = (plan) => {
     const rawText = String(plan?.summary || plan?.legacy_content || '').replace(/\s+/g, ' ').trim();
     if (!rawText) return '';
@@ -407,21 +407,6 @@ const MyPage = () => {
 
     if (summary.length <= 180) return summary;
     return `${summary.slice(0, 180).replace(/\s+\S*$/, '')}...`;
-  };
-  const getPlanSourceType = (item) => {
-    if (item.tourApiVerified) return 'verified';
-    if (item.source === 'ai_generated' || !(item.contentId || item.contentid || item.content_id)) return 'suggested';
-    return 'candidate';
-  };
-  const getPlanSourceBadge = (item) => {
-    const sourceType = getPlanSourceType(item);
-    if (sourceType === 'verified') {
-      return { label: '공식 여행지', className: 'bg-primary/10 text-primary ring-1 ring-primary/15' };
-    }
-    if (sourceType === 'suggested') {
-      return { label: '코스 추천', className: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200' };
-    }
-    return { label: '공식 후보', className: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' };
   };
   const getPlanItemCount = (plan) => getPlanDays(plan)
     .reduce((total, day) => total + getPlanItems(day).length, 0);

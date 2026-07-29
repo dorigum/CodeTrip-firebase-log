@@ -384,7 +384,8 @@ Firebase 무료 배포 버전에서는 서버를 제거했으므로 브라우저
 
 - 첫 요청 또는 캐시 만료 이후에는 외부 API 호출이 발생합니다.
 - 서버 프록시가 없으므로 API 키를 완전히 숨길 수는 없습니다.
-- `apiCache`는 비로그인 사용자도 읽고 쓸 수 있게 열어 두었습니다. 소규모 시연용 구조이며, 실제 운영 서비스라면 Cloud Functions 또는 Cloud Run 프록시로 이전하는 것이 안전합니다.
+- `apiCache`는 반올림 좌표 기반 위치명 캐시 등 사용 흔적이 포함될 수 있으므로 로그인 사용자만 읽고 쓸 수 있도록 제한합니다.
+- 비회원 공개 페이지에서는 Realtime Database 공유 캐시를 호출하지 않고, 메모리/localStorage 캐시 또는 외부 API 직접 호출 fallback을 사용합니다.
 
 ---
 
@@ -509,7 +510,7 @@ boardComments: 누구나 읽기, 로그인 사용자만 쓰기
 travelComments: 누구나 읽기, 로그인 사용자만 쓰기
 wishlists: 로그인 사용자만 읽기, 본인 데이터만 쓰기
 wishlistFolders: 로그인 사용자만 읽기, 본인 데이터만 쓰기
-apiCache: 누구나 읽기/쓰기, expiresAt/updatedAt 숫자 필드 검증
+apiCache: 로그인 사용자만 읽기/쓰기, expiresAt/updatedAt 숫자 필드 검증
 wishlistNotes: 로그인 사용자만 읽기, 본인 데이터만 쓰기
 notifications: 로그인 사용자만 읽기, 본인 데이터만 쓰기
 ```
@@ -613,7 +614,7 @@ npx firebase-tools deploy --only hosting,database
 
 ```text
 npm run build: 성공
-npm run lint: 오류 없음, 기존 React Hook warning 12개 확인
+npm run lint: 오류 없음, 기존 React Hook warning 10개 확인
 firebase deploy: Hosting + Realtime Database rules 배포 성공
 ```
 
@@ -787,6 +788,9 @@ Cloud Functions
 6. Firebase Hosting preview channel 도입
 7. Gemini API 호출을 Firebase Functions로 이전
 8. Gemini API key를 Functions Secret으로 관리
+9. 최종 제출 빌드에서 프론트엔드 `VITE_GEMINI_API_KEY` 제거 확인
+
+Gemini API key가 프론트엔드 번들에 포함된 상태는 최종 제출 배포 차단 조건으로 봅니다. 제출 직전에는 Blaze 전환, Functions endpoint 구성, Functions Secret 등록, AI 코스 생성/저장 회귀 테스트를 완료한 뒤 배포합니다.
 
 ---
 

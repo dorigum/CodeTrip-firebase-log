@@ -4,7 +4,7 @@
 
 이 문서는 CodeTrip 프로젝트가 기존 Express/MySQL 기반 구조에서 Firebase 기반 배포 구조로 변경되면서 달라진 프로젝트 구조, 데이터 흐름, 주요 기능, 운영 방식을 상세히 정리한 문서입니다.
 
-대상 브랜치: `firebase`  
+대상 브랜치: `main`
 배포 방식: Firebase Hosting 정적 배포  
 인증 방식: Firebase Authentication  
 데이터 저장소: Firebase Realtime Database  

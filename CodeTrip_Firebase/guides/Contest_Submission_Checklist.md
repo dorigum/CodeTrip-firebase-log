@@ -67,15 +67,18 @@ React / Vite
 
 ## 5. Gemini 기능 제출 전 메모
 
-현재 Gemini 기능은 프론트엔드에서 API를 호출하는 구조입니다. 공모전 최종 제출 전에는 아래 방향으로 전환하는 것을 권장합니다.
+현재 Gemini 기능은 프론트엔드에서 API를 호출하는 구조입니다. 프론트엔드 환경변수는 빌드 결과물에 포함될 수 있으므로 비밀값 보호 수단이 아닙니다.
+
+공모전 최종 제출 전에는 아래 전환 작업을 **배포 차단 조건**으로 두고 반드시 완료합니다.
 
 - Firebase 프로젝트 Blaze 요금제 전환
 - Firebase Functions 추가
 - Gemini API key를 Functions Secret으로 관리
 - 프론트엔드는 Gemini API key를 직접 사용하지 않고 Functions endpoint 호출
 - Functions 전환 후 AI 코스 생성/저장/오류 안내 흐름 재테스트
+- 최종 제출 빌드에서 `VITE_GEMINI_API_KEY` 제거 확인
 
-Blaze 전환은 결제 계정 연결이 필요한 작업이므로 제출 직전 최종 단계에서 진행합니다.
+Blaze 전환은 결제 계정 연결이 필요한 작업이므로 제출 직전 최종 단계에서 진행하되, Functions 전환이 완료되기 전에는 최종 제출 배포를 진행하지 않습니다.
 
 ---
 

@@ -39,6 +39,7 @@ React / Vite
 
 서버 API 의존도를 줄이고, 브라우저에서 Firebase Web SDK와 공공데이터 API를 직접 사용하는 구조입니다.
 공공데이터, 날씨, 위치명 조회는 `apiCache` 공통 레이어를 통해 메모리, localStorage, Realtime Database 캐시를 함께 사용합니다.
+Realtime Database 공유 캐시는 로그인 사용자만 접근하며, 비회원 공개 화면에서는 메모리/localStorage 캐시와 외부 API 직접 호출 흐름으로 동작합니다.
 
 ## ✨ 주요 기능
 
@@ -335,7 +336,7 @@ Hosting 배포 대상은 `firebase.json`의 Hosting 설정에 따라 `dist/`입�
 - Realtime Database Rules 반영 후 권한 오류 수정 확인
 - `npm run build` 성공
 - `npm run lint` error 0개 확인
-- 기존 React Hook warning 12개는 남아 있으나, Firebase 데이터 구조 변경으로 인한 신규 lint error는 없음
+- 기존 React Hook warning 10개는 남아 있으나, Firebase 데이터 구조 변경으로 인한 신규 lint error는 없음
 - `npx firebase-tools deploy --only hosting,database`로 Firebase Hosting과 Realtime Database Rules 배포 완료
 - Firebase Hosting 배포 URL 접속 확인: https://dorigum-codetrip.web.app
 
