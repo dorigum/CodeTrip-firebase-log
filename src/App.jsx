@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './components/Layout/Header';
 import SideBar from './components/Layout/SideBar';
 import Footer from './components/Layout/Footer';
+import ApiCacheStatus from './components/ApiCacheStatus';
 import useRegionStore from './store/useRegionStore';
 import useAuthStore from './store/useAuthStore';
 import { ToastProvider } from './context/ToastProvider';
@@ -66,6 +67,7 @@ const App = () => {
             {/* 푸터 복구 */}
             <Footer />
           </div>
+          <ApiCacheStatus />
 
           <button
             type="button"
