@@ -38,6 +38,7 @@ const MyPage = () => {
   const [editFolderEnd, setEditFolderEnd] = useState('');
   const [movingItemId, setMovingItemId] = useState(null);
   const [selectedAiPlan, setSelectedAiPlan] = useState(null);
+  const [selectedAiPlanDayIndex, setSelectedAiPlanDayIndex] = useState(0);
   const [editingAiPlan, setEditingAiPlan] = useState(false);
   const [editAiPlanTitle, setEditAiPlanTitle] = useState('');
   const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
@@ -389,12 +390,14 @@ const MyPage = () => {
 
   const openAiPlan = (plan) => {
     setEditingAiPlan(false);
+    setSelectedAiPlanDayIndex(0);
     setSelectedAiPlan(plan);
   };
 
   const closeAiPlan = () => {
     if (aiPlanPending) return;
     setEditingAiPlan(false);
+    setSelectedAiPlanDayIndex(0);
     setSelectedAiPlan(null);
   };
 
@@ -649,40 +652,74 @@ const MyPage = () => {
                 )}
 
                 <div className="mt-8 space-y-6">
-                  {getPlanDays(selectedAiPlan).map((day, dayIndex) => (
-                    <section key={`${selectedAiPlan.id}-detail-${day.day || dayIndex}`} className="rounded-2xl border border-outline-variant/20">
-                      <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
-                        <p className="font-mono text-xs font-bold text-primary">## DAY_{day.day || dayIndex + 1}</p>
-                        <h3 className="mt-1 font-headline text-xl font-bold text-slate-950">{day.theme || day.title || '추천 일정'}</h3>
-                      </div>
-                      <div className="divide-y divide-outline-variant/10">
-                        {getPlanItems(day).map((item, itemIndex) => (
-                          <div key={`${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`} className="grid gap-4 px-5 py-5 md:grid-cols-[86px_minmax(0,1fr)]">
-                            <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
-                            <div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h4 className="font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
-                                {(item.category || item.cat3Name || item.type) && (
-                                  <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
-                                    {item.category || item.cat3Name || item.type}
-                                  </span>
-                                )}
-                                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
-                                  {getPlanSourceBadge(item).label}
-                                </span>
-                              </div>
-                              {getPlanAddress(item) && (
-                                <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
-                              )}
-                              {getPlanNote(item) && (
-                                <p className="mt-3 text-sm leading-7 text-slate-600">{getPlanNote(item)}</p>
-                              )}
-                            </div>
+                  {(() => {
+                    const planDays = getPlanDays(selectedAiPlan);
+                    const activeDayIndex = Math.min(selectedAiPlanDayIndex, Math.max(planDays.length - 1, 0));
+                    const visiblePlanDays = planDays.length <= 1
+                      ? planDays.map((day, dayIndex) => ({ day, dayIndex }))
+                      : planDays
+                        .map((day, dayIndex) => ({ day, dayIndex }))
+                        .filter(({ dayIndex }) => dayIndex === activeDayIndex);
+
+                    return (
+                      <>
+                        {planDays.length > 1 && (
+                          <div className="flex gap-2 overflow-x-auto rounded-2xl border border-outline-variant/20 bg-slate-50 p-2 custom-scrollbar">
+                            {planDays.map((day, dayIndex) => (
+                              <button
+                                key={`${selectedAiPlan.id}-day-tab-${day.day || dayIndex}`}
+                                type="button"
+                                onClick={() => setSelectedAiPlanDayIndex(dayIndex)}
+                                className={`flex min-w-[104px] flex-1 flex-col items-start rounded-xl px-4 py-3 text-left transition ${
+                                  activeDayIndex === dayIndex
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'bg-white text-slate-500 hover:bg-primary/5 hover:text-primary'
+                                }`}
+                              >
+                                <span className="font-label text-[10px] font-bold uppercase tracking-[0.18em]">Day {day.day || dayIndex + 1}</span>
+                                <span className="mt-1 line-clamp-1 text-xs font-bold">{day.theme || day.title || '추천 일정'}</span>
+                              </button>
+                            ))}
                           </div>
+                        )}
+
+                        {visiblePlanDays.map(({ day, dayIndex }) => (
+                          <section key={`${selectedAiPlan.id}-detail-${day.day || dayIndex}`} className="rounded-2xl border border-outline-variant/20">
+                            <div className="border-b border-outline-variant/15 bg-slate-50 px-5 py-4">
+                              <p className="font-mono text-xs font-bold text-primary">## DAY_{day.day || dayIndex + 1}</p>
+                              <h3 className="mt-1 font-headline text-xl font-bold text-slate-950">{day.theme || day.title || '추천 일정'}</h3>
+                            </div>
+                            <div className="divide-y divide-outline-variant/10">
+                              {getPlanItems(day).map((item, itemIndex) => (
+                                <div key={`${selectedAiPlan.id}-detail-${dayIndex}-${itemIndex}`} className="grid gap-4 px-5 py-5 md:grid-cols-[86px_minmax(0,1fr)]">
+                                  <span className="font-mono text-sm font-bold text-primary">{item.time || item.startTime || `${itemIndex + 1}.`}</span>
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <h4 className="font-headline text-lg font-bold text-slate-950">{getPlanPlaceName(item)}</h4>
+                                      {(item.category || item.cat3Name || item.type) && (
+                                        <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
+                                          {item.category || item.cat3Name || item.type}
+                                        </span>
+                                      )}
+                                      <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${getPlanSourceBadge(item).className}`}>
+                                        {getPlanSourceBadge(item).label}
+                                      </span>
+                                    </div>
+                                    {getPlanAddress(item) && (
+                                      <p className="mt-1 text-xs text-slate-400">{getPlanAddress(item)}</p>
+                                    )}
+                                    {getPlanNote(item) && (
+                                      <p className="mt-3 text-sm leading-7 text-slate-600">{getPlanNote(item)}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
                         ))}
-                      </div>
-                    </section>
-                  ))}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
