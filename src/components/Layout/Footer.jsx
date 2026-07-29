@@ -5,7 +5,7 @@ const Footer = () => {
 	return (
 		<footer className="flex justify-between px-10 w-full mt-auto py-4 bg-background border-t border-outline-variant/15">
           <div className="font-label text-xs uppercase tracking-widest text-on-secondary-container opacity-70">
-            /* © 2026 Code Trip - System Status: Optimal */
+            /* © 2026 CodeTrip - System Status: Optimal */
           </div>
           <div className="flex gap-6">
             <a

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getFestivalList } from '../api/travelApi';
 import useWishlistStore from '../store/useWishlistStore';
@@ -6,6 +6,7 @@ import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
+import { DEFAULT_REGIONS } from '../constants/regions';
 
 const Festivals = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,7 @@ const Festivals = () => {
   // URL 파라미터에서 현재 상태 읽기
   const page = parseInt(searchParams.get('page')) || 1;
   const sortOrder = searchParams.get('sort') || 'default';
+  const regionCode = searchParams.get('region') || '';
 
   const { isLoggedIn } = useAuthStore();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
@@ -26,13 +28,25 @@ const Festivals = () => {
   const [selectedTravel, setSelectedTravel] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const makeFestivalParams = useCallback(({ nextPage = page, nextSort = sortOrder, nextRegion = regionCode } = {}) => {
+    const params = {
+      page: String(nextPage),
+      sort: nextSort,
+    };
+    if (nextRegion) params.region = nextRegion;
+    return params;
+  }, [page, sortOrder, regionCode]);
+
   useEffect(() => {
     const fetchFestivals = async () => {
       setLoading(true);
       try {
-        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder);
+        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode);
         setFestivals(data.items || []);
         setTotalPages(data.totalPages || 0);
+        if (data.totalPages > 0 && page > data.totalPages) {
+          setSearchParams(makeFestivalParams({ nextPage: data.totalPages }));
+        }
       } catch (err) {
         console.error('Fetch festivals failed:', err);
         showToast('축제 데이터를 불러오는 데 실패했습니다.');
@@ -41,7 +55,7 @@ const Festivals = () => {
       }
     };
     fetchFestivals();
-  }, [page, sortOrder, showToast]);
+  }, [page, sortOrder, regionCode, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (isLoggedIn && !wishlistInitialized) {
@@ -50,12 +64,16 @@ const Festivals = () => {
   }, [isLoggedIn, wishlistInitialized]);
 
   const handlePageChange = (newPage) => {
-    setSearchParams({ page: newPage, sort: sortOrder });
+    setSearchParams(makeFestivalParams({ nextPage: newPage }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSortChange = (newSort) => {
-    setSearchParams({ page: 1, sort: newSort }); // 정렬 변경 시 1페이지로
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextSort: newSort }));
+  };
+
+  const handleRegionChange = (newRegion) => {
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextRegion: newRegion }));
   };
 
   const handleHeartToggle = async (e, post) => {
@@ -99,15 +117,28 @@ const Festivals = () => {
           title="전국 축제 및 행사 정보"
           description="대한민국 곳곳에서 열리는 활기찬 축제 데이터를 탐색하세요."
           action={(
-          <select 
-            value={sortOrder}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
-          >
-            <option value="default">DEFAULT_NODES</option>
-            <option value="date_asc">DATE_ASCENDING</option>
-            <option value="date_desc">DATE_DESCENDING</option>
-          </select>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <select
+                value={regionCode}
+                onChange={(e) => handleRegionChange(e.target.value)}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
+              >
+                {DEFAULT_REGIONS.map((region) => (
+                  <option key={region.code || 'all'} value={region.code}>
+                    {region.code ? `REGION_${region.name}` : 'REGION_ALL'}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sortOrder}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
+              >
+                <option value="default">DEFAULT_NODES</option>
+                <option value="date_asc">DATE_ASCENDING</option>
+                <option value="date_desc">DATE_DESCENDING</option>
+              </select>
+            </div>
           )}
         />
       </div>
@@ -122,7 +153,7 @@ const Festivals = () => {
         ) : festivals.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center gap-2 grayscale opacity-30">
             <span className="material-symbols-outlined text-6xl">inventory_2</span>
-            <p className="font-mono text-sm">// no_festivals_found_in_cache</p>
+            <p className="font-mono text-sm">// no_active_or_upcoming_festivals</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

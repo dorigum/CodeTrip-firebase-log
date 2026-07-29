@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { cachedApiRequest } from './apiCache';
 import authApi from './authApi';
-import { getTravelInfo, getTravelInfoByKeyword } from './travelInfoApi';
+import { getFestivalInfo, getTravelInfo, getTravelInfoByKeyword } from './travelInfoApi';
 import { getWeather } from './weatherApi';
 
 const PHOTO_BASE_URL = 'https://apis.data.go.kr/B551011/PhotoGalleryService1';
@@ -151,9 +151,9 @@ export const getSpontaneousTravel = async (weatherKeyword = DEFAULT_KEYWORD, wea
   };
 };
 
-export const getFestivalList = async (page = 1, limit = 8, sort = 'default') => {
-  const { items, totalCount } = await getTravelInfo({ pageNo: page, numOfRows: limit, contentTypeId: '15' });
-  return { items, totalCount, page, limit, sort };
+export const getFestivalList = async (page = 1, limit = 8, sort = 'default', region = '') => {
+  const data = await getFestivalInfo({ pageNo: page, numOfRows: limit, sort, lDongRegnCd: region || undefined });
+  return { ...data, page, limit, sort, region };
 };
 
 export const getWeatherRecommendations = async (keyword) => {

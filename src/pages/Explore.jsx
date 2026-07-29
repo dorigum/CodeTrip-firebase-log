@@ -18,7 +18,6 @@ const Explore = () => {
   const [regionOpen, setRegionOpen] = useState(true);
   const [themeOpen, setThemeOpen] = useState(true);
   const [activeAnimId, setActiveAnimId] = useState(null); // 강제 애니메이션 트리거용 ID
-  const [pageInput, setPageInput] = useState('');
   const [favoriteRegions, setFavoriteRegions] = useState([]);
 
   const { isLoggedIn } = useAuthStore();
@@ -160,24 +159,6 @@ const Explore = () => {
     const el = document.getElementById('main-scroll');
     if (el) el.scrollTop = 0;
   }, [currentPage]);
-
-  const handlePageInputSubmit = (e) => {
-    e.preventDefault();
-    const page = parseInt(pageInput);
-    if (!isNaN(page) && page >= 1 && page <= totalPages) {
-      changePage(page);
-    }
-    setPageInput('');
-  };
-
-  const getPageNumbers = () => {
-    const WINDOW = 2;
-    const start = Math.max(1, currentPage - WINDOW);
-    const end = Math.min(totalPages, currentPage + WINDOW);
-    const pages = [];
-    for (let i = start; i <= end; i++) pages.push(i);
-    return pages;
-  };
 
   const filteredPosts = posts.filter((post) =>
     post.title?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -412,70 +393,46 @@ const Explore = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-12 flex items-center justify-center gap-1 font-mono">
+                <div className="mt-12 flex items-center justify-center gap-2 pb-6">
                   <button
-                    onClick={() => changePage(currentPage - 1)}
+                    onClick={() => changePage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg text-on-secondary-container hover:bg-surface-container-high disabled:opacity-30 transition-colors"
+                    className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    <span className="material-symbols-outlined text-lg">chevron_left</span>
                   </button>
 
-                  {getPageNumbers()[0] > 1 && (
-                    <>
-                      <button onClick={() => changePage(1)} className="w-9 h-9 rounded-lg text-xs hover:bg-surface-container-high transition-colors">1</button>
-                      {getPageNumbers()[0] > 2 && <span className="w-9 h-9 flex items-center justify-center text-xs text-outline">..</span>}
-                    </>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                      let pageNum = currentPage <= 3
+                        ? i + 1
+                        : (currentPage >= totalPages - 2 ? totalPages - 4 + i : currentPage - 2 + i);
+                      if (pageNum > totalPages) pageNum = totalPages;
+                      if (pageNum <= 0) return null;
 
-                  {getPageNumbers().map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => changePage(page)}
-                      className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
-                        page === currentPage ? 'bg-primary text-white shadow-md scale-110' : 'text-on-secondary-container hover:bg-surface-container-high'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  {getPageNumbers().at(-1) < totalPages && (
-                    <>
-                      {getPageNumbers().at(-1) < totalPages - 1 && <span className="w-9 h-9 flex items-center justify-center text-xs text-outline">..</span>}
-                      <button onClick={() => changePage(totalPages)} className="w-9 h-9 rounded-lg text-xs hover:bg-surface-container-high transition-colors">{totalPages}</button>
-                    </>
-                  )}
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => changePage(pageNum)}
+                          className={`w-10 h-10 rounded-lg font-mono text-sm transition-all ${
+                            currentPage === pageNum
+                              ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20'
+                              : 'hover:bg-slate-50 text-slate-500'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
 
                   <button
-                    onClick={() => changePage(currentPage + 1)}
+                    onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg text-on-secondary-container hover:bg-surface-container-high disabled:opacity-30 transition-colors"
+                    className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                    <span className="material-symbols-outlined text-lg">chevron_right</span>
                   </button>
-
-                  <span className="ml-4 text-[10px] text-outline">
-                    {currentPage} / {totalPages} ({totalCount.toLocaleString()} 건)
-                  </span>
-
-                  <form onSubmit={handlePageInputSubmit} className="ml-4 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min={1}
-                      max={totalPages}
-                      value={pageInput}
-                      onChange={(e) => setPageInput(e.target.value)}
-                      placeholder="페이지"
-                      className="w-16 h-9 text-center text-xs font-mono bg-surface-container-low border border-outline-variant/30 rounded-lg focus:outline-none focus:border-primary text-on-surface"
-                    />
-                    <button
-                      type="submit"
-                      className="h-9 px-2 rounded-lg text-xs font-mono text-on-secondary-container hover:bg-surface-container-high transition-colors"
-                    >
-                      GO
-                    </button>
-                  </form>
                 </div>
               )}
             </>

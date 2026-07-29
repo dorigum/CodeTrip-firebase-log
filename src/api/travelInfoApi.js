@@ -9,8 +9,17 @@ const DAY = 24 * HOUR;
 const CACHE_TTL = {
   list: 12 * HOUR,
   keyword: 6 * HOUR,
+  festival: 6 * HOUR,
   detail: 14 * DAY,
   regions: 30 * DAY,
+};
+
+const FESTIVAL_POOL_PAGE_SIZE = 1000;
+const FESTIVAL_POOL_MAX_ROWS = 3000;
+
+const toDateKey = (date = new Date()) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 10).replace(/-/g, '');
 };
 
 const normalizeItems = (items) => {
@@ -21,6 +30,42 @@ const normalizeItems = (items) => {
     firstimage: (item.firstimage || item.originimgurl || item.galWebImageUrl || '')?.replace('http://', 'https://'),
     originimgurl: (item.originimgurl || item.firstimage || '')?.replace('http://', 'https://'),
   }));
+};
+
+const getFestivalStartDate = (item) =>
+  String(item?.eventstartdate || item?.eventStartDate || '').replace(/\D/g, '').slice(0, 8);
+
+const getFestivalEndDate = (item) =>
+  String(item?.eventenddate || item?.eventEndDate || '').replace(/\D/g, '').slice(0, 8) || getFestivalStartDate(item);
+
+const isActiveOrUpcomingFestival = (item, todayKey) => {
+  const startDate = getFestivalStartDate(item);
+  const endDate = getFestivalEndDate(item);
+  if (!startDate && !endDate) return false;
+  return (endDate || startDate) >= todayKey;
+};
+
+const sortFestivalItems = (items, sort, todayKey) => {
+  const getComparableDate = (item) => getFestivalStartDate(item) || getFestivalEndDate(item) || '99999999';
+  const isOngoing = (item) => {
+    const startDate = getFestivalStartDate(item);
+    const endDate = getFestivalEndDate(item);
+    return startDate && endDate && startDate <= todayKey && endDate >= todayKey;
+  };
+
+  return [...items].sort((a, b) => {
+    if (sort === 'date_desc') {
+      return getComparableDate(b).localeCompare(getComparableDate(a)) || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+    }
+
+    if (sort === 'date_asc') {
+      return getComparableDate(a).localeCompare(getComparableDate(b)) || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+    }
+
+    const ongoingDiff = Number(isOngoing(b)) - Number(isOngoing(a));
+    if (ongoingDiff !== 0) return ongoingDiff;
+    return getComparableDate(a).localeCompare(getComparableDate(b)) || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+  });
 };
 
 const fetchTourApi = async (service, params = {}, ttlMs = CACHE_TTL.list) => {
@@ -94,6 +139,49 @@ export const getTravelInfo = async ({ pageNo = 1, numOfRows = 10, contentTypeId,
   const data = await fetchTourApi('areaBasedList2', { pageNo, numOfRows, contentTypeId, lDongRegnCd, arrange: 'O' }, CACHE_TTL.list);
   const body = data?.response?.body || {};
   return { items: normalizeItems(body.items?.item), totalCount: Number(body.totalCount || 0) };
+};
+
+export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'default', lDongRegnCd } = {}) => {
+  const todayKey = toDateKey();
+  const eventStartDate = `${todayKey.slice(0, 4)}0101`;
+  const firstPageData = await fetchTourApi(
+    'searchFestival2',
+    { pageNo: 1, numOfRows: FESTIVAL_POOL_PAGE_SIZE, eventStartDate, lDongRegnCd, arrange: 'O' },
+    CACHE_TTL.festival
+  );
+  const firstBody = firstPageData?.response?.body || {};
+  const totalRawCount = Number(firstBody.totalCount || 0);
+  const maxRows = Math.min(totalRawCount || FESTIVAL_POOL_PAGE_SIZE, FESTIVAL_POOL_MAX_ROWS);
+  const totalRawPages = Math.max(1, Math.ceil(maxRows / FESTIVAL_POOL_PAGE_SIZE));
+  const rawItems = normalizeItems(firstBody.items?.item);
+
+  if (totalRawPages > 1) {
+    const restPages = await Promise.all(
+      Array.from({ length: totalRawPages - 1 }, (_, index) => index + 2).map((festivalPage) =>
+        fetchTourApi(
+          'searchFestival2',
+          { pageNo: festivalPage, numOfRows: FESTIVAL_POOL_PAGE_SIZE, eventStartDate, lDongRegnCd, arrange: 'O' },
+          CACHE_TTL.festival
+        )
+      )
+    );
+
+    restPages.forEach((pageData) => {
+      const pageBody = pageData?.response?.body || {};
+      rawItems.push(...normalizeItems(pageBody.items?.item));
+    });
+  }
+
+  const filteredItems = rawItems.filter((item) => isActiveOrUpcomingFestival(item, todayKey));
+  const sortedItems = sortFestivalItems(filteredItems, sort, todayKey);
+  const startIndex = (pageNo - 1) * numOfRows;
+  const items = sortedItems.slice(startIndex, startIndex + numOfRows);
+
+  return {
+    items,
+    totalCount: sortedItems.length,
+    totalPages: Math.ceil(sortedItems.length / numOfRows),
+  };
 };
 
 export const getTravelInfoByKeyword = async ({ keyword, pageNo = 1, numOfRows = 10, contentTypeId, lDongRegnCd } = {}) => {
