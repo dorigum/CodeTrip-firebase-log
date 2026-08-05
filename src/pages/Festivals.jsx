@@ -32,6 +32,7 @@ const Festivals = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [subRegions, setSubRegions] = useState([]);
   const [subRegionLoading, setSubRegionLoading] = useState(false);
+  const [festivalError, setFestivalError] = useState('');
 
   const makeFestivalParams = useCallback(({
     nextPage = page,
@@ -53,6 +54,10 @@ const Festivals = () => {
   useEffect(() => {
     if (!regionCode) {
       setSubRegions([]);
+      setSubRegionLoading(false);
+      if (subRegionCode) {
+        setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: '' }));
+      }
       return;
     }
 
@@ -74,7 +79,7 @@ const Festivals = () => {
     return () => {
       ignore = true;
     };
-  }, [regionCode]);
+  }, [regionCode, subRegionCode, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (!subRegionCode || subRegionLoading) return;
@@ -88,9 +93,18 @@ const Festivals = () => {
 
     const fetchFestivals = async () => {
       setLoading(true);
+      setFestivalError('');
       try {
-        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode, keyword, subRegionCode);
+        const data = await getFestivalList(
+          page,
+          ITEMS_PER_PAGE,
+          sortOrder,
+          regionCode,
+          keyword,
+          regionCode ? subRegionCode : '',
+        );
         if (cancelled) return;
+        setFestivalError('');
         setFestivals(data.items || []);
         setTotalPages(data.totalPages || 0);
         if (data.totalPages > 0 && page > data.totalPages) {
@@ -99,6 +113,7 @@ const Festivals = () => {
       } catch (err) {
         if (cancelled) return;
         console.error('Fetch festivals failed:', err);
+        setFestivalError('축제 데이터를 불러오지 못했습니다.');
         showToast('축제 데이터를 불러오는 데 실패했습니다.');
       } finally {
         if (!cancelled) setLoading(false);
@@ -181,6 +196,7 @@ const Festivals = () => {
           action={(
             <div className="flex flex-col gap-2 sm:flex-row">
               <select
+                aria-label="지역 선택"
                 value={regionCode}
                 onChange={(e) => handleRegionChange(e.target.value)}
                 className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
@@ -192,6 +208,7 @@ const Festivals = () => {
                 ))}
               </select>
               <select
+                aria-label="시군구 선택"
                 value={subRegionCode}
                 onChange={(e) => handleSubRegionChange(e.target.value)}
                 disabled={!regionCode || subRegionLoading || subRegions.length === 0}
@@ -207,6 +224,7 @@ const Festivals = () => {
                 ))}
               </select>
               <select
+                aria-label="정렬 기준 선택"
                 value={sortOrder}
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
@@ -223,6 +241,7 @@ const Festivals = () => {
             <span className="text-outline">// searching_festivals:</span>
             <span className="text-primary font-bold">"{keyword}"</span>
             <button
+              aria-label="검색어 삭제"
               onClick={handleClearKeyword}
               className="ml-1 text-outline hover:text-on-surface transition-colors flex items-center"
             >
@@ -238,6 +257,12 @@ const Festivals = () => {
           <div className="h-64 flex flex-col items-center justify-center gap-4 opacity-50">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             <p className="text-xs font-mono uppercase animate-pulse">loading_node_data...</p>
+          </div>
+        ) : festivalError ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-2 text-center">
+            <span className="material-symbols-outlined text-6xl text-error">error</span>
+            <p className="font-mono text-sm text-error">{festivalError}</p>
+            <p className="text-xs text-outline">잠시 후 다시 시도해주세요.</p>
           </div>
         ) : festivals.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center gap-2 grayscale opacity-30">
