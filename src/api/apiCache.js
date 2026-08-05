@@ -120,8 +120,10 @@ export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fet
     emitCacheStatus({ scope, service, cacheKey, source: 'network', expiresAt: nextEntry.expiresAt });
     return data;
   } catch (error) {
-    const staleEntry = remoteEntry || localEntry || memoryEntry;
-    if (staleEntry && Object.prototype.hasOwnProperty.call(staleEntry, 'data')) {
+    const staleEntry = [remoteEntry, localEntry, memoryEntry].find(
+      (entry) => entry && Object.prototype.hasOwnProperty.call(entry, 'data'),
+    );
+    if (staleEntry) {
       console.warn('Using stale API cache after request failure:', error);
       emitCacheStatus({ scope, service, cacheKey, source: 'stale', expiresAt: staleEntry.expiresAt, stale: true });
       return staleEntry.data;

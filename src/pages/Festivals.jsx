@@ -84,23 +84,31 @@ const Festivals = () => {
   }, [subRegionCode, subRegions, subRegionLoading, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchFestivals = async () => {
       setLoading(true);
       try {
         const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder, regionCode, keyword, subRegionCode);
+        if (cancelled) return;
         setFestivals(data.items || []);
         setTotalPages(data.totalPages || 0);
         if (data.totalPages > 0 && page > data.totalPages) {
           setSearchParams(makeFestivalParams({ nextPage: data.totalPages }));
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Fetch festivals failed:', err);
         showToast('축제 데이터를 불러오는 데 실패했습니다.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchFestivals();
+
+    return () => {
+      cancelled = true;
+    };
   }, [page, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {

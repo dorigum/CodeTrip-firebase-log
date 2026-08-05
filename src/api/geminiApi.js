@@ -34,12 +34,6 @@ const readResponseJson = (response) => withTimeout(
   'CodeTrip 여행 코스 응답을 읽는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
 );
 
-const readResponseText = (response) => withTimeout(
-  response.text(),
-  GEMINI_RESPONSE_BODY_TIMEOUT_MS,
-  'CodeTrip 여행 코스 오류 응답을 읽는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
-);
-
 const fetchGeminiWithRetry = async (requestOptions) => {
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
     const controller = new AbortController();
@@ -230,25 +224,10 @@ export const validateTripPlan = (plan) => {
   return plan;
 };
 
-const createGeminiError = async (response) => {
-  let payload = null;
-  let rawMessage = '';
-  try {
-    payload = await readResponseJson(response);
-    rawMessage = payload?.error?.message || '';
-  } catch {
-    try {
-      rawMessage = await readResponseText(response);
-    } catch (error) {
-      rawMessage = error?.message || '';
-    }
-  }
-
-  console.error('Gemini API error detail:', {
+const createGeminiError = (response) => {
+  console.error('Gemini API request failed:', {
     status: response.status,
     statusText: response.statusText,
-    payload,
-    rawMessage,
   });
 
   if (response.status === 429) {
