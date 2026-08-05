@@ -24,6 +24,28 @@ const INTRO_FIELD_MAP = {
   homepage: { label: '홈페이지', icon: 'language' },
 };
 
+const formatTourDate = (value) => {
+  const raw = String(value || '').replace(/\D/g, '').slice(0, 8);
+  if (raw.length !== 8) return '';
+  return `${raw.slice(0, 4)}.${raw.slice(4, 6)}.${raw.slice(6, 8)}`;
+};
+
+const stripHtml = (value) => String(value || '')
+  .replace(/<br\s*\/?>/gi, '\n')
+  .replace(/<[^>]+>/g, '')
+  .replace(/&nbsp;/gi, ' ')
+  .trim();
+
+const extractHomepageLink = (value) => {
+  const html = String(value || '');
+  const href = html.match(/href=["']([^"']+)["']/i)?.[1];
+  const text = stripHtml(html);
+  return {
+    href: href || (html.startsWith('http') ? html : ''),
+    text: text || href || '',
+  };
+};
+
 const TravelDetail = () => {
   const { contentId } = useParams();
   const navigate = useNavigate();
@@ -281,6 +303,55 @@ const TravelDetail = () => {
     return fields;
   };
 
+  const getFestivalInfoRows = () => {
+    if (String(common?.contenttypeid) !== '15') return [];
+
+    const startDate = formatTourDate(intro?.eventstartdate || common?.eventstartdate);
+    const endDate = formatTourDate(intro?.eventenddate || common?.eventenddate);
+    const homepage = extractHomepageLink(intro?.eventhomepage || intro?.homepage || common?.homepage);
+    const rows = [
+      {
+        icon: 'calendar_month',
+        label: 'PERIOD',
+        title: '축제 기간',
+        value: startDate ? `${startDate} ~ ${endDate || '미정'}` : '',
+      },
+      {
+        icon: 'location_on',
+        label: 'VENUE',
+        title: '행사 장소',
+        value: intro?.eventplace || `${common?.addr1 || ''} ${common?.addr2 || ''}`.trim(),
+      },
+      {
+        icon: 'schedule',
+        label: 'TIME',
+        title: '운영 시간',
+        value: intro?.playtime || intro?.usetimefestival,
+      },
+      {
+        icon: 'payments',
+        label: 'FEE',
+        title: '이용 요금',
+        value: intro?.usefee || intro?.discountinfofestival,
+      },
+      {
+        icon: 'call',
+        label: 'CONTACT',
+        title: '문의',
+        value: intro?.sponsor1tel || intro?.sponsor2tel || common?.tel,
+      },
+      {
+        icon: 'language',
+        label: 'HOMEPAGE',
+        title: '홈페이지',
+        value: homepage.text,
+        href: homepage.href,
+      },
+    ];
+
+    return rows.filter((row) => row.value && String(row.value).trim() && row.value !== 'null');
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -302,6 +373,7 @@ const TravelDetail = () => {
 
   const nodeHeaderImage = state?.firstimage || common.firstimage || (images.length > 0 ? (images[0].originimgurl || images[0].firstimage) : null);
   const envFields = systemEnvFields();
+  const festivalInfoRows = getFestivalInfoRows();
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
@@ -396,6 +468,39 @@ const TravelDetail = () => {
               )}
             </div>
           </div>
+
+          {festivalInfoRows.length > 0 && (
+            <div className="bg-white rounded-2xl border border-primary/15 shadow-sm overflow-hidden">
+              <div className="flex items-center gap-2 px-8 py-5 border-b border-slate-50 bg-primary/5">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                <p className="text-primary font-bold uppercase tracking-tighter font-mono text-sm">festival_info.json</p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-px bg-slate-100">
+                {festivalInfoRows.map((row) => (
+                  <div key={row.label} className="bg-white px-6 py-5 flex gap-4">
+                    <span className="material-symbols-outlined text-primary text-xl mt-0.5">{row.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{row.label}</p>
+                      <p className="mt-1 text-xs font-label text-slate-500">{row.title}</p>
+                      {row.href ? (
+                        <a
+                          href={row.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex max-w-full items-center gap-1 text-sm font-bold text-primary hover:text-primary/80 transition-colors break-all"
+                        >
+                          {row.value}
+                          <span className="material-symbols-outlined text-sm">open_in_new</span>
+                        </a>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-line">{stripHtml(row.value)}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {infoItems.length > 0 && (
             <div className="bg-white rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden">

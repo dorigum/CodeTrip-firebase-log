@@ -63,16 +63,35 @@ const readRemote = async (cacheKey) => {
   return snapshot.exists() ? snapshot.val() : null;
 };
 
+const emitCacheStatus = ({ scope, service, cacheKey, source, expiresAt, stale = false }) => {
+  if (typeof window === 'undefined' || !import.meta.env.DEV) return;
+
+  const detail = {
+    scope,
+    service,
+    cacheKey,
+    source,
+    stale,
+    expiresAt: expiresAt || null,
+    checkedAt: Date.now(),
+  };
+  window.dispatchEvent(new CustomEvent('codetrip:api-cache-status', { detail }));
+};
+
 export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fetcher }) => {
   const cacheKey = makeCacheKey({ scope, service, params });
   const now = Date.now();
 
   const memoryEntry = memoryCache.get(cacheKey);
-  if (isFresh(memoryEntry, now)) return memoryEntry.data;
+  if (isFresh(memoryEntry, now)) {
+    emitCacheStatus({ scope, service, cacheKey, source: 'memory', expiresAt: memoryEntry.expiresAt });
+    return memoryEntry.data;
+  }
 
   const localEntry = readLocal(cacheKey);
   if (isFresh(localEntry, now)) {
     memoryCache.set(cacheKey, localEntry);
+    emitCacheStatus({ scope, service, cacheKey, source: 'local', expiresAt: localEntry.expiresAt });
     return localEntry.data;
   }
 
@@ -82,6 +101,7 @@ export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fet
     if (isFresh(remoteEntry, now)) {
       memoryCache.set(cacheKey, remoteEntry);
       writeLocal(cacheKey, remoteEntry);
+      emitCacheStatus({ scope, service, cacheKey, source: 'remote', expiresAt: remoteEntry.expiresAt });
       return remoteEntry.data;
     }
   } catch (error) {
@@ -97,11 +117,15 @@ export const cachedApiRequest = async ({ scope, service, params = {}, ttlMs, fet
     };
     memoryCache.set(cacheKey, nextEntry);
     writeLocal(cacheKey, nextEntry);
+    emitCacheStatus({ scope, service, cacheKey, source: 'network', expiresAt: nextEntry.expiresAt });
     return data;
   } catch (error) {
-    const staleEntry = remoteEntry || localEntry || memoryEntry;
-    if (staleEntry && Object.prototype.hasOwnProperty.call(staleEntry, 'data')) {
+    const staleEntry = [remoteEntry, localEntry, memoryEntry].find(
+      (entry) => entry && Object.prototype.hasOwnProperty.call(entry, 'data'),
+    );
+    if (staleEntry) {
       console.warn('Using stale API cache after request failure:', error);
+      emitCacheStatus({ scope, service, cacheKey, source: 'stale', expiresAt: staleEntry.expiresAt, stale: true });
       return staleEntry.data;
     }
     throw error;

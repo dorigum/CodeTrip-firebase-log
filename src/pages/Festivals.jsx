@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getFestivalList } from '../api/travelApi';
+import { getSubRegions } from '../api/travelInfoApi';
 import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
+import { DEFAULT_REGIONS } from '../constants/regions';
 
 const Festivals = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +19,9 @@ const Festivals = () => {
   // URL 파라미터에서 현재 상태 읽기
   const page = parseInt(searchParams.get('page')) || 1;
   const sortOrder = searchParams.get('sort') || 'default';
+  const regionCode = searchParams.get('region') || '';
+  const subRegionCode = searchParams.get('sigungu') || '';
+  const keyword = searchParams.get('keyword')?.trim() || '';
 
   const { isLoggedIn } = useAuthStore();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
@@ -25,23 +30,101 @@ const Festivals = () => {
   const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
   const [selectedTravel, setSelectedTravel] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [subRegions, setSubRegions] = useState([]);
+  const [subRegionLoading, setSubRegionLoading] = useState(false);
+  const [festivalError, setFestivalError] = useState('');
+
+  const makeFestivalParams = useCallback(({
+    nextPage = page,
+    nextSort = sortOrder,
+    nextRegion = regionCode,
+    nextSubRegion = subRegionCode,
+    nextKeyword = keyword,
+  } = {}) => {
+    const params = {
+      page: String(nextPage),
+      sort: nextSort,
+    };
+    if (nextRegion) params.region = nextRegion;
+    if (nextSubRegion) params.sigungu = nextSubRegion;
+    if (nextKeyword) params.keyword = nextKeyword;
+    return params;
+  }, [page, sortOrder, regionCode, subRegionCode, keyword]);
 
   useEffect(() => {
+    if (!regionCode) {
+      setSubRegions([]);
+      setSubRegionLoading(false);
+      if (subRegionCode) {
+        setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: '' }));
+      }
+      return;
+    }
+
+    let ignore = false;
+    const fetchSubRegionOptions = async () => {
+      setSubRegionLoading(true);
+      try {
+        const items = await getSubRegions(regionCode);
+        if (!ignore) setSubRegions(items);
+      } catch (error) {
+        console.error('Fetch festival sub regions failed:', error);
+        if (!ignore) setSubRegions([]);
+      } finally {
+        if (!ignore) setSubRegionLoading(false);
+      }
+    };
+
+    fetchSubRegionOptions();
+    return () => {
+      ignore = true;
+    };
+  }, [regionCode, subRegionCode, setSearchParams, makeFestivalParams]);
+
+  useEffect(() => {
+    if (!subRegionCode || subRegionLoading) return;
+    if (subRegions.length > 0 && !subRegions.some((subRegion) => subRegion.code === subRegionCode)) {
+      setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: '' }));
+    }
+  }, [subRegionCode, subRegions, subRegionLoading, setSearchParams, makeFestivalParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const fetchFestivals = async () => {
       setLoading(true);
+      setFestivalError('');
       try {
-        const data = await getFestivalList(page, ITEMS_PER_PAGE, sortOrder);
+        const data = await getFestivalList(
+          page,
+          ITEMS_PER_PAGE,
+          sortOrder,
+          regionCode,
+          keyword,
+          regionCode ? subRegionCode : '',
+        );
+        if (cancelled) return;
+        setFestivalError('');
         setFestivals(data.items || []);
         setTotalPages(data.totalPages || 0);
+        if (data.totalPages > 0 && page > data.totalPages) {
+          setSearchParams(makeFestivalParams({ nextPage: data.totalPages }));
+        }
       } catch (err) {
+        if (cancelled) return;
         console.error('Fetch festivals failed:', err);
+        setFestivalError('축제 데이터를 불러오지 못했습니다.');
         showToast('축제 데이터를 불러오는 데 실패했습니다.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchFestivals();
-  }, [page, sortOrder, showToast]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (isLoggedIn && !wishlistInitialized) {
@@ -50,12 +133,24 @@ const Festivals = () => {
   }, [isLoggedIn, wishlistInitialized]);
 
   const handlePageChange = (newPage) => {
-    setSearchParams({ page: newPage, sort: sortOrder });
+    setSearchParams(makeFestivalParams({ nextPage: newPage }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSortChange = (newSort) => {
-    setSearchParams({ page: 1, sort: newSort }); // 정렬 변경 시 1페이지로
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextSort: newSort }));
+  };
+
+  const handleRegionChange = (newRegion) => {
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextRegion: newRegion, nextSubRegion: '' }));
+  };
+
+  const handleSubRegionChange = (newSubRegion) => {
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: newSubRegion }));
+  };
+
+  const handleClearKeyword = () => {
+    setSearchParams(makeFestivalParams({ nextPage: 1, nextKeyword: '' }));
   };
 
   const handleHeartToggle = async (e, post) => {
@@ -99,17 +194,61 @@ const Festivals = () => {
           title="전국 축제 및 행사 정보"
           description="대한민국 곳곳에서 열리는 활기찬 축제 데이터를 탐색하세요."
           action={(
-          <select 
-            value={sortOrder}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
-          >
-            <option value="default">DEFAULT_NODES</option>
-            <option value="date_asc">DATE_ASCENDING</option>
-            <option value="date_desc">DATE_DESCENDING</option>
-          </select>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <select
+                aria-label="지역 선택"
+                value={regionCode}
+                onChange={(e) => handleRegionChange(e.target.value)}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
+              >
+                {DEFAULT_REGIONS.map((region) => (
+                  <option key={region.code || 'all'} value={region.code}>
+                    {region.code ? `REGION_${region.name}` : 'REGION_ALL'}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="시군구 선택"
+                value={subRegionCode}
+                onChange={(e) => handleSubRegionChange(e.target.value)}
+                disabled={!regionCode || subRegionLoading || subRegions.length === 0}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <option value="">
+                  {regionCode ? (subRegionLoading ? 'CITY_LOADING' : 'CITY_ALL') : 'CITY_DISABLED'}
+                </option>
+                {subRegions.map((subRegion) => (
+                  <option key={subRegion.code} value={subRegion.code}>
+                    CITY_{subRegion.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="정렬 기준 선택"
+                value={sortOrder}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10 cursor-pointer uppercase font-bold tracking-tighter"
+              >
+                <option value="default">DEFAULT_NODES</option>
+                <option value="date_asc">DATE_ASCENDING</option>
+                <option value="date_desc">DATE_DESCENDING</option>
+              </select>
+            </div>
           )}
         />
+        {keyword && (
+          <div className="mt-4 inline-flex items-center gap-3 bg-surface-container-low border border-primary/20 rounded-lg px-4 py-2 font-mono text-sm">
+            <span className="text-outline">// searching_festivals:</span>
+            <span className="text-primary font-bold">"{keyword}"</span>
+            <button
+              aria-label="검색어 삭제"
+              onClick={handleClearKeyword}
+              className="ml-1 text-outline hover:text-on-surface transition-colors flex items-center"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 리스트 섹션 */}
@@ -119,10 +258,16 @@ const Festivals = () => {
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             <p className="text-xs font-mono uppercase animate-pulse">loading_node_data...</p>
           </div>
+        ) : festivalError ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-2 text-center">
+            <span className="material-symbols-outlined text-6xl text-error">error</span>
+            <p className="font-mono text-sm text-error">{festivalError}</p>
+            <p className="text-xs text-outline">잠시 후 다시 시도해주세요.</p>
+          </div>
         ) : festivals.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center gap-2 grayscale opacity-30">
             <span className="material-symbols-outlined text-6xl">inventory_2</span>
-            <p className="font-mono text-sm">// no_festivals_found_in_cache</p>
+            <p className="font-mono text-sm">// no_active_or_upcoming_festivals</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
