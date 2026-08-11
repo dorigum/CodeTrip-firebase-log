@@ -19,6 +19,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 13. [기술 부채 등록부](12-technical-debt-register.md)
 14. [검증 보고서](13-validation-report.md)
 15. [백로그](14-backlog.md)
+16. [심사 시연 시나리오](15-demo-scenario.md)
 
 의사결정은 [`decision-log/`](decision-log/), 회고는 [`retrospectives/`](retrospectives/)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 

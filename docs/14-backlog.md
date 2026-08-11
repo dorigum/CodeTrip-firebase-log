@@ -32,7 +32,7 @@
 | BL-08 | 외부 API 장애 시나리오별 smoke test 작성 | P2 | todo | `TD-08` | TourAPI, Open-Meteo, Nominatim, Gemini 실패 시 사용자 안내와 fallback 결과 기록 | `docs/13-validation-report.md` |
 | BL-09 | 주요 의사결정 로그 3건 작성 | P2 | ready | `TD-07` | 애자일 문서 체계, AI 분석 규칙, 성능 측정 원칙 결정 기록 작성 | `docs/decision-log/` |
 | BL-10 | 스프린트 회고 첫 기록 작성 | P2 | todo | `TD-07` | 문서 체계화 작업의 목표, 잘된 점, 문제, 다음 액션 기록 | `docs/retrospectives/` |
-| BL-11 | 심사 시연 시나리오 작성 | P2 | todo | WBS 6~8주차 | 탐색, 상세, 로그인, 찜, AI 일정, 마이페이지, 커뮤니티, 품질 설명 흐름 정의 | `docs/15-demo-scenario.md` 예정 |
+| BL-11 | 심사 시연 시나리오 작성 | P2 | done | WBS 6~8주차 | 탐색, 상세, 로그인, 찜, AI 일정, 마이페이지, 커뮤니티, 품질 설명 흐름 정의 | `docs/15-demo-scenario.md` |
 | BL-12 | 상용 예약·결제·관리자 기능 백로그 보관 | P3 | deferred | `FR-08` | MVP 범위 제외 사유와 상용화 단계 재검토 조건 기록 | `docs/02-product-requirements.md`, `decision-log/` |
 
 ## 추천 처리 순서
