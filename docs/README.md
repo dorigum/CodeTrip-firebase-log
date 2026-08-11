@@ -15,6 +15,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 9. [KPI·평가 지표](09-metrics.md)
 10. [기술 노트 마인드맵](tech-notes/README.md)
 11. [Gemini 하네스 엔지니어링](10-ai-harness-engineering.md)
+12. [AI 문서 분석 규칙](11-ai-document-analysis-rules.md)
 
 의사결정은 [`decision-log/`](decision-log/), 회고는 [`retrospectives/`](retrospectives/)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 
