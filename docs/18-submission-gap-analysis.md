@@ -29,13 +29,13 @@
 | 서비스 URL | 접속 가능한 서비스 URL 제출 | `https://dorigum-codetrip.web.app` 후보와 검증 절차 문서화 | 부분 충족 | `README.md`, `docs/16-contest-submission-checklist.md`, `docs/21-service-url-verification.md` | 제출 직전 URL 접속과 최신 배포 여부 확인 |
 | 테스트 계정 | 필요 시 지정 형식의 테스트 전용 계정 | 검증 절차 문서화, 계정 정보 미확정 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md` | 전용 계정 생성 후 로그인 가능 여부 확인 |
 | OpenAPI 인증키 | 인코딩키·디코딩키 제출 | 저장소 기록 금지, 검증 절차 문서화, 실제 키 확인 필요 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/20-openapi-submission-verification.md` | 제출 페이지에만 입력 |
-| 지역 특화 | 선택 항목, 가점 가능 | 전국 단위 제출 방향, 지역 특화 미정 | 미결정 | `docs/16-contest-submission-checklist.md` | 가점 전략 여부 결정 |
+| 지역 특화 | 선택 항목, 가점 가능 | 전국 단위 제출을 기본 권장으로 정리했고, 특정 지역 특화 전환 조건을 별도 문서화 | 전략 문서화, 최종 결정 필요 | `docs/16-contest-submission-checklist.md`, `docs/23-regional-specialization-strategy.md` | 전국 단위 유지 또는 특정 지역 특화 전환 여부 최종 결정 |
 
 ## 심사 기준 관점 갭
 
 | 심사항목 | 배점 | 현재 강점 | 현재 약점 | 보강 우선순위 |
 |---|---:|---|---|---|
-| 서비스 기획력 | 30 | 탐색 → 저장 → AI 일정 → 공유 흐름이 명확하다. | 지역 특화 여부가 미정이고 사용자 문제 문구를 더 짧게 다듬을 수 있다. | 중 |
+| 서비스 기획력 | 30 | 탐색 → 저장 → AI 일정 → 공유 흐름이 명확하고, 지역 특화 여부 판단 기준을 문서화했다. | 최종 제출 전략을 전국 단위로 확정할지, 특정 지역 특화로 전환할지 결정이 필요하다. | 중 |
 | 서비스 완성도 | 30 | 배포 URL과 공개 화면 캡처, 기능 흐름 초안이 존재한다. | 로그인 후 AI·마이페이지·커뮤니티 실제 화면 증빙이 부족하다. | 높음 |
 | 데이터 활용 적절성 | 20 | TourAPI endpoint 목록과 활용 맥락이 정리되어 있다. | 제출용 인증키 정보와 실제 호출 이력 확인은 별도 작업이다. | 높음 |
 | 서비스 발전성 | 20 | 기술 부채·백로그 기반 발전계획이 구체적이다. | 발전계획이 기술 중심이라 사용자/사업 확장 관점 보강 여지가 있다. | 중 |
