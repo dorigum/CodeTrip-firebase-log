@@ -10,6 +10,8 @@
 
 텍스트 객체 54개의 글자 크기도 검사했으며, 최소 글자 크기는 12pt이고 12pt 미만 텍스트는 0개로 확인했다. 다만 접수 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 내부 기능 화면, 양식 수정 없음 조건의 최종 육안 검증은 아직 미완료다.
 
+최종 제출 페이지에 실제로 입력해야 하는 값과 탈락 리스크는 `docs/25-final-input-checklist.md`에서 별도로 관리한다.
+
 ## 제출 조건별 상태
 
 | 구분 | 요구 조건 | 현재 상태 | 판정 | 증빙 | 다음 조치 |
@@ -43,13 +45,14 @@
 ## 최종 제출 전 우선순위
 
 1. `docs/22-final-submission-runbook.md` 순서에 따라 최종 제출 전 확인을 진행한다.
-2. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
-3. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
-4. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
-5. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
-6. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
-7. 최종 PPTX를 PDF로 변환한 뒤 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
-8. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
+2. `docs/25-final-input-checklist.md`의 FI-01~FI-16을 기준으로 최종 입력값 누락 여부를 점검한다.
+3. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
+4. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
+5. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
+6. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
+7. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
+8. 최종 PPTX를 PDF로 변환한 뒤 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
+9. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
 
 ## 제출 가능 판정 기준
 
@@ -61,3 +64,4 @@
 - 최종 PDF가 5페이지 이하, 12포인트 이상, 10MB 미만이며 정상 열람된다.
 - 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 화면으로 구성되어 있다.
 - `docs/17-submission-artifact-manifest.md`에 최종 파일의 checksum과 전달 위치가 기록되어 있다.
+- `docs/25-final-input-checklist.md`의 최종 입력값 항목이 제출 직전 확인되어 있다.

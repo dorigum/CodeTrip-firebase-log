@@ -17,15 +17,16 @@
 |---:|---|---|---|
 | 1 | 공모전 접수 계정 로그인과 이메일 인증 가능 여부 확인 | `docs/16-contest-submission-checklist.md` | 제출 페이지 접근 가능 여부 |
 | 2 | 접수 팀명과 최종 팀원 정보 확인 | `docs/16-contest-submission-checklist.md` | 기능설명서 1페이지 팀명 반영 |
-| 3 | 전국 단위 제출 또는 지역 특화 제출 여부 결정 | `docs/23-regional-specialization-strategy.md` | 제출 페이지와 기능설명서 반영 방향 확정 |
-| 4 | 서비스 URL 최신 배포 상태 확인 | `docs/21-service-url-verification.md` | `docs/13-validation-report.md` URL smoke test 기록 |
-| 5 | 테스트 전용 계정 생성 및 로그인 후 기능 검증 | `docs/19-test-account-verification.md` | `docs/13-validation-report.md` TA-01~TA-06 기록 |
-| 6 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
-| 7 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md` | `output/contest/screenshots/` 캡처 후보 생성 |
-| 8 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
-| 9 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
-| 10 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
-| 11 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md` | 모든 제출 가능 판정 기준 충족 |
+| 3 | 최종 입력값 누락 여부 1차 점검 | `docs/25-final-input-checklist.md` | FI-01~FI-16 현재 상태 확인 |
+| 4 | 전국 단위 제출 또는 지역 특화 제출 여부 결정 | `docs/23-regional-specialization-strategy.md`, `docs/25-final-input-checklist.md` | 제출 페이지와 기능설명서 반영 방향 확정 |
+| 5 | 서비스 URL 최신 배포 상태 확인 | `docs/21-service-url-verification.md` | `docs/13-validation-report.md` URL smoke test 기록 |
+| 6 | 테스트 전용 계정 생성 및 로그인 후 기능 검증 | `docs/19-test-account-verification.md` | `docs/13-validation-report.md` TA-01~TA-06 기록 |
+| 7 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
+| 8 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md` | `output/contest/screenshots/` 캡처 후보 생성 |
+| 9 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
+| 10 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
+| 11 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
+| 12 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md` | 모든 제출 가능 판정 기준 충족 |
 
 ## 최종 제출 전 입력값
 
@@ -54,6 +55,7 @@
 | 지역 특화 여부 | 전국 단위 유지 또는 특정 지역 특화 전환 여부가 제출 페이지·기능설명서와 일치 | `docs/23-regional-specialization-strategy.md` |
 | 화면 캡처 | 대표 이미지 1장, 상세 이미지 3~5장, 개인정보·키 노출 없음 | `docs/17-submission-artifact-manifest.md` |
 | 최종 manifest | 파일명, 생성일, checksum, 외부 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
+| 최종 입력값 | FI-01~FI-16 항목의 제출 전 확인 상태 기록 | `docs/25-final-input-checklist.md` |
 
 ## 제출 후 기록
 
@@ -73,8 +75,9 @@
 
 1. 접수 팀명과 최종 팀원 정보 확인
 2. 전국 단위 제출 또는 지역 특화 제출 여부 최종 결정
-3. 테스트 전용 계정 생성 및 로그인 후 기능 검증
-4. 로그인 후 AI·마이페이지·커뮤니티 실제 화면 캡처 교체
-5. OpenAPI 인증키와 제출 계정 기준 호출 정보 확인
-6. 제출 직전 최신 배포 URL smoke test
-7. 최종 PDF 생성 후 manifest의 외부 전달 위치 갱신
+3. `docs/25-final-input-checklist.md`의 FI-01~FI-16 상태 확인
+4. 테스트 전용 계정 생성 및 로그인 후 기능 검증
+5. 로그인 후 AI·마이페이지·커뮤니티 실제 화면 캡처 교체
+6. OpenAPI 인증키와 제출 계정 기준 호출 정보 확인
+7. 제출 직전 최신 배포 URL smoke test
+8. 최종 PDF 생성 후 manifest의 외부 전달 위치 갱신
