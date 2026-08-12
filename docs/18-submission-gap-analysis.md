@@ -42,13 +42,14 @@
 
 ## 최종 제출 전 우선순위
 
-1. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
-2. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
-3. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
-4. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
-5. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
-6. 최종 PPTX를 PDF로 변환한 뒤 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
-7. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
+1. `docs/22-final-submission-runbook.md` 순서에 따라 최종 제출 전 확인을 진행한다.
+2. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
+3. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
+4. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
+5. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
+6. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
+7. 최종 PPTX를 PDF로 변환한 뒤 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
+8. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
 
 ## 제출 가능 판정 기준
 

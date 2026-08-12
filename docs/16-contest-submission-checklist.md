@@ -2,7 +2,7 @@
 
 이 문서는 2026 관광데이터 활용 공모전 웹·앱 개발 부문 1차 심사 자료 제출 항목에 맞춰 CodeTrip의 제출 준비 상태를 관리한다. 실제 인증키, 비밀번호, 개인 이메일 등 민감정보는 이 저장소에 기록하지 않는다.
 
-현재 기능설명서 초안의 제출 조건 충족 여부와 남은 갭은 `docs/18-submission-gap-analysis.md`에서 별도로 관리한다. 심사용 테스트 계정 생성과 로그인 후 기능 검증 절차는 `docs/19-test-account-verification.md`, 한국관광공사 OpenAPI 제출 정보 검증은 `docs/20-openapi-submission-verification.md`, 서비스 URL 검증은 `docs/21-service-url-verification.md`를 따른다.
+현재 기능설명서 초안의 제출 조건 충족 여부와 남은 갭은 `docs/18-submission-gap-analysis.md`에서 별도로 관리한다. 최종 제출 직전 실행 순서는 `docs/22-final-submission-runbook.md`를 따르며, 심사용 테스트 계정 생성과 로그인 후 기능 검증 절차는 `docs/19-test-account-verification.md`, 한국관광공사 OpenAPI 제출 정보 검증은 `docs/20-openapi-submission-verification.md`, 서비스 URL 검증은 `docs/21-service-url-verification.md`를 따른다.
 
 ## 제출 핵심 일정
 
