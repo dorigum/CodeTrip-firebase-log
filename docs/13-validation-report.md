@@ -27,6 +27,7 @@
 | 2026-08-12 | `520c721` | 기능설명서 제출 항목 정리본 전체 슬라이드 QA | PDF 5페이지, 394335 bytes로 10MB 미만 확인. 1~5번 슬라이드 PNG 렌더 육안 확인 | `docs/17-submission-artifact-manifest.md`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_제출항목정리_초안.pdf`, `output/contest/rendered/submission-draft-all/` | 접수 팀명 입력 필요, 로그인 후 AI·마이페이지·커뮤니티 내부 화면 교체 필요, 최종 제출 전 12포인트 이상·양식 수정 없음 조건 육안 검증 필요 |
 | 2026-08-12 | `da66290` | 기능설명서 제출 항목 정리본 글자 크기 검증 | 텍스트 객체 54개 검사, 최소 글자 크기 12pt, 12pt 미만 0개 확인. PDF 5페이지, 394311 bytes로 10MB 미만 확인 | `docs/17-submission-artifact-manifest.md`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_제출항목정리_초안.pptx`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_제출항목정리_초안.pdf` | 접수 팀명 입력 필요, 로그인 후 AI·마이페이지·커뮤니티 내부 화면 교체 필요, 양식 수정 없음 조건은 최종본 육안 검증 필요 |
 | 2026-08-12 | `88be462` | 공모전 제출 문서 링크 무결성 검사 | 통과. `docs/` 내 마크다운 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/README.md` | `output/` 산출물은 커밋 제외 정책 유지 |
+| 2026-08-12 | `a7cc6e3` | 제출 준비도 대시보드 포함 문서 링크 무결성 재검사 | 통과. `docs/28-submission-readiness-dashboard.md` 추가 후 `docs/` 내 마크다운 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/README.md`, `docs/28-submission-readiness-dashboard.md` | `output/` 산출물은 커밋 제외 정책 유지 |
 
 ## 핵심 사용자 흐름 체크리스트
 
