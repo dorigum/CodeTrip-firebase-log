@@ -26,7 +26,7 @@
 | 9 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
 | 10 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md`, `docs/31-submission-screenshot-plan.md` | `output/contest/screenshots/` 캡처 후보 생성 |
 | 11 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
-| 12 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
+| 12 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md`, `docs/35-pptx-slide-final-review-checklist.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
 | 13 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
 | 14 | 중복 출품·부문 오첨부·마감 리스크 확인 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | FI-17~FI-19, VE-10~VE-12, SUB-01~SUB-03 확인 |
 | 15 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md`, `docs/28-submission-readiness-dashboard.md` | 모든 제출 가능 판정 기준 충족 |

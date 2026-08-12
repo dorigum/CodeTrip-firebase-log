@@ -1,6 +1,6 @@
 # 기능설명서 PPTX 최종 반영 작업 지시서
 
-이 문서는 CodeTrip 공모전 기능설명서 최종본을 만들 때, 현재 초안 PPTX에서 어떤 항목을 어떤 순서로 수정해야 하는지 정리한다. 실제 PPTX/PDF 바이너리는 `output/` 또는 외부 저장 위치에서 관리하고, Git에는 최종 산출물 manifest와 검증 기록만 남긴다.
+이 문서는 CodeTrip 공모전 기능설명서 최종본을 만들 때, 현재 초안 PPTX에서 어떤 항목을 어떤 순서로 수정해야 하는지 정리한다. 실제 PPTX/PDF 바이너리는 `output/` 또는 외부 저장 위치에서 관리하고, Git에는 최종 산출물 manifest와 검증 기록만 남긴다. 최종본을 열람하며 슬라이드별로 확인할 항목은 `docs/35-pptx-slide-final-review-checklist.md`를 따른다.
 
 ## 기준 산출물
 
@@ -78,6 +78,8 @@ Functions 프록시, 권한 검증, 성능 측정, 코드 스플리팅, E2E 테�
 ## 최종 PDF 변환 후 검증
 
 PPTX를 수정한 뒤에는 반드시 PDF로 변환하고 아래 항목을 다시 확인한다.
+
+슬라이드별 세부 검수는 `docs/35-pptx-slide-final-review-checklist.md`에 기록한다.
 
 | 검증 항목 | 기준 | 증빙 위치 |
 |---|---|---|
