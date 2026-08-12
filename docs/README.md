@@ -21,6 +21,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 15. [백로그](14-backlog.md)
 16. [심사 시연 시나리오](15-demo-scenario.md)
 17. [공모전 1차 심사 제출 준비](16-contest-submission-checklist.md)
+18. [제출 산출물 manifest](17-submission-artifact-manifest.md)
 
 의사결정은 [`decision-log/README.md`](decision-log/README.md), 회고는 [`retrospectives/README.md`](retrospectives/README.md)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 
