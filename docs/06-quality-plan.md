@@ -42,6 +42,7 @@ Vite 빌드에서 500kB 초과 청크 경고가 발생하는 경우 이를 기�
 성능 데이터는 MVP 단계에서 원시 로그를 장기간 누적하기보다 릴리스별 집계 지표를 우선한다. 사용자별 `performanceLogs`를 무제한 저장하는 구조는 개인정보, 저장 비용, Rules 관리 부담이 있으므로 기본값으로 채택하지 않는다.
 
 - 초기 기준선은 Lighthouse, 브라우저 Performance 패널, `npm run build` 로그로 확보한다.
-- API 캐시 상태는 현재 개발 모드의 `ApiCacheStatus` 패널과 `codetrip:api-cache-status` 이벤트를 디버깅 증빙으로 사용한다.
-- 캐시 적중률을 성과로 주장하려면 세션 또는 릴리스 단위로 hit, network, stale 이벤트 수를 별도 집계해야 한다.
+- API 캐시 상태는 현재 개발 모드의 `ApiCacheStatus` 패널과 `codetrip:api-cache-status` 이벤트를 개발·시연 세션의 디버깅 증빙으로만 사용한다.
+- 캐시 적중률을 성과로 주장하려면 개발·시연 세션 단위로 fresh hit(memory, local, remote), network, stale fallback 이벤트 수를 별도 집계해야 한다.
+- 운영 집계 경로를 도입하는 경우 구현 위치, 수집 조건, 보존 기간, Firebase Rules 적용 범위를 함께 문서화한다.
 - AI 성공률은 Gemini 호출 성공·실패·timeout·429·JSON 파싱 실패·재생성 한도 초과를 구분해 기록할 때만 정량 지표로 사용한다.
