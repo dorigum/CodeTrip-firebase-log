@@ -36,7 +36,7 @@
 | VE-06 | 서비스 URL | 제출 URL 접속, 직접 경로 새로고침, 공개 화면 로딩 확인 | 미실행 | `docs/21-service-url-verification.md`, `docs/13-validation-report.md` |  |
 | VE-07 | 테스트 계정 | 제출용 계정으로 로그인, 로그아웃 후 재로그인 확인 | 미실행 | `docs/19-test-account-verification.md`, `docs/13-validation-report.md` |  |
 | VE-08 | OpenAPI 인증키 | 공공데이터포털의 인코딩키·디코딩키를 제출 페이지에만 입력했는지 확인 | 미실행 | `docs/20-openapi-submission-verification.md` |  |
-| VE-09 | OpenAPI 활용 목록 | 제출 페이지, 기능설명서, 실제 코드 endpoint 목록이 일치하는지 확인 | 미실행 | `docs/20-openapi-submission-verification.md`, 최종 PDF |  |
+| VE-09 | OpenAPI 활용 목록 | 제출 페이지, 기능설명서, 실제 코드 endpoint 목록이 일치하는지 확인 | 미실행 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md`, 최종 PDF |  |
 | VE-10 | 동일 서비스 중복 출품 여부 | 동일 서비스로 타 부문 또는 공사 주관 지원 사업 수상·수혜 이력이 없는지 확인 | 미실행 | 팀 내부 확인 기록 |  |
 | VE-11 | 제출 부문·양식 일치 여부 | 웹·앱 개발 부문 제출 페이지와 웹·앱 개발 부문 기능설명서 양식이 일치하는지 확인 | 미실행 | 제출 페이지, 최종 PDF |  |
 | VE-12 | 마감 전 수정 가능 시간 | 2026-09-21 16:00 전 제출·수정 가능 시간을 확보했는지 확인 | 미실행 | 제출 일정 확인 기록 |  |

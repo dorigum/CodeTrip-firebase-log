@@ -23,7 +23,7 @@
 | 6 | 전국 단위 제출 또는 지역 특화 제출 여부 결정 | `docs/23-regional-specialization-strategy.md`, `docs/25-final-input-checklist.md` | 제출 페이지와 기능설명서 반영 방향 확정 |
 | 7 | 서비스 URL 최신 배포 상태 확인 | `docs/21-service-url-verification.md`, `docs/32-service-url-smoke-test-runbook.md` | `docs/13-validation-report.md` URL smoke test 기록 |
 | 8 | 테스트 전용 계정 생성 및 로그인 후 기능 검증 | `docs/19-test-account-verification.md`, `docs/33-test-account-demo-data-runbook.md` | `docs/13-validation-report.md` TA-01~TA-06 기록 |
-| 9 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
+| 9 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
 | 10 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md`, `docs/31-submission-screenshot-plan.md` | `output/contest/screenshots/` 캡처 후보 생성 |
 | 11 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
 | 12 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |

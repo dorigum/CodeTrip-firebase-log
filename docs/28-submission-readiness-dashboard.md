@@ -21,7 +21,7 @@
 | 지역 특화 전략 | 전국 단위 제출 기본 권장과 전환 조건 문서화 | 결정 필요 | `docs/23-regional-specialization-strategy.md` | 전국 단위 유지 또는 특정 지역 특화 확정 |
 | 서비스 URL | 후보 URL, 검증 기준, smoke test 실행표 문서화 | 부분 준비 | `docs/21-service-url-verification.md`, `docs/32-service-url-smoke-test-runbook.md` | 제출 직전 smoke test 실행 |
 | 테스트 계정 | 생성·검증 절차와 시연 데이터 세팅 기준 문서화 | 미완료 | `docs/19-test-account-verification.md`, `docs/33-test-account-demo-data-runbook.md` | 제출용 전용 계정 생성 및 시연 데이터 준비 |
-| OpenAPI 제출 정보 | 활용 API 목록과 검증 절차 문서화 | 미완료 | `docs/20-openapi-submission-verification.md` | 인코딩키·디코딩키와 제출 계정 확인 |
+| OpenAPI 제출 정보 | 활용 API 목록, 검증 절차, 제출용 작성표 문서화 | 미완료 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 인코딩키·디코딩키와 제출 계정 확인 |
 | 로그인 후 화면 캡처 | 교체 우선순위 문서화 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/26-pptx-final-editing-guide.md` | AI·마이페이지·커뮤니티 내부 화면 캡처 |
 | 화면 캡처 계획 | 대표·상세 이미지 후보와 보안 점검 기준 정의 | 준비됨 | `docs/31-submission-screenshot-plan.md` | SC-04~SC-06 실제 캡처 확보 |
 | 최종 PDF 검증 | 초안 PDF의 페이지·용량·글자 크기 검증 기록 있음 | 부분 준비 | `docs/13-validation-report.md`, `docs/17-submission-artifact-manifest.md` | 최종본 변환 후 재검증 |
@@ -49,7 +49,7 @@
 | B-01 | 접수 팀명 placeholder 제거 | 미완료 | 기능설명서 1페이지에 실제 접수 팀명 반영 | `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` |
 | B-02 | 테스트 전용 계정 생성·검증 | 미완료 | 제출용 계정으로 로그인, 로그아웃 후 재로그인, 보호 기능 접근과 시연 데이터 유지 확인 | `docs/19-test-account-verification.md`, `docs/33-test-account-demo-data-runbook.md` |
 | B-03 | OpenAPI 인증키 확인 | 미완료 | 공공데이터포털 인코딩키·디코딩키를 제출 페이지에만 입력 | `docs/20-openapi-submission-verification.md` |
-| B-04 | OpenAPI 활용 목록 최종 대조 | 부분 준비 | 제출 페이지, 기능설명서, 코드 endpoint 목록 일치 | `docs/20-openapi-submission-verification.md` |
+| B-04 | OpenAPI 활용 목록 최종 대조 | 부분 준비 | 제출 페이지, 기능설명서, 코드 endpoint 목록 일치 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` |
 | B-05 | 로그인 후 내부 화면 캡처 | 미완료 | AI 일정, 마이페이지 또는 찜·폴더, 커뮤니티 화면 중 핵심 캡처 확보 | `docs/26-pptx-final-editing-guide.md`, `docs/31-submission-screenshot-plan.md` |
 | B-06 | 최종 PPTX/PDF 생성 | 미완료 | 최종 파일명으로 PPTX/PDF 생성 | `docs/26-pptx-final-editing-guide.md` |
 | B-07 | 최종 PDF 제약 검증 | 미완료 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 | `docs/27-final-validation-execution-sheet.md` |
