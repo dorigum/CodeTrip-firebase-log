@@ -24,6 +24,7 @@
 | 로그인 후 화면 캡처 | 교체 우선순위 문서화 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/26-pptx-final-editing-guide.md` | AI·마이페이지·커뮤니티 내부 화면 캡처 |
 | 최종 PDF 검증 | 초안 PDF의 페이지·용량·글자 크기 검증 기록 있음 | 부분 준비 | `docs/13-validation-report.md`, `docs/17-submission-artifact-manifest.md` | 최종본 변환 후 재검증 |
 | 제출 직전 실행표 | VE, URL, TA, PDF 검증표 작성 | 준비됨 | `docs/27-final-validation-execution-sheet.md` | 실제 제출 직전 결과 입력 |
+| 제출 리스크 관리 | 중복 출품, 부문 오첨부, 마감 전 수정 가능 시간 확인 항목 보강 | 부분 준비 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | 제출 직전 실제 확인 |
 
 ## 참고 준비도
 
@@ -52,6 +53,7 @@
 | B-07 | 최종 PDF 제약 검증 | 미완료 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 | `docs/27-final-validation-execution-sheet.md` |
 | B-08 | 최종 checksum·전달 위치 기록 | 미완료 | 최종 산출물의 SHA-256, 파일 크기, 생성일, 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
 | B-09 | 제출 직전 차단 조건 통과 | 미실행 | `VE`, `URL`, `TA`, `PDF` 차단 항목 모두 통과 | `docs/27-final-validation-execution-sheet.md` |
+| B-10 | 중복 출품·부문 오첨부·마감 리스크 확인 | 미확인 | 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간 확보 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` |
 
 ## 심사 기준 대응 상태
 
@@ -72,6 +74,7 @@
 6. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
 7. 최종 PDF로 변환하고 `docs/27-final-validation-execution-sheet.md` 기준으로 검증한다.
 8. 최종 산출물 checksum과 전달 위치를 `docs/17-submission-artifact-manifest.md`에 기록한다.
+9. 중복 출품, 부문 오첨부, 마감 후 수정 불가 리스크를 제출 직전에 다시 확인한다.
 
 ## 상태 갱신 규칙
 
