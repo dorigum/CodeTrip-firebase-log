@@ -15,7 +15,7 @@
 - `완료`로 표시하려면 확인 일자, 확인자, 증빙 위치가 있어야 한다.
 - 최종 제출 직전에는 이 문서와 `docs/22-final-submission-runbook.md`를 함께 확인한다.
 - 제출 가능 여부를 최종 판정할 때는 `docs/27-final-validation-execution-sheet.md`의 제출 직전 차단 조건을 따른다.
-- 남은 차단 항목의 우선순위는 `docs/28-submission-readiness-dashboard.md`의 B-01~B-09를 기준으로 본다.
+- 남은 차단 항목의 우선순위는 `docs/28-submission-readiness-dashboard.md`의 B-01~B-10을 기준으로 본다.
 
 ## 최종 입력값 상태표
 
