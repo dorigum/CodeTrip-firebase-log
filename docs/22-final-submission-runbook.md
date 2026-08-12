@@ -16,7 +16,7 @@
 | 순서 | 작업 | 참조 문서 | 완료 증빙 |
 |---:|---|---|---|
 | 1 | 공모전 접수 계정 로그인과 이메일 인증 가능 여부 확인 | `docs/16-contest-submission-checklist.md` | 제출 페이지 접근 가능 여부 |
-| 2 | 전체 제출 준비도와 차단 항목 확인 | `docs/28-submission-readiness-dashboard.md` | B-01~B-10 현재 상태 확인 |
+| 2 | 전체 제출 준비도와 차단 항목 확인 | `docs/28-submission-readiness-dashboard.md`, `docs/36-final-blockers-summary.md` | B-01~B-10 현재 상태와 우선순위 확인 |
 | 3 | 사용자 제공 입력값과 민감정보 기록 금지 범위 확인 | `docs/30-user-provided-submission-inputs.md` | UI-01~UI-13 준비 상태 확인 |
 | 4 | 접수 팀명과 최종 팀원 정보 확인 | `docs/16-contest-submission-checklist.md` | 기능설명서 1페이지 팀명 반영 |
 | 5 | 최종 입력값 누락 여부 1차 점검 | `docs/25-final-input-checklist.md` | FI-01~FI-19 현재 상태 확인 |

@@ -8,7 +8,7 @@
 
 문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 다만 실제 접수 팀명, 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
 
-따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다.
+따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다. 남은 차단 항목의 우선순위와 책임 범위는 `docs/36-final-blockers-summary.md`에서 별도로 요약한다.
 
 ## 준비도 요약
 
@@ -28,6 +28,7 @@
 | 슬라이드별 최종 검수 | 슬라이드 1~5와 PDF 제약 검수표 작성 | 준비됨 | `docs/35-pptx-slide-final-review-checklist.md` | 최종 PDF 생성 후 실제 검수 |
 | 제출 직전 실행표 | VE, URL, TA, PDF 검증표 작성 | 준비됨 | `docs/27-final-validation-execution-sheet.md` | 실제 제출 직전 결과 입력 |
 | 제출 리스크 관리 | 중복 출품, 부문 오첨부, 마감 전 수정 가능 시간 확인 항목 보강 | 부분 준비 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | 제출 직전 실제 확인 |
+| 차단 항목 요약 | 남은 차단 항목을 책임 범위와 우선순위별로 정리 | 준비됨 | `docs/36-final-blockers-summary.md` | 실제 실행 결과 반영 |
 
 ## 참고 준비도
 
