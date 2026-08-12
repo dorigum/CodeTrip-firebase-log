@@ -5,6 +5,7 @@
 비밀번호, OpenAPI 인증키, 개인 이메일, 팀원 개인정보 등 민감정보는 저장소에 기록하지 않는다. 이 문서에는 실제 값 대신 확인 상태, 확인자, 반영 위치, 증빙 문서만 기록한다.
 
 최종 제출 직전 실제 검증 실행 결과는 `docs/27-final-validation-execution-sheet.md`에 기록한다.
+전체 제출 준비도와 남은 차단 항목은 `docs/28-submission-readiness-dashboard.md`에서 요약한다.
 
 ## 사용 원칙
 
@@ -14,6 +15,7 @@
 - `완료`로 표시하려면 확인 일자, 확인자, 증빙 위치가 있어야 한다.
 - 최종 제출 직전에는 이 문서와 `docs/22-final-submission-runbook.md`를 함께 확인한다.
 - 제출 가능 여부를 최종 판정할 때는 `docs/27-final-validation-execution-sheet.md`의 제출 직전 차단 조건을 따른다.
+- 남은 차단 항목의 우선순위는 `docs/28-submission-readiness-dashboard.md`의 B-01~B-09를 기준으로 본다.
 
 ## 최종 입력값 상태표
 

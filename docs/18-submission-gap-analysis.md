@@ -13,6 +13,7 @@
 최종 제출 페이지에 실제로 입력해야 하는 값과 탈락 리스크는 `docs/25-final-input-checklist.md`에서 별도로 관리한다.
 기능설명서 PPTX의 슬라이드별 최종 수정 지시는 `docs/26-pptx-final-editing-guide.md`에서 관리한다.
 제출 직전 실제 검증 실행 결과는 `docs/27-final-validation-execution-sheet.md`에서 관리한다.
+전체 제출 준비도와 차단 항목 현황은 `docs/28-submission-readiness-dashboard.md`에서 요약한다.
 
 ## 제출 조건별 상태
 
@@ -48,13 +49,14 @@
 
 1. `docs/22-final-submission-runbook.md` 순서에 따라 최종 제출 전 확인을 진행한다.
 2. `docs/25-final-input-checklist.md`의 FI-01~FI-16을 기준으로 최종 입력값 누락 여부를 점검한다.
-3. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
-4. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
-5. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
-6. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
-7. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
-8. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 반영한 뒤 PDF로 변환하고, 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
-9. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
+3. `docs/28-submission-readiness-dashboard.md`의 차단 항목 B-01~B-09를 순서대로 해소한다.
+4. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
+5. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
+6. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
+7. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
+8. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
+9. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 반영한 뒤 PDF로 변환하고, 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
+10. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
 
 ## 제출 가능 판정 기준
 
