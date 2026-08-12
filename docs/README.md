@@ -36,6 +36,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 30. [공모전 심사 대응 Q&A](29-contest-judge-qa.md)
 31. [공모전 사용자 제공 입력값 준비 패킷](30-user-provided-submission-inputs.md)
 32. [공모전 기능설명서 화면 캡처 계획](31-submission-screenshot-plan.md)
+33. [공모전 서비스 URL Smoke Test 실행표](32-service-url-smoke-test-runbook.md)
 
 ## 공모전 제출 준비 빠른 사용 순서
 
@@ -49,11 +50,12 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 6. [공모전 지역 특화 제출 전략](23-regional-specialization-strategy.md)에서 전국 단위 제출 또는 지역 특화 제출 여부를 확정한다.
 7. [공모전 기능설명서 제출용 문구](24-submission-copywriting.md)의 축약 문구를 기준으로 PPTX 문구를 정리한다.
 8. [공모전 기능설명서 화면 캡처 계획](31-submission-screenshot-plan.md)에 따라 대표 이미지와 상세 이미지 후보를 확보한다.
-9. [기능설명서 PPTX 최종 반영 작업 지시서](26-pptx-final-editing-guide.md)에 따라 최종 PPTX를 수정한다.
-10. [공모전 최종 검증 실행표](27-final-validation-execution-sheet.md)로 제출 직전 차단 조건을 검증한다.
-11. [제출 산출물 manifest](17-submission-artifact-manifest.md)에 최종 PPTX/PDF 파일명, 생성일, checksum, 전달 위치를 기록한다.
-12. [검증 보고서](13-validation-report.md)에 최종 URL, 테스트 계정, PDF 검증 요약을 남긴다.
-13. [공모전 심사 대응 Q&A](29-contest-judge-qa.md)로 기능설명서와 시연 답변의 표현을 맞춘다.
+9. [공모전 서비스 URL Smoke Test 실행표](32-service-url-smoke-test-runbook.md)로 제출 URL, 직접 경로 새로고침, 로그인 후 화면을 확인한다.
+10. [기능설명서 PPTX 최종 반영 작업 지시서](26-pptx-final-editing-guide.md)에 따라 최종 PPTX를 수정한다.
+11. [공모전 최종 검증 실행표](27-final-validation-execution-sheet.md)로 제출 직전 차단 조건을 검증한다.
+12. [제출 산출물 manifest](17-submission-artifact-manifest.md)에 최종 PPTX/PDF 파일명, 생성일, checksum, 전달 위치를 기록한다.
+13. [검증 보고서](13-validation-report.md)에 최종 URL, 테스트 계정, PDF 검증 요약을 남긴다.
+14. [공모전 심사 대응 Q&A](29-contest-judge-qa.md)로 기능설명서와 시연 답변의 표현을 맞춘다.
 
 실제 비밀번호, OpenAPI 인증키, 개인 이메일, 팀원 개인정보는 저장소에 기록하지 않는다. `output/` 산출물은 별도 지시 전까지 커밋 대상에서 제외한다.
 

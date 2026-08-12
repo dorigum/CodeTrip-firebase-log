@@ -19,7 +19,7 @@
 | 기능설명서 초안 | 5페이지 제출 항목 정리본 초안 존재 | 부분 준비 | `docs/17-submission-artifact-manifest.md`, `docs/18-submission-gap-analysis.md` | 팀명·캡처·최종 입력값 반영 |
 | 제출용 문구 | 서비스 개요, 주제 선정 이유, 차별성, 발전계획 문구 정리 | 준비됨 | `docs/24-submission-copywriting.md` | PPTX 공간에 맞춰 최종 반영 |
 | 지역 특화 전략 | 전국 단위 제출 기본 권장과 전환 조건 문서화 | 결정 필요 | `docs/23-regional-specialization-strategy.md` | 전국 단위 유지 또는 특정 지역 특화 확정 |
-| 서비스 URL | 후보 URL과 검증 절차 문서화 | 부분 준비 | `docs/21-service-url-verification.md` | 제출 직전 smoke test 실행 |
+| 서비스 URL | 후보 URL, 검증 기준, smoke test 실행표 문서화 | 부분 준비 | `docs/21-service-url-verification.md`, `docs/32-service-url-smoke-test-runbook.md` | 제출 직전 smoke test 실행 |
 | 테스트 계정 | 생성·검증 절차 문서화 | 미완료 | `docs/19-test-account-verification.md` | 제출용 전용 계정 생성 |
 | OpenAPI 제출 정보 | 활용 API 목록과 검증 절차 문서화 | 미완료 | `docs/20-openapi-submission-verification.md` | 인코딩키·디코딩키와 제출 계정 확인 |
 | 로그인 후 화면 캡처 | 교체 우선순위 문서화 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/26-pptx-final-editing-guide.md` | AI·마이페이지·커뮤니티 내부 화면 캡처 |
@@ -54,7 +54,7 @@
 | B-06 | 최종 PPTX/PDF 생성 | 미완료 | 최종 파일명으로 PPTX/PDF 생성 | `docs/26-pptx-final-editing-guide.md` |
 | B-07 | 최종 PDF 제약 검증 | 미완료 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 | `docs/27-final-validation-execution-sheet.md` |
 | B-08 | 최종 checksum·전달 위치 기록 | 미완료 | 최종 산출물의 SHA-256, 파일 크기, 생성일, 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
-| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `VE`, `URL`, `TA`, `PDF` 차단 항목 모두 통과 | `docs/27-final-validation-execution-sheet.md` |
+| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `VE`, `URL`, `TA`, `PDF` 차단 항목 모두 통과 | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md` |
 | B-10 | 중복 출품·부문 오첨부·마감 리스크 확인 | 미확인 | 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간 확보 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` |
 
 ## 심사 기준 대응 상태

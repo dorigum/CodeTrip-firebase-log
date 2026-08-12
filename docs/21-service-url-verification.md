@@ -1,6 +1,6 @@
 # 서비스 URL 제출 전 검증 절차
 
-이 문서는 공모전 1차 심사 제출 페이지에 입력할 CodeTrip 서비스 URL이 실제 심사자가 접속 가능한 상태인지 확인하기 위한 절차다.
+이 문서는 공모전 1차 심사 제출 페이지에 입력할 CodeTrip 서비스 URL이 실제 심사자가 접속 가능한 상태인지 확인하기 위한 기준 문서다. 제출 직전에 브라우저로 하나씩 실행할 상세 체크는 `docs/32-service-url-smoke-test-runbook.md`를 따른다.
 
 ## 제출 후보 URL
 
@@ -39,7 +39,7 @@
 1. `npm run lint`와 `npm run build`를 실행해 배포 전 정적 검증과 빌드 검증을 수행한다.
 2. Firebase Hosting 배포 대상이 `codetrip`이고 public 디렉터리가 `dist`인지 확인한다.
 3. 배포 후 `https://dorigum-codetrip.web.app`에 접속한다.
-4. URL-01~URL-07을 같은 브라우저 환경에서 확인한다.
+4. `docs/32-service-url-smoke-test-runbook.md` 기준으로 URL-01~URL-07과 로그인 후 핵심 기능을 같은 브라우저 환경에서 확인한다.
 5. 비로그인 화면 캡처는 `output/contest/screenshots/`에 저장하고, 최종 기능설명서에 반영할 후보만 선별한다.
 6. 테스트 계정이 준비되면 로그인 후 AI Planner, 마이페이지, 커뮤니티 화면을 다시 확인하고 캡처한다.
 7. 검증 결과는 `docs/13-validation-report.md`에 날짜, 기준 커밋, 환경, 결과, 미해결 이슈로 기록한다.

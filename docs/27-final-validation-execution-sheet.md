@@ -43,6 +43,8 @@
 
 ## 서비스 URL smoke test
 
+상세 실행 순서는 `docs/32-service-url-smoke-test-runbook.md`를 따른다. 이 표에는 제출 직전 요약 결과만 기록한다.
+
 | ID | 경로 | 확인 항목 | 결과 | 증빙 위치 | 후속 조치 |
 |---|---|---|---|---|---|
 | URL-01 | `/` | 홈 화면이 로딩되고 서비스 소개 또는 주요 카드가 보인다. | 미실행 | `docs/13-validation-report.md` |  |
