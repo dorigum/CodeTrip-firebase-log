@@ -33,6 +33,7 @@
 | 2026-08-12 | `7514213` | 제출 제외 리스크 커버리지 보강 후 링크 검사 | 통과. 중복 출품, 부문·양식 오첨부, 마감 전 수정 가능 시간 확인 항목을 보강한 뒤 `docs/` 내 마크다운 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/16-contest-submission-checklist.md`, `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | 실제 중복 출품 여부와 제출 부문 확인은 제출 직전 수동 확인 필요 |
 | 2026-08-12 | `30ab724` | 제출 차단 항목 번호 정합성 확인 | 통과. 대시보드 차단 항목이 B-10까지 확장된 뒤 최종 입력값 체크표의 참조 범위를 B-01~B-10으로 맞추고 링크 무결성을 재확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/25-final-input-checklist.md`, `docs/28-submission-readiness-dashboard.md` | `output/` 산출물은 커밋 제외 정책 유지 |
 | 2026-08-12 | `a6d91bd` | 사용자 제공 입력값 준비 패킷 추가 후 문서 링크 무결성 검사 | 통과. 저장소 기록 가능 값과 기록 금지 값을 분리하는 `docs/30-user-provided-submission-inputs.md`를 추가하고 README, 런북, 대시보드 연결을 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/30-user-provided-submission-inputs.md`, `docs/README.md`, `docs/22-final-submission-runbook.md`, `docs/28-submission-readiness-dashboard.md` | 실제 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 캡처는 사용자 제공 및 제출 직전 수동 확인 필요. `output/` 산출물은 커밋 제외 정책 유지 |
+| 2026-08-12 | `223e5ab` | 기능설명서 화면 캡처 계획 추가 후 문서 링크 무결성 검사 | 통과. 대표 이미지와 상세 이미지 후보, 로그인 후 캡처 우선순위, 개인정보·보안 점검 기준을 `docs/31-submission-screenshot-plan.md`에 정의하고 README, 런북, PPTX 지시서, 대시보드 연결을 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/31-submission-screenshot-plan.md`, `docs/README.md`, `docs/22-final-submission-runbook.md`, `docs/26-pptx-final-editing-guide.md`, `docs/28-submission-readiness-dashboard.md` | 실제 SC-04~SC-06 캡처는 테스트 전용 계정 준비 후 수행 필요. `output/` 산출물은 커밋 제외 정책 유지 |
 
 ## 핵심 사용자 흐름 체크리스트
 

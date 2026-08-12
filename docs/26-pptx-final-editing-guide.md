@@ -28,7 +28,7 @@
 |---:|---|---|---|---|
 | 1 | 표지 | `[접수 팀명 입력]` placeholder를 접수 페이지 기준 팀명으로 교체한다. 서비스명은 `CodeTrip`으로 유지한다. | `docs/25-final-input-checklist.md` FI-02 | 팀명과 서비스명이 제출 페이지와 일치한다. |
 | 2 | 서비스 소개 | 서비스 개요, 주제 선정 이유, 핵심 기능 문구를 제출용 축약 문구로 정리한다. 지역 특화 여부가 바뀌면 해당 문구도 함께 조정한다. | `docs/24-submission-copywriting.md`, `docs/23-regional-specialization-strategy.md` | 심사자가 서비스 목적과 사용자 문제를 30초 안에 이해할 수 있다. |
-| 3 | 대표·상세 이미지 | 비로그인 화면 중심 캡처 중 일부를 로그인 후 AI 일정, 마이페이지 또는 찜·폴더, 커뮤니티 내부 화면으로 교체한다. | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md` | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 흐름을 보여준다. |
+| 3 | 대표·상세 이미지 | 비로그인 화면 중심 캡처 중 일부를 로그인 후 AI 일정, 마이페이지 또는 찜·폴더, 커뮤니티 내부 화면으로 교체한다. | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md`, `docs/31-submission-screenshot-plan.md` | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 흐름을 보여준다. |
 | 4 | 핵심 기능 흐름 | 5개 핵심 기능 흐름을 유지하되, 캡처 교체 또는 문구 수정으로 흐름이 달라졌다면 단계명을 맞춘다. | `docs/03-user-flows.md`, `docs/15-demo-scenario.md` | 탐색 → 상세 → 찜·폴더 → AI 일정 → 커뮤니티 흐름이 끊기지 않는다. |
 | 5 | 데이터 활용·차별성·발전계획 | 한국관광공사 OpenAPI 활용 목록을 제출 계정 기준 최종 목록과 대조한다. 차별성·발전계획 문구는 과장 없이 정리한다. | `docs/20-openapi-submission-verification.md`, `docs/24-submission-copywriting.md` | OpenAPI 목록, 기타 API, 차별성, 발전계획이 실제 구현과 일치한다. |
 
@@ -55,6 +55,8 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 ## 슬라이드 3 화면 캡처 교체 우선순위
 
 현재 초안은 비로그인 공개 화면 중심으로 구성되어 있다. 최종 제출 전 테스트 계정이 준비되면 아래 순서로 교체한다.
+
+세부 캡처 파일명, 화면별 완료 기준, 개인정보·보안 점검 기준은 `docs/31-submission-screenshot-plan.md`를 따른다.
 
 | 우선순위 | 교체할 화면 | 이유 | 검증 조건 |
 |---:|---|---|---|
