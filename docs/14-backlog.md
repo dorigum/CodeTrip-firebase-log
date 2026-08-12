@@ -35,7 +35,7 @@
 | BL-11 | 심사 시연 시나리오 작성 | P2 | done | WBS 6~8주차 | 탐색, 상세, 로그인, 찜, AI 일정, 마이페이지, 커뮤니티, 품질 설명 흐름 정의 | `docs/15-demo-scenario.md` |
 | BL-12 | 상용 예약·결제·관리자 기능 백로그 보관 | P3 | deferred | `FR-08` | MVP 범위 제외 사유와 상용화 단계 재검토 조건 기록 | `docs/02-product-requirements.md`, `decision-log/` |
 | BL-13 | 공모전 1차 심사 제출 항목 매핑 | P0 | done | 제출 안내, 기능설명서 양식 | 제출 항목, 기능설명서 슬라이드, OpenAPI 활용 목록, 제출 전 체크리스트 정리 | `docs/16-contest-submission-checklist.md` |
-| BL-14 | 기능설명서 PPTX 작성 및 PDF 변환 | P0 | ready | 제출 안내, 기능설명서 양식 | 제공 양식 기반 기능설명서 작성, PDF 변환 후 열람 확인, 제출 산출물 manifest 작성 | 비바이너리 manifest: 파일명, 생성일, 양식 버전, checksum, 외부 전달 위치 |
+| BL-14 | 기능설명서 PPTX 작성 및 PDF 변환 | P0 | ready | 제출 안내, 기능설명서 양식 | 제공 양식 기반 기능설명서 작성, PDF 변환 후 열람 확인, 제출 산출물 manifest 작성 | 비바이너리 manifest: 파일명, 생성일, 양식 버전, checksum, 외부 전달 위치 / `docs/13-validation-report.md`: 수행자, 환경, 확인 흐름, 결과, 실패 지점 |
 
 ## 추천 처리 순서
 
