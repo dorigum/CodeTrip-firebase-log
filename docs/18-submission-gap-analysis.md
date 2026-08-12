@@ -27,7 +27,7 @@
 | 기타 API | 기타 API·기술 활용 작성 | Open-Meteo, Nominatim, Kakao Maps, Gemini, Firebase, React/Vite/Tailwind/Zustand 작성 | 충족 | 제출 항목 정리본 5페이지 | 과도한 기술 나열 여부 최종 검토 |
 | 차별성·발전계획 | 서비스 차별성·발전계획 작성 | AI 일정화, TourAPI 검증, 프록시·Rules·성능·E2E 발전계획 작성 | 충족 | 제출 항목 정리본 5페이지 | Gemini 키 노출 리스크 표현 수위 최종 조정 |
 | 서비스 URL | 접속 가능한 서비스 URL 제출 | `https://dorigum-codetrip.web.app` 후보 확인 | 부분 충족 | `README.md`, `docs/16-contest-submission-checklist.md` | 제출 직전 URL 접속과 최신 배포 여부 확인 |
-| 테스트 계정 | 필요 시 지정 형식의 테스트 전용 계정 | 계정 정보 미확정 | 미완료 | `docs/16-contest-submission-checklist.md` | 전용 계정 생성 후 로그인 가능 여부 확인 |
+| 테스트 계정 | 필요 시 지정 형식의 테스트 전용 계정 | 검증 절차 문서화, 계정 정보 미확정 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md` | 전용 계정 생성 후 로그인 가능 여부 확인 |
 | OpenAPI 인증키 | 인코딩키·디코딩키 제출 | 저장소 기록 금지, 별도 확인 필요 | 미완료 | `docs/16-contest-submission-checklist.md` | 제출 페이지에만 입력 |
 | 지역 특화 | 선택 항목, 가점 가능 | 전국 단위 제출 방향, 지역 특화 미정 | 미결정 | `docs/16-contest-submission-checklist.md` | 가점 전략 여부 결정 |
 
@@ -43,7 +43,7 @@
 ## 최종 제출 전 우선순위
 
 1. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
-2. 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
+2. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
 3. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
 4. 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
 5. 최종 PPTX를 PDF로 변환한 뒤 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
