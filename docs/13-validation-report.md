@@ -29,6 +29,7 @@
 | 2026-08-12 | `88be462` | 공모전 제출 문서 링크 무결성 검사 | 통과. `docs/` 내 마크다운 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/README.md` | `output/` 산출물은 커밋 제외 정책 유지 |
 | 2026-08-12 | `a7cc6e3` | 제출 준비도 대시보드 포함 문서 링크 무결성 재검사 | 통과. `docs/28-submission-readiness-dashboard.md` 추가 후 `docs/` 내 마크다운 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/README.md`, `docs/28-submission-readiness-dashboard.md` | `output/` 산출물은 커밋 제외 정책 유지 |
 | 2026-08-12 | `94bccb7` | 공모전 제출 준비 문서 사용 순서 링크 검사 | 통과. `docs/README.md`에 제출 준비 빠른 사용 순서를 추가한 뒤 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/README.md` | `output/` 산출물은 커밋 제외 정책 유지 |
+| 2026-08-12 | `edb02a7` | 심사 대응 Q&A 추가 후 문서 링크 무결성 검사 | 통과. `docs/29-contest-judge-qa.md` 추가 후 `docs/` 내 마크다운 상대 링크가 모두 존재하는 파일을 가리키는지 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/README.md`, `docs/29-contest-judge-qa.md` | `output/` 산출물은 커밋 제외 정책 유지 |
 
 ## 핵심 사용자 흐름 체크리스트
 

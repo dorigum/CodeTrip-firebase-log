@@ -33,6 +33,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 27. [기능설명서 PPTX 최종 반영 작업 지시서](26-pptx-final-editing-guide.md)
 28. [공모전 최종 검증 실행표](27-final-validation-execution-sheet.md)
 29. [공모전 제출 준비도 대시보드](28-submission-readiness-dashboard.md)
+30. [공모전 심사 대응 Q&A](29-contest-judge-qa.md)
 
 ## 공모전 제출 준비 빠른 사용 순서
 
@@ -48,6 +49,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 8. [공모전 최종 검증 실행표](27-final-validation-execution-sheet.md)로 제출 직전 차단 조건을 검증한다.
 9. [제출 산출물 manifest](17-submission-artifact-manifest.md)에 최종 PPTX/PDF 파일명, 생성일, checksum, 전달 위치를 기록한다.
 10. [검증 보고서](13-validation-report.md)에 최종 URL, 테스트 계정, PDF 검증 요약을 남긴다.
+11. [공모전 심사 대응 Q&A](29-contest-judge-qa.md)로 기능설명서와 시연 답변의 표현을 맞춘다.
 
 실제 비밀번호, OpenAPI 인증키, 개인 이메일, 팀원 개인정보는 저장소에 기록하지 않는다. `output/` 산출물은 별도 지시 전까지 커밋 대상에서 제외한다.
 
