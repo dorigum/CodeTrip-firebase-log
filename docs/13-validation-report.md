@@ -24,6 +24,7 @@
 | 2026-08-11 | `61116ed` | 기능설명서 PPTX/PDF 초안 열람 검증 | 초안 열람 가능, 최종 제출 조건 추가 검증 필요 | `docs/17-submission-artifact-manifest.md` | 실제 화면 캡처 미삽입, 5페이지 이하 조건 추가 편집 필요 |
 | 2026-08-12 | `8aa3187` | 기능설명서 5페이지 압축 초안 검증 | PDF 5페이지, 198252 bytes로 10MB 미만 확인 | `docs/17-submission-artifact-manifest.md`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_초안.pdf` | 실제 화면 캡처 미삽입, 양식 수정 없음·모든 항목 작성·12포인트 이상 조건은 최종본 육안 검증 필요 |
 | 2026-08-12 | `f11bd8c` | 기능설명서 화면 캡처 삽입 초안 검증 | PDF 5페이지, 374454 bytes로 10MB 미만 확인. 3번 슬라이드 PNG 렌더 육안 확인 | `docs/17-submission-artifact-manifest.md`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_화면캡처_초안.pdf`, `output/contest/rendered/screen-draft-slide3-final.png` | 로그인 후 AI·마이페이지·커뮤니티 내부 화면은 테스트 계정 생성 후 교체 필요. 모든 슬라이드의 12포인트 이상 조건은 최종본 육안 검증 필요 |
+| 2026-08-12 | `520c721` | 기능설명서 제출 항목 정리본 전체 슬라이드 QA | PDF 5페이지, 394335 bytes로 10MB 미만 확인. 1~5번 슬라이드 PNG 렌더 육안 확인 | `docs/17-submission-artifact-manifest.md`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_제출항목정리_초안.pdf`, `output/contest/rendered/submission-draft-all/` | 접수 팀명 입력 필요, 로그인 후 AI·마이페이지·커뮤니티 내부 화면 교체 필요, 최종 제출 전 12포인트 이상·양식 수정 없음 조건 육안 검증 필요 |
 
 ## 핵심 사용자 흐름 체크리스트
 
