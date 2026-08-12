@@ -22,15 +22,15 @@
 | ID | 항목 | 현재 상태 | 최종 확인 기준 | 반영 위치 | 증빙 위치 |
 |---|---|---|---|---|---|
 | FI-01 | 접수 계정 로그인·이메일 인증 | 미확인 | 한국관광 콘텐츠랩 접수 계정으로 로그인하고 이메일 인증을 완료할 수 있다. | 제출 페이지 | 제출 페이지 접근 확인 기록 |
-| FI-02 | 접수 팀명 | 미완료 | 제출 페이지의 팀명과 기능설명서 1페이지 팀명이 일치한다. | 제출 페이지, 기능설명서 1페이지 | 최종 PDF, `docs/17-submission-artifact-manifest.md` |
+| FI-02 | 접수 팀명 | 확인됨: `CodeTrip` | 제출 페이지의 팀명과 기능설명서 1페이지 팀명이 일치한다. | 제출 페이지, 기능설명서 1페이지 | 신청 정보 화면, 최종 PDF, `docs/17-submission-artifact-manifest.md` |
 | FI-03 | 최종 팀원 정보 | 미확인 | 제출 페이지의 최종 팀원 정보가 실제 팀 구성과 일치한다. | 제출 페이지 | 제출 페이지 확인 기록 |
 | FI-04 | 서비스명 | 완료 후보 | `CodeTrip` 표기가 제출 페이지와 기능설명서에서 일치한다. | 제출 페이지, 기능설명서 | 최종 PDF |
 | FI-05 | 서비스 유형 | 완료 후보 | 웹 서비스로 선택한다. | 제출 페이지, 기능설명서 | 최종 PDF |
 | FI-06 | 서비스 개요 | 초안 준비 | `docs/24-submission-copywriting.md`의 축약 문구를 기준으로 제출 페이지와 기능설명서 문구를 맞춘다. | 제출 페이지, 기능설명서 2페이지 | 최종 PDF |
-| FI-07 | 지역 특화 여부 | 전략 문서화, 최종 결정 필요 | 전국 단위 제출 또는 특정 지역 특화 제출 여부를 확정하고 제출 페이지와 기능설명서에 동일하게 반영한다. | 제출 페이지, 기능설명서 | `docs/23-regional-specialization-strategy.md`, 최종 PDF |
+| FI-07 | 지역 특화 여부 | 확인됨: 지역 특화 서비스 없음 | 전국 단위 제출 또는 특정 지역 특화 제출 여부를 확정하고 제출 페이지와 기능설명서에 동일하게 반영한다. | 제출 페이지, 기능설명서 | 신청 정보 화면, `docs/23-regional-specialization-strategy.md`, 최종 PDF |
 | FI-08 | 서비스 URL | 후보 확인 | `https://dorigum-codetrip.web.app` 접속, 직접 경로 새로고침, 주요 공개 화면 로딩을 확인한다. | 제출 페이지 | `docs/21-service-url-verification.md`, `docs/13-validation-report.md` |
 | FI-09 | 테스트 계정 ID/PW | 미완료 | 지정 형식의 제출용 전용 계정을 생성하고 로그인, AI, 마이페이지, 커뮤니티 접근을 확인한다. | 제출 페이지 | `docs/19-test-account-verification.md`, `docs/13-validation-report.md` |
-| FI-10 | 한국관광공사 OpenAPI 인증키 | 미완료 | 공공데이터포털에서 인코딩키·디코딩키를 확인하고 제출 페이지에만 입력한다. | 제출 페이지 | `docs/20-openapi-submission-verification.md` |
+| FI-10 | 한국관광공사 OpenAPI 인증키 | 확인 필요: 원문 기록 금지 | 공공데이터포털에서 인코딩키·디코딩키를 확인하고 제출 페이지에만 입력한다. 저장소에는 확인 여부만 기록한다. | 제출 페이지 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` |
 | FI-11 | 한국관광공사 OpenAPI 활용 목록 | 부분 충족 | 기능설명서의 API 목록과 실제 코드 endpoint 목록이 일치한다. | 제출 페이지, 기능설명서 5페이지 | `docs/20-openapi-submission-verification.md` |
 | FI-12 | 기능설명서 PPTX | 초안 진행 | 제공 양식 기반으로 팀명, 화면 캡처, API 목록, 차별성·발전계획을 최종 반영한다. | 제출 파일 원본 | `docs/17-submission-artifact-manifest.md` |
 | FI-13 | 기능설명서 PDF | 초안 확인 | PDF 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람을 확인한다. | 제출 첨부파일 | `docs/17-submission-artifact-manifest.md`, `docs/13-validation-report.md` |

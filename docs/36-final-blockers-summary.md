@@ -12,7 +12,7 @@
 
 | 그룹 | 성격 | 대표 항목 | 현재 판정 |
 |---|---|---|---|
-| G1 사용자·팀 확인값 | 접수 페이지와 팀 내부에서만 확인 가능 | 팀명, 팀원 정보, 중복 출품 여부, 마감 전 제출 시간 | 미완료 |
+| G1 사용자·팀 확인값 | 접수 페이지와 팀 내부에서만 확인 가능 | 팀명, 팀원 정보, 중복 출품 여부, 마감 전 제출 시간 | 부분 확인 |
 | G2 계정·서비스 검증 | 실제 배포 URL과 테스트 계정으로 확인 필요 | 테스트 계정, 시연 데이터, URL smoke test | 미완료 |
 | G3 OpenAPI 제출 정보 | 공공데이터포털과 배포 환경 대조 필요 | 인코딩키·디코딩키, 활용 API 목록, 최종 PDF API 문구 | 부분 준비 |
 | G4 기능설명서 최종 산출물 | PPTX/PDF 최종본 생성 후 확인 가능 | 팀명 반영, 캡처 교체, 5페이지, 12pt, 10MB, checksum | 미완료 |
@@ -22,8 +22,8 @@
 
 | 순서 | 차단 항목 | 먼저 필요한 것 | 완료 증빙 | 연결 문서 |
 |---:|---|---|---|---|
-| 1 | 접수 계정·팀명·팀원 정보 확인 | 한국관광 콘텐츠랩 접수 계정 접근 | 팀명 placeholder 교체 가능 상태 | `docs/30-user-provided-submission-inputs.md` |
-| 2 | 지역 특화 여부 최종 결정 | 전국 단위 또는 특정 지역 특화 전략 선택 | 제출 페이지와 기능설명서 방향 일치 | `docs/23-regional-specialization-strategy.md` |
+| 1 | 접수 계정·팀명·팀원 정보 확인 | 한국관광 콘텐츠랩 접수 계정 접근 | 팀명 `CodeTrip` 확인, 팀원 정보 추가 확인 필요 | `docs/30-user-provided-submission-inputs.md` |
+| 2 | 지역 특화 여부 최종 결정 | 전국 단위 또는 특정 지역 특화 전략 선택 | 지역 특화 서비스 `없음` 확인 | `docs/23-regional-specialization-strategy.md` |
 | 3 | 테스트 전용 계정 생성 | 제출 안내 지정 형식 계정 | 로그인·로그아웃·재로그인 성공 | `docs/19-test-account-verification.md` |
 | 4 | 테스트 계정 시연 데이터 세팅 | 로그인 가능한 테스트 계정 | 찜·폴더·AI 일정·커뮤니티 데이터 확인 | `docs/33-test-account-demo-data-runbook.md` |
 | 5 | OpenAPI 인증키 확인 | 공공데이터포털 계정 접근 | 제출 계정 키와 배포 환경변수 대조 완료 | `docs/20-openapi-submission-verification.md` |
@@ -42,11 +42,11 @@
 | ID | 사용자 제공 항목 | 저장소 기록 가능 여부 | 현재 상태 |
 |---|---|---|---|
 | U-B01 | 공모전 접수 계정 로그인·이메일 인증 가능 여부 | 확인 여부만 기록 | 미확인 |
-| U-B02 | 접수 팀명 | 필요 시 팀명 기록 가능 | 미확인 |
+| U-B02 | 접수 팀명 | 필요 시 팀명 기록 가능 | 확인됨: `CodeTrip` |
 | U-B03 | 최종 팀원 정보 | 원문 기록 금지 | 미확인 |
 | U-B04 | 테스트 계정 ID/PW | 비밀번호 기록 금지 | 미완료 |
 | U-B05 | OpenAPI 인코딩키·디코딩키 | 원문 기록 금지 | 미확인 |
-| U-B06 | 지역 특화 여부 최종 결정 | 결정 결과 기록 가능 | 미결정 |
+| U-B06 | 지역 특화 여부 최종 결정 | 결정 결과 기록 가능 | 확인됨: 지역 특화 서비스 없음 |
 | U-B07 | 동일 서비스 중복 출품·수혜 이력 확인 | 확인 여부만 기록 | 미확인 |
 | U-B08 | 내부 제출 목표 시각 | 기록 가능 | 미확인 |
 | U-B09 | 최종 산출물 외부 전달 위치 | 기록 가능 | 미정 |
@@ -60,7 +60,7 @@
 | 제출 문서 목록과 사용 순서 | 준비됨 | `docs/README.md` |
 | 제출 준비도 현황판 | 준비됨 | `docs/28-submission-readiness-dashboard.md` |
 | 최종 제출 런북 | 준비됨 | `docs/22-final-submission-runbook.md` |
-| 사용자 제공 입력값 패킷 | 준비됨 | `docs/30-user-provided-submission-inputs.md` |
+| 사용자 제공 입력값 패킷 | 준비됨, 팀명·지역 특화 여부 일부 확인 | `docs/30-user-provided-submission-inputs.md` |
 | 화면 캡처 계획 | 준비됨 | `docs/31-submission-screenshot-plan.md` |
 | 서비스 URL smoke test 실행표 | 준비됨 | `docs/32-service-url-smoke-test-runbook.md` |
 | 테스트 계정 시연 데이터 절차 | 준비됨 | `docs/33-test-account-demo-data-runbook.md` |

@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출은 보류`로 분류한다.
 
-문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 다만 실제 접수 팀명, 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
+문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `없음`으로 확인되었다. 다만 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
 
 따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다. 남은 차단 항목의 우선순위와 책임 범위는 `docs/36-final-blockers-summary.md`에서 별도로 요약한다.
 
@@ -18,10 +18,10 @@
 | 사용자 제공 입력값 | 저장소 기록 가능 값과 금지 값을 분리함 | 준비됨 | `docs/30-user-provided-submission-inputs.md` | UI-01~UI-13 실제 값 확인 |
 | 기능설명서 초안 | 5페이지 제출 항목 정리본 초안 존재 | 부분 준비 | `docs/17-submission-artifact-manifest.md`, `docs/18-submission-gap-analysis.md` | 팀명·캡처·최종 입력값 반영 |
 | 제출용 문구 | 서비스 개요, 주제 선정 이유, 차별성, 발전계획 문구 정리 | 준비됨 | `docs/24-submission-copywriting.md` | PPTX 공간에 맞춰 최종 반영 |
-| 지역 특화 전략 | 전국 단위 제출 기본 권장과 전환 조건 문서화 | 결정 필요 | `docs/23-regional-specialization-strategy.md` | 전국 단위 유지 또는 특정 지역 특화 확정 |
+| 지역 특화 전략 | 지역 특화 서비스 없음 확인 | 준비됨 | `docs/23-regional-specialization-strategy.md`, 신청 정보 화면 | 기능설명서와 제출 페이지 표현 일치 |
 | 서비스 URL | 후보 URL, 검증 기준, smoke test 실행표 문서화 | 부분 준비 | `docs/21-service-url-verification.md`, `docs/32-service-url-smoke-test-runbook.md` | 제출 직전 smoke test 실행 |
 | 테스트 계정 | 생성·검증 절차와 시연 데이터 세팅 기준 문서화 | 미완료 | `docs/19-test-account-verification.md`, `docs/33-test-account-demo-data-runbook.md` | 제출용 전용 계정 생성 및 시연 데이터 준비 |
-| OpenAPI 제출 정보 | 활용 API 목록, 검증 절차, 제출용 작성표 문서화 | 미완료 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 인코딩키·디코딩키와 제출 계정 확인 |
+| OpenAPI 제출 정보 | 활용 API 목록, 검증 절차, 제출용 작성표 문서화 | 미완료 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 인코딩키·디코딩키를 공공데이터포털에서 확인하고 제출 페이지에만 입력 |
 | 로그인 후 화면 캡처 | 교체 우선순위 문서화 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/26-pptx-final-editing-guide.md` | AI·마이페이지·커뮤니티 내부 화면 캡처 |
 | 화면 캡처 계획 | 대표·상세 이미지 후보와 보안 점검 기준 정의 | 준비됨 | `docs/31-submission-screenshot-plan.md` | SC-04~SC-06 실제 캡처 확보 |
 | 최종 PDF 검증 | 초안 PDF의 페이지·용량·글자 크기 검증 기록 있음 | 부분 준비 | `docs/13-validation-report.md`, `docs/17-submission-artifact-manifest.md` | 최종본 변환 후 재검증 |
@@ -48,7 +48,7 @@
 
 | ID | 차단 항목 | 현재 상태 | 해소 기준 | 기준 문서 |
 |---|---|---|---|---|
-| B-01 | 접수 팀명 placeholder 제거 | 미완료 | 기능설명서 1페이지에 실제 접수 팀명 반영 | `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` |
+| B-01 | 접수 팀명 placeholder 제거 | 부분 확인 | 기능설명서 1페이지에 `CodeTrip` 반영 | `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` |
 | B-02 | 테스트 전용 계정 생성·검증 | 미완료 | 제출용 계정으로 로그인, 로그아웃 후 재로그인, 보호 기능 접근과 시연 데이터 유지 확인 | `docs/19-test-account-verification.md`, `docs/33-test-account-demo-data-runbook.md` |
 | B-03 | OpenAPI 인증키 확인 | 미완료 | 공공데이터포털 인코딩키·디코딩키를 제출 페이지에만 입력 | `docs/20-openapi-submission-verification.md` |
 | B-04 | OpenAPI 활용 목록 최종 대조 | 부분 준비 | 제출 페이지, 기능설명서, 코드 endpoint 목록 일치 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` |
