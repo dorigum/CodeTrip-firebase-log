@@ -23,7 +23,7 @@
 | 6 | 테스트 전용 계정 생성 및 로그인 후 기능 검증 | `docs/19-test-account-verification.md` | `docs/13-validation-report.md` TA-01~TA-06 기록 |
 | 7 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
 | 8 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md` | `output/contest/screenshots/` 캡처 후보 생성 |
-| 9 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
+| 9 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
 | 10 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
 | 11 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
 | 12 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md` | 모든 제출 가능 판정 기준 충족 |
@@ -48,6 +48,7 @@
 | 항목 | 판정 기준 | 현재 기준 문서 |
 |---|---|---|
 | 제출 파일 형식 | 제공 양식 기반 PPTX 작성 후 PDF 변환 | `docs/16-contest-submission-checklist.md` |
+| PPTX 최종 편집 | 슬라이드별 팀명, 문구, 캡처, OpenAPI, 발전계획 반영 | `docs/26-pptx-final-editing-guide.md` |
 | PDF 제약 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 | `docs/17-submission-artifact-manifest.md` |
 | 서비스 URL | 공개 URL 접속, 직접 경로 새로고침, 주요 공개 화면 확인 | `docs/21-service-url-verification.md` |
 | 테스트 계정 | 전용 계정 생성, 로그인, 보호 기능 접근 확인 | `docs/19-test-account-verification.md` |

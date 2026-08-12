@@ -30,6 +30,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 24. [공모전 지역 특화 제출 전략](23-regional-specialization-strategy.md)
 25. [공모전 기능설명서 제출용 문구](24-submission-copywriting.md)
 26. [공모전 최종 입력값 체크표](25-final-input-checklist.md)
+27. [기능설명서 PPTX 최종 반영 작업 지시서](26-pptx-final-editing-guide.md)
 
 의사결정은 [`decision-log/README.md`](decision-log/README.md), 회고는 [`retrospectives/README.md`](retrospectives/README.md)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 

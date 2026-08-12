@@ -11,12 +11,13 @@
 텍스트 객체 54개의 글자 크기도 검사했으며, 최소 글자 크기는 12pt이고 12pt 미만 텍스트는 0개로 확인했다. 다만 접수 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 내부 기능 화면, 양식 수정 없음 조건의 최종 육안 검증은 아직 미완료다.
 
 최종 제출 페이지에 실제로 입력해야 하는 값과 탈락 리스크는 `docs/25-final-input-checklist.md`에서 별도로 관리한다.
+기능설명서 PPTX의 슬라이드별 최종 수정 지시는 `docs/26-pptx-final-editing-guide.md`에서 관리한다.
 
 ## 제출 조건별 상태
 
 | 구분 | 요구 조건 | 현재 상태 | 판정 | 증빙 | 다음 조치 |
 |---|---|---|---|---|---|
-| 제출 양식 | 제공 PPTX 양식 기반 작성 | 제공 양식을 기반으로 5페이지 정리본 초안 생성 | 부분 충족 | `docs/17-submission-artifact-manifest.md` | 최종본에서 양식 수정 금지 조건 육안 확인 |
+| 제출 양식 | 제공 PPTX 양식 기반 작성 | 제공 양식을 기반으로 5페이지 정리본 초안 생성, 슬라이드별 최종 편집 지시서 작성 | 부분 충족 | `docs/17-submission-artifact-manifest.md`, `docs/26-pptx-final-editing-guide.md` | 최종본에서 양식 수정 금지 조건 육안 확인 |
 | PDF 페이지 수 | PDF 5페이지 이하 | 5페이지 확인 | 충족 | `docs/13-validation-report.md` | 최종본 변환 후 재확인 |
 | PDF 용량 | 10MB 미만 | 394311 bytes 확인 | 충족 | `docs/17-submission-artifact-manifest.md` | 최종본 변환 후 재확인 |
 | 글자 크기 | 12포인트 이상 | 텍스트 객체 54개 검사, 최소 12pt, 12pt 미만 0개 확인 | 충족 | `docs/13-validation-report.md` | 최종본 변경 시 재검사 |
@@ -51,7 +52,7 @@
 5. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.
 6. `docs/20-openapi-submission-verification.md` 절차에 따라 한국관광공사 OpenAPI 인코딩키·디코딩키와 활용 API 목록을 제출 페이지 기준으로 확인한다.
 7. `docs/21-service-url-verification.md` 절차에 따라 제출 후보 URL과 최신 배포 상태를 확인한다.
-8. 최종 PPTX를 PDF로 변환한 뒤 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
+8. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 반영한 뒤 PDF로 변환하고, 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람 여부를 다시 확인한다.
 9. 최종 파일명, 생성일, checksum, 외부 제출 위치를 `docs/17-submission-artifact-manifest.md`에 갱신한다.
 
 ## 제출 가능 판정 기준
