@@ -1,6 +1,6 @@
 # 심사용 테스트 계정 검증 절차
 
-이 문서는 공모전 1차 심사 제출 전 CodeTrip 테스트 계정을 생성하고 로그인 필요 기능을 검증하기 위한 절차다. 실제 이메일, 비밀번호, 인증키, 개인 식별 정보는 저장소에 기록하지 않는다.
+이 문서는 공모전 1차 심사 제출 전 CodeTrip 테스트 계정을 생성하고 로그인 필요 기능을 검증하기 위한 절차다. 실제 이메일, 비밀번호, 인증키, 개인 식별 정보는 저장소에 기록하지 않는다. 테스트 계정 내부에 넣을 시연 데이터 기준은 `docs/33-test-account-demo-data-runbook.md`를 따른다.
 
 ## 목적
 
@@ -74,3 +74,4 @@
 - 검증 결과는 `docs/13-validation-report.md`에 날짜, 환경, 확인 흐름, 실패 지점으로 기록한다.
 - 최종 화면 캡처를 반영한 기능설명서 파일은 `docs/17-submission-artifact-manifest.md`에 파일명, 생성일, checksum, 외부 전달 위치를 기록한다.
 - 테스트 계정 검증이 완료되면 `docs/16-contest-submission-checklist.md`의 CS-04 상태를 갱신한다.
+- 테스트 계정에 찜·폴더·AI 일정·커뮤니티 시연 데이터를 준비할 때는 `docs/33-test-account-demo-data-runbook.md`를 참조한다.
