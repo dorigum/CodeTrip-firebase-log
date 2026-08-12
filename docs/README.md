@@ -28,6 +28,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 22. [서비스 URL 제출 전 검증 절차](21-service-url-verification.md)
 23. [공모전 기능설명서 최종 제출 런북](22-final-submission-runbook.md)
 24. [공모전 지역 특화 제출 전략](23-regional-specialization-strategy.md)
+25. [공모전 기능설명서 제출용 문구](24-submission-copywriting.md)
 
 의사결정은 [`decision-log/README.md`](decision-log/README.md), 회고는 [`retrospectives/README.md`](retrospectives/README.md)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 

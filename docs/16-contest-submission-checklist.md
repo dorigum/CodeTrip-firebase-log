@@ -22,7 +22,7 @@
 |---|---|---|---|
 | 팀 정보 | 팀명, 팀 구성원 정보 | 접수 계정 기준 최종 팀원 정보 확인 | 미확인 |
 | 서비스 정보 | 서비스명 | CodeTrip | 준비됨 |
-| 서비스 정보 | 서비스 개요 | 여행지 탐색, 찜·폴더 저장, Gemini AI 일정 생성, 커뮤니티를 연결한 여행 서비스 MVP | 초안 준비 |
+| 서비스 정보 | 서비스 개요 | 여행지 탐색, 찜·폴더 저장, Gemini AI 일정 생성, 커뮤니티를 연결한 여행 서비스 MVP | 제출용 문구 초안 준비 |
 | 서비스 정보 | 서비스 유형 | 웹 서비스 | 준비됨 |
 | 서비스 정보 | 지역 특화 서비스 유무 | 현재 기본 권장은 전국 단위 서비스. 특정 지역 특화 전환 조건은 `docs/23-regional-specialization-strategy.md` 기준으로 판단 | 전략 문서화, 최종 결정 필요 |
 | 서비스 테스트 정보 | 서비스 URL | Firebase Hosting 공개 URL 제출 | 절차 문서화, 제출 직전 최신 배포 확인 필요 |
@@ -48,14 +48,14 @@
 | 슬라이드 | 양식 항목 | CodeTrip 작성 방향 | 연결 문서 |
 |---|---|---|---|
 | 1 | 팀명, 서비스명 | 접수 팀명과 `CodeTrip` 표기 | `docs/01-project-charter.md` |
-| 2 | 서비스명, 유형, 개요, 주제 선정 이유 | 웹 서비스, 여행 탐색에서 AI 일정 생성까지 이어지는 문제 해결 흐름 작성 | `docs/01-project-charter.md`, `docs/02-product-requirements.md` |
+| 2 | 서비스명, 유형, 개요, 주제 선정 이유 | 웹 서비스, 여행 탐색에서 AI 일정 생성까지 이어지는 문제 해결 흐름 작성 | `docs/01-project-charter.md`, `docs/02-product-requirements.md`, `docs/24-submission-copywriting.md` |
 | 3 | 서비스 핵심기능 | 최대 5개로 압축: 여행지 탐색, 상세·날씨·지도, 찜·폴더, AI 일정 생성, 커뮤니티 | `docs/02-product-requirements.md`, `docs/03-user-flows.md` |
 | 4 | 대표 이미지, 상세 이미지 3~5장 | 홈/탐색, 상세, AI 일정, 마이페이지, 커뮤니티 화면 캡처 권장 | `docs/15-demo-scenario.md` |
 | 5 | 지역 특화 서비스 | 전국 단위로 제출하면 삭제 가능. 가점을 노릴 경우 서울 제외 지역 특화 전략과 화면 증빙을 별도 확정 | `docs/23-regional-specialization-strategy.md` |
 | 6 | 핵심 기능별 흐름도 | 핵심 기능별 화면 캡처와 단계 설명 작성. 최대 5개 기능별로 슬라이드 복제 가능 | `docs/03-user-flows.md`, `docs/15-demo-scenario.md` |
 | 7 | 한국관광공사 OpenAPI 리스트 | `KorService2`, `PhotoGalleryService1` 및 실제 사용 endpoint 작성 | `src/api/travelInfoApi.js`, `src/api/travelApi.js` |
 | 8 | 기타 API·파일데이터 | Open-Meteo, Nominatim, Kakao Maps, Gemini API, Firebase를 기타 활용 기술로 정리 | `docs/04-architecture.md` |
-| 9 | 차별성·발전계획 | AI 하네스, TourAPI 검증, 캐시, Firebase 운영, 기술 부채 기반 발전계획 작성 | `docs/10-ai-harness-engineering.md`, `docs/12-technical-debt-register.md`, `docs/14-backlog.md` |
+| 9 | 차별성·발전계획 | AI 하네스, TourAPI 검증, 캐시, Firebase 운영, 기술 부채 기반 발전계획 작성 | `docs/10-ai-harness-engineering.md`, `docs/12-technical-debt-register.md`, `docs/14-backlog.md`, `docs/24-submission-copywriting.md` |
 
 ## 기능설명서 핵심 기능 후보
 
@@ -100,7 +100,7 @@
 
 | 심사항목 | 배점 | CodeTrip 대응 포인트 | 보강 필요 |
 |---|---:|---|---|
-| 서비스 기획력 | 30 | 여행 탐색 → 저장 → AI 일정 → 커뮤니티로 이어지는 문제 해결 흐름, AI 여행 계획 트렌드 반영 | 주제 선정 이유를 사용자 문제 중심으로 압축 |
+| 서비스 기획력 | 30 | 여행 탐색 → 저장 → AI 일정 → 커뮤니티로 이어지는 문제 해결 흐름, AI 여행 계획 트렌드 반영 | `docs/24-submission-copywriting.md`의 축약 문구를 PPTX 공간에 맞게 반영 |
 | 서비스 완성도 | 30 | Firebase 배포 URL, 핵심 기능 흐름, 인증·저장·AI·커뮤니티 시연 | 테스트 계정, 수동 검증 보고, 시연 캡처 준비 |
 | 데이터 활용 적절성 | 20 | TourAPI 목록·검색·상세·이미지·축제·지역코드 활용, AI 결과 검증에 TourAPI 사용 | 인증키 제출 정보와 실제 호출 API 목록 대조 |
 | 서비스 발전성 | 20 | 코드 스플리팅, Functions 프록시, 성능 측정, E2E 테스트, 운영 지표 백로그 보유 | 발전계획을 기술 부채와 백로그 기준으로 정리 |
