@@ -4,6 +4,8 @@
 
 비밀번호, OpenAPI 인증키, 개인 이메일, 팀원 개인정보 등 민감정보는 저장소에 기록하지 않는다. 이 문서에는 실제 값 대신 확인 상태, 확인자, 반영 위치, 증빙 문서만 기록한다.
 
+최종 제출 직전 실제 검증 실행 결과는 `docs/27-final-validation-execution-sheet.md`에 기록한다.
+
 ## 사용 원칙
 
 - 실제 값은 제출 페이지, 공공데이터포털, Firebase Console 등 원본 시스템에서 확인한다.
@@ -11,6 +13,7 @@
 - 기능설명서 PDF와 제출 페이지 입력값이 서로 다르면 제출 전 반드시 맞춘다.
 - `완료`로 표시하려면 확인 일자, 확인자, 증빙 위치가 있어야 한다.
 - 최종 제출 직전에는 이 문서와 `docs/22-final-submission-runbook.md`를 함께 확인한다.
+- 제출 가능 여부를 최종 판정할 때는 `docs/27-final-validation-execution-sheet.md`의 제출 직전 차단 조건을 따른다.
 
 ## 최종 입력값 상태표
 
@@ -32,6 +35,15 @@
 | FI-14 | 대표·상세 이미지 | 부분 충족 | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 화면이며 개인정보·키 노출이 없다. | 기능설명서 3페이지 | `output/contest/screenshots/`, 최종 PDF |
 | FI-15 | 제출 파일명·checksum | 초안 확인 | 최종 PDF의 파일명, 생성일, checksum, 외부 제출 위치를 기록한다. | manifest | `docs/17-submission-artifact-manifest.md` |
 | FI-16 | 첨부파일 오첨부 방지 | 미확인 | 최종 PDF가 올바른 부문, 올바른 서비스, 올바른 버전인지 제출 직전 다시 연다. | 제출 페이지 | 제출 직전 확인 기록 |
+
+## 실행 검증 연결
+
+| 체크 범위 | 실행 검증 문서 |
+|---|---|
+| FI-01~FI-09 제출 페이지 입력값 | `docs/27-final-validation-execution-sheet.md` VE-01~VE-09 |
+| FI-08 서비스 URL | `docs/27-final-validation-execution-sheet.md` URL-01~URL-07 |
+| FI-09 테스트 계정 | `docs/27-final-validation-execution-sheet.md` TA-01~TA-06 |
+| FI-12~FI-16 기능설명서·첨부파일 | `docs/27-final-validation-execution-sheet.md` PDF-01~PDF-09 |
 
 ## 탈락 리스크 우선순위
 

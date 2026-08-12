@@ -12,6 +12,7 @@
 
 최종 제출 페이지에 실제로 입력해야 하는 값과 탈락 리스크는 `docs/25-final-input-checklist.md`에서 별도로 관리한다.
 기능설명서 PPTX의 슬라이드별 최종 수정 지시는 `docs/26-pptx-final-editing-guide.md`에서 관리한다.
+제출 직전 실제 검증 실행 결과는 `docs/27-final-validation-execution-sheet.md`에서 관리한다.
 
 ## 제출 조건별 상태
 
@@ -66,3 +67,4 @@
 - 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 화면으로 구성되어 있다.
 - `docs/17-submission-artifact-manifest.md`에 최종 파일의 checksum과 전달 위치가 기록되어 있다.
 - `docs/25-final-input-checklist.md`의 최종 입력값 항목이 제출 직전 확인되어 있다.
+- `docs/27-final-validation-execution-sheet.md`의 제출 직전 차단 조건이 모두 통과되어 있다.

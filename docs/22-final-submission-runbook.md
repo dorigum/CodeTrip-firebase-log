@@ -26,7 +26,7 @@
 | 9 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
 | 10 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
 | 11 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
-| 12 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md` | 모든 제출 가능 판정 기준 충족 |
+| 12 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | 모든 제출 가능 판정 기준 충족 |
 
 ## 최종 제출 전 입력값
 
@@ -57,6 +57,7 @@
 | 화면 캡처 | 대표 이미지 1장, 상세 이미지 3~5장, 개인정보·키 노출 없음 | `docs/17-submission-artifact-manifest.md` |
 | 최종 manifest | 파일명, 생성일, checksum, 외부 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
 | 최종 입력값 | FI-01~FI-16 항목의 제출 전 확인 상태 기록 | `docs/25-final-input-checklist.md` |
+| 최종 검증 실행 | 제출 페이지 입력값, URL, 테스트 계정, PDF 제약, checksum의 실행 결과 기록 | `docs/27-final-validation-execution-sheet.md` |
 
 ## 제출 후 기록
 
@@ -82,3 +83,4 @@
 6. OpenAPI 인증키와 제출 계정 기준 호출 정보 확인
 7. 제출 직전 최신 배포 URL smoke test
 8. 최종 PDF 생성 후 manifest의 외부 전달 위치 갱신
+9. `docs/27-final-validation-execution-sheet.md` 기준으로 제출 직전 차단 조건 확인
