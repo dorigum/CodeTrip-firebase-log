@@ -34,6 +34,23 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 28. [공모전 최종 검증 실행표](27-final-validation-execution-sheet.md)
 29. [공모전 제출 준비도 대시보드](28-submission-readiness-dashboard.md)
 
+## 공모전 제출 준비 빠른 사용 순서
+
+공모전 1차 심사 자료를 준비할 때는 아래 순서로 문서를 확인한다.
+
+1. [공모전 제출 준비도 대시보드](28-submission-readiness-dashboard.md)에서 현재 상태와 차단 항목을 먼저 확인한다.
+2. [공모전 기능설명서 제출 갭 분석](18-submission-gap-analysis.md)에서 제출 조건별 충족·미충족 상태를 확인한다.
+3. [공모전 기능설명서 최종 제출 런북](22-final-submission-runbook.md)의 실행 순서에 따라 작업한다.
+4. [공모전 최종 입력값 체크표](25-final-input-checklist.md)로 접수 팀명, 테스트 계정, OpenAPI, 서비스 URL 등 실제 입력값을 점검한다.
+5. [공모전 지역 특화 제출 전략](23-regional-specialization-strategy.md)에서 전국 단위 제출 또는 지역 특화 제출 여부를 확정한다.
+6. [공모전 기능설명서 제출용 문구](24-submission-copywriting.md)의 축약 문구를 기준으로 PPTX 문구를 정리한다.
+7. [기능설명서 PPTX 최종 반영 작업 지시서](26-pptx-final-editing-guide.md)에 따라 최종 PPTX를 수정한다.
+8. [공모전 최종 검증 실행표](27-final-validation-execution-sheet.md)로 제출 직전 차단 조건을 검증한다.
+9. [제출 산출물 manifest](17-submission-artifact-manifest.md)에 최종 PPTX/PDF 파일명, 생성일, checksum, 전달 위치를 기록한다.
+10. [검증 보고서](13-validation-report.md)에 최종 URL, 테스트 계정, PDF 검증 요약을 남긴다.
+
+실제 비밀번호, OpenAPI 인증키, 개인 이메일, 팀원 개인정보는 저장소에 기록하지 않는다. `output/` 산출물은 별도 지시 전까지 커밋 대상에서 제외한다.
+
 의사결정은 [`decision-log/README.md`](decision-log/README.md), 회고는 [`retrospectives/README.md`](retrospectives/README.md)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 
 ## 문서 운영 규칙
