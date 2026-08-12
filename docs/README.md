@@ -25,6 +25,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 19. [공모전 기능설명서 제출 갭 분석](18-submission-gap-analysis.md)
 20. [심사용 테스트 계정 검증 절차](19-test-account-verification.md)
 21. [한국관광공사 OpenAPI 제출 정보 검증 절차](20-openapi-submission-verification.md)
+22. [서비스 URL 제출 전 검증 절차](21-service-url-verification.md)
 
 의사결정은 [`decision-log/README.md`](decision-log/README.md), 회고는 [`retrospectives/README.md`](retrospectives/README.md)에 기록한다. 기존의 일일 개발 기록과 장애 기록은 `CodeTrip_Firebase/project-log/` 및 `CodeTrip_Firebase/TROUBLESHOOTING.md`에서 유지한다.
 
