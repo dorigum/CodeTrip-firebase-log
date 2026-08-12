@@ -16,19 +16,20 @@
 | 순서 | 작업 | 참조 문서 | 완료 증빙 |
 |---:|---|---|---|
 | 1 | 공모전 접수 계정 로그인과 이메일 인증 가능 여부 확인 | `docs/16-contest-submission-checklist.md` | 제출 페이지 접근 가능 여부 |
-| 2 | 전체 제출 준비도와 차단 항목 확인 | `docs/28-submission-readiness-dashboard.md` | B-01~B-09 현재 상태 확인 |
-| 3 | 접수 팀명과 최종 팀원 정보 확인 | `docs/16-contest-submission-checklist.md` | 기능설명서 1페이지 팀명 반영 |
-| 4 | 최종 입력값 누락 여부 1차 점검 | `docs/25-final-input-checklist.md` | FI-01~FI-16 현재 상태 확인 |
-| 5 | 전국 단위 제출 또는 지역 특화 제출 여부 결정 | `docs/23-regional-specialization-strategy.md`, `docs/25-final-input-checklist.md` | 제출 페이지와 기능설명서 반영 방향 확정 |
-| 6 | 서비스 URL 최신 배포 상태 확인 | `docs/21-service-url-verification.md` | `docs/13-validation-report.md` URL smoke test 기록 |
-| 7 | 테스트 전용 계정 생성 및 로그인 후 기능 검증 | `docs/19-test-account-verification.md` | `docs/13-validation-report.md` TA-01~TA-06 기록 |
-| 8 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
-| 9 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md` | `output/contest/screenshots/` 캡처 후보 생성 |
-| 10 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
-| 11 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
-| 12 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
-| 13 | 중복 출품·부문 오첨부·마감 리스크 확인 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | FI-17~FI-19, VE-10~VE-12, SUB-01~SUB-03 확인 |
-| 14 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md`, `docs/28-submission-readiness-dashboard.md` | 모든 제출 가능 판정 기준 충족 |
+| 2 | 전체 제출 준비도와 차단 항목 확인 | `docs/28-submission-readiness-dashboard.md` | B-01~B-10 현재 상태 확인 |
+| 3 | 사용자 제공 입력값과 민감정보 기록 금지 범위 확인 | `docs/30-user-provided-submission-inputs.md` | UI-01~UI-13 준비 상태 확인 |
+| 4 | 접수 팀명과 최종 팀원 정보 확인 | `docs/16-contest-submission-checklist.md` | 기능설명서 1페이지 팀명 반영 |
+| 5 | 최종 입력값 누락 여부 1차 점검 | `docs/25-final-input-checklist.md` | FI-01~FI-19 현재 상태 확인 |
+| 6 | 전국 단위 제출 또는 지역 특화 제출 여부 결정 | `docs/23-regional-specialization-strategy.md`, `docs/25-final-input-checklist.md` | 제출 페이지와 기능설명서 반영 방향 확정 |
+| 7 | 서비스 URL 최신 배포 상태 확인 | `docs/21-service-url-verification.md` | `docs/13-validation-report.md` URL smoke test 기록 |
+| 8 | 테스트 전용 계정 생성 및 로그인 후 기능 검증 | `docs/19-test-account-verification.md` | `docs/13-validation-report.md` TA-01~TA-06 기록 |
+| 9 | OpenAPI 인증키와 활용 API 목록 확인 | `docs/20-openapi-submission-verification.md` | 제출 계정 기준 키 확인, CS-05~CS-06 갱신 |
+| 10 | 로그인 후 실제 기능 화면 캡처 | `docs/19-test-account-verification.md`, `docs/21-service-url-verification.md` | `output/contest/screenshots/` 캡처 후보 생성 |
+| 11 | 기능설명서 PPTX 최종 반영 | `docs/16-contest-submission-checklist.md`, `docs/18-submission-gap-analysis.md`, `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md`, `docs/25-final-input-checklist.md`, `docs/26-pptx-final-editing-guide.md` | 팀명, 캡처, API 목록, 지역 특화 여부, 서비스 소개 문구, 발전계획 반영 |
+| 12 | PDF 변환 및 제출 조건 검증 | `docs/17-submission-artifact-manifest.md` | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 |
+| 13 | 산출물 manifest 갱신 | `docs/17-submission-artifact-manifest.md` | 최종 파일명, 생성일, checksum, 외부 전달 위치 |
+| 14 | 중복 출품·부문 오첨부·마감 리스크 확인 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | FI-17~FI-19, VE-10~VE-12, SUB-01~SUB-03 확인 |
+| 15 | 제출 페이지 입력·첨부 전 최종 확인 | `docs/18-submission-gap-analysis.md`, `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md`, `docs/28-submission-readiness-dashboard.md` | 모든 제출 가능 판정 기준 충족 |
 
 ## 최종 제출 전 입력값
 

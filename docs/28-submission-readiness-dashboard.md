@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출은 보류`로 분류한다.
 
-문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 다만 실제 접수 팀명, 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
+문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 다만 실제 접수 팀명, 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
 
 따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다.
 
@@ -15,6 +15,7 @@
 | 영역 | 현재 상태 | 판정 | 근거 | 다음 조치 |
 |---|---|---|---|---|
 | 제출 문서 체계 | 문서 목록, 체크리스트, 런북, 검증표까지 구성됨 | 준비됨 | `docs/README.md`, `docs/13-validation-report.md` | 실제 검증 결과 반영 |
+| 사용자 제공 입력값 | 저장소 기록 가능 값과 금지 값을 분리함 | 준비됨 | `docs/30-user-provided-submission-inputs.md` | UI-01~UI-13 실제 값 확인 |
 | 기능설명서 초안 | 5페이지 제출 항목 정리본 초안 존재 | 부분 준비 | `docs/17-submission-artifact-manifest.md`, `docs/18-submission-gap-analysis.md` | 팀명·캡처·최종 입력값 반영 |
 | 제출용 문구 | 서비스 개요, 주제 선정 이유, 차별성, 발전계획 문구 정리 | 준비됨 | `docs/24-submission-copywriting.md` | PPTX 공간에 맞춰 최종 반영 |
 | 지역 특화 전략 | 전국 단위 제출 기본 권장과 전환 조건 문서화 | 결정 필요 | `docs/23-regional-specialization-strategy.md` | 전국 단위 유지 또는 특정 지역 특화 확정 |
@@ -67,14 +68,15 @@
 ## 다음 실행 순서
 
 1. 접수 페이지에서 팀명과 최종 팀원 정보를 확인한다.
-2. 지역 특화 여부를 전국 단위 제출로 유지할지 최종 결정한다.
-3. 테스트 전용 계정을 생성하고 로그인·AI·마이페이지·커뮤니티 접근을 검증한다.
-4. OpenAPI 인증키와 활용 API 목록을 제출 계정 기준으로 확인한다.
-5. 로그인 후 내부 화면 캡처를 확보한다.
-6. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
-7. 최종 PDF로 변환하고 `docs/27-final-validation-execution-sheet.md` 기준으로 검증한다.
-8. 최종 산출물 checksum과 전달 위치를 `docs/17-submission-artifact-manifest.md`에 기록한다.
-9. 중복 출품, 부문 오첨부, 마감 후 수정 불가 리스크를 제출 직전에 다시 확인한다.
+2. `docs/30-user-provided-submission-inputs.md` 기준으로 사용자 제공 입력값과 민감정보 기록 금지 범위를 확인한다.
+3. 지역 특화 여부를 전국 단위 제출로 유지할지 최종 결정한다.
+4. 테스트 전용 계정을 생성하고 로그인·AI·마이페이지·커뮤니티 접근을 검증한다.
+5. OpenAPI 인증키와 활용 API 목록을 제출 계정 기준으로 확인한다.
+6. 로그인 후 내부 화면 캡처를 확보한다.
+7. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
+8. 최종 PDF로 변환하고 `docs/27-final-validation-execution-sheet.md` 기준으로 검증한다.
+9. 최종 산출물 checksum과 전달 위치를 `docs/17-submission-artifact-manifest.md`에 기록한다.
+10. 중복 출품, 부문 오첨부, 마감 후 수정 불가 리스크를 제출 직전에 다시 확인한다.
 
 ## 상태 갱신 규칙
 
