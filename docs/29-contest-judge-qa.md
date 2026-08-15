@@ -46,7 +46,7 @@
 | 왜 Firebase를 사용했나요? | 심사 가능한 MVP에서 인증, Realtime Database, Hosting을 빠르게 통합하기 위해 사용했다. 사용자 데이터와 커뮤니티 데이터 권한은 Rules와 검증 계획으로 관리한다. | `docs/04-architecture.md`, `docs/05-data-security.md` |
 | Gemini API 하네스란 무엇인가요? | 단순 API 호출이 아니라 입력 검증, 컨텍스트 구성, 모델 호출, JSON 응답 검증, 저장, 평가를 연결한 실행 계층이다. 성공 기준은 Gemini 응답 여부가 아니라 서비스 저장 구조와 사용자 안내까지 포함한다. | `docs/10-ai-harness-engineering.md` |
 | AI 결과의 신뢰성은 어떻게 관리하나요? | Gemini가 생성한 일정을 JSON 계약으로 검증하고, TourAPI 기반 장소와 AI 보조 추천 장소를 구분한다. 실패 시 timeout, 429, 잘못된 JSON 같은 오류 유형을 품질 게이트에 포함한다. | `docs/10-ai-harness-engineering.md`, `docs/06-quality-plan.md` |
-| 보안상 가장 큰 리스크는 무엇인가요? | 현재 가장 큰 리스크는 Gemini API 키가 클라이언트 번들에 포함될 수 있다는 점이다. 공개 AI 배포와 시연은 Firebase Functions 프록시 이전과 Secret Manager 저장이 완료되기 전까지 차단하거나, 호출량 제한·키 교체·시연 범위 제한을 임시 안전장치로 적용한다. | `docs/10-ai-harness-engineering.md`, `docs/14-backlog.md`, `docs/36-final-blockers-summary.md` |
+| 보안상 가장 큰 리스크는 무엇인가요? | 현재 가장 큰 리스크는 Gemini API 키가 클라이언트 번들에 포함될 수 있다는 점이다. 공개 URL에서 Gemini 생성 기능을 제공하려면 Firebase Functions 프록시와 서버 측 Secret 저장이 완료되어야 하며, 미완료 시 공개 신규 생성 기능은 비활성화한다. | `docs/10-ai-harness-engineering.md`, `docs/14-backlog.md`, `docs/36-final-blockers-summary.md` |
 | 성능은 검증했나요? | 빌드와 일부 산출물 검증 기록은 있으나, Lighthouse, 캐시 적중률, API 지연시간 같은 누적 정량 측정은 아직 부족하다. 성능 측정 계약과 백로그는 문서화되어 있다. | `docs/09-metrics.md`, `docs/13-validation-report.md`, `docs/12-technical-debt-register.md` |
 
 ## 발전성 관련 질문
@@ -64,7 +64,7 @@
 | 모든 기능이 완성되었습니다. | 테스트 계정, 최종 PDF, OpenAPI 제출 정보 검증이 아직 남아 있다. | MVP 핵심 흐름은 구현·문서화했고, 최종 제출 전 검증 항목을 관리하고 있습니다. |
 | AI 결과는 항상 정확합니다. | 생성형 AI 결과는 실패와 오류 가능성이 있다. | AI 결과는 JSON 계약과 TourAPI 장소 구분 기준으로 검증하고, 실패 시 fallback을 안내합니다. |
 | 성능 최적화가 완료되었습니다. | 정량 측정값이 부족하다. | 성능 측정 계약과 코드 스플리팅 백로그를 관리하고 있습니다. |
-| 보안 문제는 없습니다. | Gemini API 키 노출 리스크가 문서화되어 있다. | 현재 리스크를 인식하고 있으며, 공개 AI 시연 전 Functions 프록시 이전 또는 임시 호출 제한·키 교체 절차를 P0 차단 조건으로 관리합니다. |
+| 보안 문제는 없습니다. | Gemini API 키 노출 리스크가 문서화되어 있다. | 현재 리스크를 인식하고 있으며, Functions 프록시와 서버 측 Secret 이전 전에는 공개 URL의 Gemini 신규 생성 기능을 비활성화하는 P0 차단 조건으로 관리합니다. |
 | 지역 특화 서비스입니다. | 현재 기본 전략은 전국 단위 제출이다. | 현재는 전국 단위 MVP이며, 지역 특화는 별도 지역과 화면 증빙이 준비될 때 전환할 수 있습니다. |
 
 ## 최종 제출 전 확인

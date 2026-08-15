@@ -56,7 +56,7 @@
 | B-06 | 최종 PPTX/PDF 생성 | 미완료 | 최종 파일명으로 PPTX/PDF 생성 | `docs/26-pptx-final-editing-guide.md` |
 | B-07 | 최종 PDF 제약 검증 | 미완료 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 | `docs/27-final-validation-execution-sheet.md`, `docs/35-pptx-slide-final-review-checklist.md` |
 | B-08 | 최종 checksum·전달 위치 기록 | 미완료 | 최종 산출물의 SHA-256, 파일 크기, 생성일, 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
-| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `VE`, `URL`, `TA`, `PDF` 차단 항목 모두 통과 | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md` |
+| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `VE`, `URL`, `TA`, `AI-SEC`, `PDF` 차단 항목 모두 통과. Gemini 프록시·Secret 미완료 시 공개 생성 기능 비활성화 | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md`, `docs/36-final-blockers-summary.md` |
 | B-10 | 중복 출품·부문 오첨부·마감 리스크 확인 | 미확인 | 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간 확보 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` |
 
 ## 심사 기준 대응 상태
@@ -85,5 +85,5 @@
 
 - 이 문서는 실제 확인이 끝날 때마다 갱신한다.
 - 민감정보 원문은 기록하지 않는다.
-- 준비도 수치는 참고값이며, 최종 제출 가능 여부는 `docs/27-final-validation-execution-sheet.md`의 차단 조건 통과 여부로 판단한다.
+- 준비도 수치는 참고값이며, 최종 제출 가능 여부는 `docs/27-final-validation-execution-sheet.md`의 차단 조건 통과 여부로 판단한다. 특히 `AI-SEC` 항목은 공개 URL에서 Gemini 생성 기능을 제공할지 여부를 결정하는 제출 차단 조건으로 본다.
 - 최종 제출을 완료하면 제출 완료일, 최종 PDF 파일명, checksum, 제출 직전 검증 결과를 갱신한다.
