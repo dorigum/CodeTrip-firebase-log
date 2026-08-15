@@ -34,7 +34,7 @@
 | 서비스 URL | 접속 가능한 서비스 URL 제출 | `https://dorigum-codetrip.web.app` 후보와 검증 절차 문서화 | 부분 충족 | `README.md`, `docs/16-contest-submission-checklist.md`, `docs/21-service-url-verification.md` | 제출 직전 URL 접속과 최신 배포 여부 확인 |
 | 테스트 계정 | 필요 시 지정 형식의 테스트 전용 계정 | 검증 절차 문서화, 계정 정보 미확정 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md` | 전용 계정 생성 후 로그인 가능 여부 확인 |
 | OpenAPI 인증키 | 인코딩키·디코딩키 제출 | 저장소 기록 금지, 검증 절차 문서화, 실제 키 확인 필요 | 미완료 | `docs/16-contest-submission-checklist.md`, `docs/20-openapi-submission-verification.md` | 제출 페이지에만 입력 |
-| 지역 특화 | 선택 항목, 가점 가능 | 전국 단위 제출을 기본 권장으로 정리했고, 특정 지역 특화 전환 조건을 별도 문서화 | 전략 문서화, 최종 결정 필요 | `docs/16-contest-submission-checklist.md`, `docs/23-regional-specialization-strategy.md` | 전국 단위 유지 또는 특정 지역 특화 전환 여부 최종 결정 |
+| 지역 특화 | 선택 항목, 가점 가능 | 전국 단위 제출, 지역 특화 서비스 `아니오`로 결정했고, 특정 지역 특화 전환 조건은 별도 문서로 보관 | 결정 기록 완료, 제출 직전 재확인 필요 | `docs/16-contest-submission-checklist.md`, `docs/23-regional-specialization-strategy.md` | 제출 페이지와 기능설명서의 지역 특화 표현 일치 확인 |
 
 ## 심사 기준 관점 갭
 
