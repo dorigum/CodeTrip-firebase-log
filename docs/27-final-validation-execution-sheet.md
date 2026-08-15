@@ -19,6 +19,8 @@
 | 검증자 | 이름 |
 | 기준 브랜치 | `docs/contest-submission-materials` |
 | 기준 커밋 | `commit hash` |
+| 배포 커밋 | Firebase Hosting에 배포된 commit hash |
+| 배포 식별자 | Firebase 배포 ID 또는 배포 시각 |
 | 배포 URL | `https://dorigum-codetrip.web.app` |
 | 기준 PPTX | `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_최종.pptx` |
 | 기준 PDF | `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_최종.pdf` |

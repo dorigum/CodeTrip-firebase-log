@@ -11,6 +11,8 @@
 | Hosting target | `codetrip` |
 | Hosting site | `dorigum-codetrip` |
 | 검증 기준 문서 | `docs/21-service-url-verification.md` |
+| 기준 커밋 기록 | `docs/27-final-validation-execution-sheet.md`의 `기준 커밋` |
+| 배포 커밋 기록 | `docs/27-final-validation-execution-sheet.md`의 `배포 커밋`과 `배포 식별자` |
 
 ## 사용 시점
 
@@ -23,7 +25,7 @@
 
 | ID | 준비 항목 | 기준 | 상태 |
 |---|---|---|---|
-| PRE-01 | 최신 빌드 반영 여부 | 제출하려는 코드가 Firebase Hosting에 배포되어 있어야 한다. | 미실행 |
+| PRE-01 | 최신 빌드 반영 여부 | 제출하려는 기준 커밋과 Firebase Hosting에 배포된 커밋이 일치해야 한다. `docs/27-final-validation-execution-sheet.md`에 기준 커밋, 배포 커밋, 배포 식별자 또는 배포 시각을 함께 기록한다. | 미실행 |
 | PRE-02 | 브라우저 환경 | 일반 사용자가 쓰는 Chrome 또는 Edge 일반 창에서 확인한다. | 미실행 |
 | PRE-03 | 비로그인 세션 | 로그아웃 상태 또는 시크릿 창에서 공개 화면을 먼저 확인한다. | 미실행 |
 | PRE-04 | 테스트 계정 | 로그인 후 화면 검증을 위해 제출용 전용 계정을 준비한다. | 미실행 |
@@ -94,7 +96,7 @@ SPA Hosting에서는 직접 경로 새로고침 시 404가 나면 제출 URL 안
    - URL-R01~URL-R05는 기존 URL-07 직접 경로 새로고침 항목에 요약 반영한다.
    - URL-A01~URL-A06은 TA-01~TA-06에 요약 반영한다.
 2. `docs/13-validation-report.md`
-   - 기준 커밋, 브라우저·OS, 확인 흐름, 실패 지점, 최종 판정을 기록한다.
+   - 기준 커밋, 배포 커밋, 배포 식별자 또는 배포 시각, 브라우저·OS, 확인 흐름, 실패 지점, 최종 판정을 기록한다.
 3. `docs/17-submission-artifact-manifest.md`
    - smoke test 중 확보한 최종 캡처 파일명과 크기를 기록한다.
 4. `docs/28-submission-readiness-dashboard.md`
