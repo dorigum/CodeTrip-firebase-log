@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출은 보류`로 분류한다.
 
-문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었다. 다만 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
+문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었다. 다만 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, Gemini 공개 생성 보안 검증, 최종 PDF 생성·검증은 아직 완료되지 않았다.
 
 따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다. 남은 차단 항목의 우선순위와 책임 범위는 `docs/36-final-blockers-summary.md`에서 별도로 요약한다.
 
@@ -56,7 +56,7 @@
 | B-06 | 최종 PPTX/PDF 생성 | 미완료 | 최종 파일명으로 PPTX/PDF 생성 | `docs/26-pptx-final-editing-guide.md` |
 | B-07 | 최종 PDF 제약 검증 | 미완료 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 | `docs/27-final-validation-execution-sheet.md`, `docs/35-pptx-slide-final-review-checklist.md` |
 | B-08 | 최종 checksum·전달 위치 기록 | 미완료 | 최종 산출물의 SHA-256, 파일 크기, 생성일, 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
-| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `VE`, `URL`, `TA`, `AI-SEC`, `PDF` 차단 항목 모두 통과. Gemini 프록시·Secret 미완료 시 공개 생성 기능 비활성화 | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md`, `docs/36-final-blockers-summary.md` |
+| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `docs/27-final-validation-execution-sheet.md`의 필수 차단 ID가 모두 `통과` 상태여야 한다. `부분 통과`, `실패`, `미실행`은 제출 보류다. 필수 범위는 `VE-01`, `VE-06`~`VE-12`, `AI-SEC-01`~`AI-SEC-09`, `PDF-01`~`PDF-06`, `PDF-09`, `SUB-01`~`SUB-03`이다. | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md`, `docs/36-final-blockers-summary.md` |
 | B-10 | 중복 출품·부문 오첨부·마감 리스크 확인 | 미확인 | 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간 확보 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` |
 
 ## 심사 기준 대응 상태
@@ -74,12 +74,21 @@
 2. `docs/30-user-provided-submission-inputs.md` 기준으로 사용자 제공 입력값과 민감정보 기록 금지 범위를 확인한다.
 3. 지역 특화 여부가 제출 페이지와 기능설명서에서 `아니오`로 일치하는지 최종 확인한다.
 4. 테스트 전용 계정을 생성하고 로그인·AI·마이페이지·커뮤니티 접근을 검증한다.
-5. OpenAPI 인증키와 활용 API 목록을 제출 계정 기준으로 확인한다.
-6. 로그인 후 내부 화면 캡처를 확보한다.
-7. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
-8. 최종 PDF로 변환하고 `docs/27-final-validation-execution-sheet.md` 기준으로 검증한다.
-9. 최종 산출물 checksum과 전달 위치를 `docs/17-submission-artifact-manifest.md`에 기록한다.
-10. 중복 출품, 부문 오첨부, 마감 후 수정 불가 리스크를 제출 직전에 다시 확인한다.
+5. OpenAPI 인증키와 활용 API 목록을 제출 계정 기준으로 확인하고, 배포 서비스 키와 제출 계정 키의 마스킹된 식별자를 대조한다.
+6. 공개 URL에서 Gemini 생성 기능을 제공할지 결정하고 `docs/27-final-validation-execution-sheet.md`의 `AI-SEC-01`~`AI-SEC-09`를 실행한다.
+   - Functions 프록시 배포 여부를 확인한다.
+   - 서버 측 Secret 사용 여부를 확인한다.
+   - 클라이언트 번들 내 Gemini 키 직접 참조를 검사한다.
+   - 사용자별 rate limit, quota, 동시 요청 제한을 확인한다.
+   - 서버 측 입력 크기·형식·민감정보 필터를 확인한다.
+   - 요청·응답·Functions 로그의 원문 비기록과 민감정보 마스킹을 확인한다.
+   - 기존 노출 가능 키의 교체 또는 폐기 계획을 기록한다.
+   - 위 조건이 미완료이면 공개 URL의 Gemini 신규 생성 기능을 비활성화한다.
+7. 로그인 후 내부 화면 캡처를 확보한다.
+8. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
+9. 최종 PDF로 변환하고 `docs/27-final-validation-execution-sheet.md` 기준으로 검증한다.
+10. 최종 산출물 checksum과 전달 위치를 `docs/17-submission-artifact-manifest.md`에 기록한다.
+11. 중복 출품, 부문 오첨부, 마감 후 수정 불가 리스크를 제출 직전에 다시 확인한다.
 
 ## 상태 갱신 규칙
 
