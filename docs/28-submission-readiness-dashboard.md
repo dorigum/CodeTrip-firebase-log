@@ -56,7 +56,7 @@
 | B-06 | 최종 PPTX/PDF 생성 | 미완료 | 최종 파일명으로 PPTX/PDF 생성 | `docs/26-pptx-final-editing-guide.md` |
 | B-07 | 최종 PDF 제약 검증 | 미완료 | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 확인 | `docs/27-final-validation-execution-sheet.md`, `docs/35-pptx-slide-final-review-checklist.md` |
 | B-08 | 최종 checksum·전달 위치 기록 | 미완료 | 최종 산출물의 SHA-256, 파일 크기, 생성일, 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
-| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `docs/27-final-validation-execution-sheet.md`의 필수 차단 ID가 모두 `통과` 상태여야 한다. `부분 통과`, `실패`, `미실행`은 제출 보류다. 필수 범위는 `VE-01`, `VE-06`~`VE-12`, `AI-SEC-01`~`AI-SEC-09`, `PDF-01`~`PDF-06`, `PDF-09`, `SUB-01`~`SUB-03`이다. | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md`, `docs/36-final-blockers-summary.md` |
+| B-09 | 제출 직전 차단 조건 통과 | 미실행 | `docs/27-final-validation-execution-sheet.md`의 필수 차단 ID가 모두 `통과` 상태여야 한다. `부분 통과`, `실패`, `미실행`은 제출 보류다. 필수 범위는 `VE-01`, `VE-06`~`VE-12`, `AI-SEC-01`~`AI-SEC-11`, `PDF-01`~`PDF-06`, `PDF-09`, `SUB-01`~`SUB-03`이다. | `docs/27-final-validation-execution-sheet.md`, `docs/32-service-url-smoke-test-runbook.md`, `docs/36-final-blockers-summary.md` |
 | B-10 | 중복 출품·부문 오첨부·마감 리스크 확인 | 미확인 | 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간 확보 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` |
 
 ## 심사 기준 대응 상태
@@ -75,15 +75,16 @@
 3. 지역 특화 여부가 제출 페이지와 기능설명서에서 `아니오`로 일치하는지 최종 확인한다.
 4. 테스트 전용 계정을 생성하고 로그인·AI·마이페이지·커뮤니티 접근을 검증한다.
 5. OpenAPI 인증키와 활용 API 목록을 제출 계정 기준으로 확인하고, 배포 서비스 키와 제출 계정 키의 마스킹된 식별자를 대조한다.
-6. 공개 URL에서 Gemini 생성 기능을 제공할지 결정하고 `docs/27-final-validation-execution-sheet.md`의 `AI-SEC-01`~`AI-SEC-09`를 실행한다.
+6. 공개 URL에서 Gemini 생성 기능을 제공하려면 `docs/27-final-validation-execution-sheet.md`의 `AI-SEC-01`~`AI-SEC-11`을 모두 실행한다.
    - Functions 프록시 배포 여부를 확인한다.
    - 서버 측 Secret 사용 여부를 확인한다.
    - 클라이언트 번들 내 Gemini 키 직접 참조를 검사한다.
-   - 사용자별 rate limit, quota, 동시 요청 제한을 확인한다.
+   - Firebase Auth ID token을 서버에서 검증하고, 미인증 요청이 Gemini 호출 전에 거부되는지 확인한다.
+   - 검증된 `uid` 기준 사용자별 rate limit, quota, 동시 요청 제한을 확인한다.
    - 서버 측 입력 크기·형식·민감정보 필터를 확인한다.
    - 요청·응답·Functions 로그의 원문 비기록과 민감정보 마스킹을 확인한다.
-   - 기존 노출 가능 키의 교체 또는 폐기 계획을 기록한다.
-   - 위 조건이 미완료이면 공개 URL의 Gemini 신규 생성 기능을 비활성화한다.
+   - 기존 노출 가능 키가 실제로 폐기 또는 만료되었고, 서버가 신규 Secret을 사용하며, 기존 키가 거부되는지 확인한다.
+   - 위 조건 중 하나라도 미완료이면 공개 URL의 Gemini 신규 생성을 제출 통과 상태로 보지 않는다.
 7. 로그인 후 내부 화면 캡처를 확보한다.
 8. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
 9. 최종 PDF로 변환하고 `docs/27-final-validation-execution-sheet.md` 기준으로 검증한다.

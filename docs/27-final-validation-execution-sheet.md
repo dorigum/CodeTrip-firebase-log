@@ -45,19 +45,21 @@
 
 ## Gemini 공개 생성 보안 검증
 
-공개 URL에서 Gemini 생성 기능을 제공하려면 아래 항목을 통과해야 한다. Functions 프록시와 서버 측 Secret이 준비되지 않았으면 공개 URL의 Gemini 생성 기능을 비활성화하고, 기능설명서와 시연 흐름에서는 기존 저장 결과 또는 비활성화 안내 화면만 사용한다.
+공개 URL에서 Gemini 생성 기능을 제공하려면 아래 항목을 모두 통과해야 한다. 최종 제출 통과 기준은 Firebase Functions 프록시 기반 생성 성공 또는 보안 게이트를 통과한 뒤 저장된 기존 AI 일정 결과 표시다. 비활성화 안내 화면만으로는 AI 일정 기능 통과로 보지 않는다.
 
 | ID | 검증 항목 | 기준 | 결과 | 증빙 위치 | 후속 조치 |
 |---|---|---|---|---|---|
 | AI-SEC-01 | Functions 프록시 배포 | Gemini 호출이 클라이언트가 아닌 Firebase Functions 프록시를 통해 실행된다. | 미실행 | 배포 로그, 기준 커밋, `docs/13-validation-report.md` |  |
 | AI-SEC-02 | 서버 측 Secret 저장 | Gemini API 키가 Functions Secret 또는 승인된 Secret Manager에 저장되고 클라이언트 번들에 포함되지 않는다. | 미실행 | Secret 등록 확인 기록, 키 원문 제외 |  |
 | AI-SEC-03 | 클라이언트 키 제거 | 공개 빌드에서 Gemini API 키를 직접 참조하거나 `x-goog-api-key`를 브라우저에서 전송하지 않는다. | 미실행 | 빌드 산출물 점검 기록, 코드 검토 기록 |  |
-| AI-SEC-04 | 미완료 시 공개 생성 비활성화 | AI-SEC-01~AI-SEC-03이 미완료이면 공개 URL에서 Gemini 신규 생성 기능을 비활성화한다. | 미실행 | 배포 화면 캡처 또는 설정 기록 |  |
-| AI-SEC-05 | 키 교체·만료 절차 | 기존 클라이언트 노출 가능 키는 교체 또는 폐기 계획을 기록한다. | 미실행 | 마스킹된 키 식별자, 교체 일자 기록 |  |
+| AI-SEC-04 | Gemini 공개 생성 보안 게이트 | AI-SEC-01~AI-SEC-03, AI-SEC-07~AI-SEC-11이 미완료이면 공개 URL의 Gemini 신규 생성을 제출 통과 상태로 보지 않는다. | 미실행 | 배포 화면 캡처, 설정 기록, 검증 결과 |  |
+| AI-SEC-05 | 키 교체·만료 완료 | 기존 클라이언트 노출 가능 키는 실제로 폐기 또는 만료 처리되어야 한다. 서버는 신규 Secret을 사용해야 하며, 기존 키가 거부되는지 마스킹된 식별자로 확인한다. | 미실행 | 마스킹된 키 식별자, 교체 일자, 기존 키 거부 확인 기록 |  |
 | AI-SEC-06 | 민감정보 기록 제한 | 검증 보고서와 캡처에는 키 원문 없이 성공 여부와 마스킹된 식별자만 기록한다. | 미실행 | `docs/36-final-blockers-summary.md` |  |
-| AI-SEC-07 | 사용자별 호출 제한 | Functions 프록시에서 사용자별 rate limit, quota, 동시 요청 제한을 적용하거나 미구현 시 공개 신규 생성을 비활성화한다. | 미실행 | Functions 설정 또는 비활성화 기록 |  |
-| AI-SEC-08 | 서버 측 입력 검증 | Functions 프록시에서 입력 크기, 필수 필드, 형식, 민감정보 포함 여부를 검증한다. 미구현 시 공개 신규 생성을 비활성화한다. | 미실행 | 코드 검토 기록, 검증 케이스 |  |
+| AI-SEC-07 | 사용자별 호출 제한 | Functions 프록시에서 Firebase Auth로 검증된 `uid` 기준 rate limit, quota, 동시 요청 제한을 적용한다. | 미실행 | Functions 설정, 제한 정책, 검증 케이스 |  |
+| AI-SEC-08 | 서버 측 입력 검증 | Functions 프록시에서 입력 크기, 필수 필드, 형식, 민감정보 포함 여부를 검증한다. | 미실행 | 코드 검토 기록, 검증 케이스 |  |
 | AI-SEC-09 | 로그 민감정보 마스킹 | 요청 원문, 응답 원문, API 키, 사용자 민감정보가 Functions 로그와 브라우저 콘솔에 남지 않는지 확인한다. | 미실행 | 로그 점검 기록, 마스킹 기준 |  |
+| AI-SEC-10 | Firebase Auth ID token 검증 | Functions 프록시는 클라이언트 요청의 Firebase Auth ID token을 서버에서 검증하고, 검증된 사용자 식별자만 Gemini 호출에 사용한다. | 미실행 | 코드 검토 기록, 인증 성공 케이스 |  |
+| AI-SEC-11 | 미인증 요청 거부 | Firebase Auth ID token이 없거나 유효하지 않은 요청은 Gemini 호출 전에 401 또는 403으로 거부한다. | 미실행 | 인증 실패 케이스, Functions 로그 마스킹 기록 |  |
 
 ## 서비스 URL smoke test
 
@@ -69,7 +71,7 @@
 | URL-02 | `/explore` | 여행지 목록, 검색 또는 필터 UI가 보인다. | 미실행 | `docs/13-validation-report.md` |  |
 | URL-03 | `/festivals` | 축제·행사 목록 또는 빈 결과·오류 상태가 구분되어 표시된다. | 미실행 | `docs/13-validation-report.md` |  |
 | URL-04 | `/login` | 이메일·비밀번호 로그인 폼이 보인다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-05 | `/ai-planner` | 비로그인 상태에서는 보호 안내, 로그인 상태에서는 AI 일정 입력 또는 결과 화면이 보인다. | 미실행 | `docs/13-validation-report.md` |  |
+| URL-05 | `/ai-planner` | 비로그인 상태에서는 보호 안내, 로그인 상태에서는 보안 프록시 기반 AI 일정 입력·생성 결과 또는 보안 게이트 통과 후 저장된 기존 결과 화면이 보인다. | 미실행 | `docs/13-validation-report.md` |  |
 | URL-06 | `/board` | 커뮤니티 화면 또는 인증 흐름이 정상 표시된다. | 미실행 | `docs/13-validation-report.md` |  |
 | URL-07 | 직접 경로 새로고침 | `/explore`, `/festivals`, `/login`, `/ai-planner`, `/board` 직접 접근 시 404가 발생하지 않는다. | 미실행 | `docs/13-validation-report.md` |  |
 
@@ -80,7 +82,7 @@
 | TA-01 | 홈 | 로그인 상태에서 홈 화면이 정상 표시된다. | 미실행 | `docs/13-validation-report.md` |  |
 | TA-02 | 여행지 탐색 | 목록과 필터가 표시되고 찜 버튼 또는 보호 흐름을 확인할 수 있다. | 미실행 | `docs/13-validation-report.md` |  |
 | TA-03 | 찜·폴더 또는 마이페이지 | 사용자 소유 데이터 화면에 접근 가능하다. | 미실행 | `docs/13-validation-report.md` |  |
-| TA-04 | AI Planner | 로그인 상태에서 보안 프록시 기반 Gemini 생성, 기존 저장 결과 표시, 또는 명시적 Gemini 비활성화 안내 화면 중 하나가 확인된다. AI-SEC-01~AI-SEC-03 미완료 상태에서는 입력 화면만 보이는 것을 통과로 보지 않는다. | 미실행 | `docs/13-validation-report.md`, `AI-SEC` 검증 결과 |  |
+| TA-04 | AI Planner | 로그인 상태에서 보안 프록시 기반 Gemini 생성이 성공하거나, AI-SEC 필수 항목 통과 후 저장된 기존 AI 일정 결과가 표시된다. 명시적 비활성화 안내 화면만으로는 통과하지 않는다. | 미실행 | `docs/13-validation-report.md`, `AI-SEC` 검증 결과 |  |
 | TA-05 | 커뮤니티 | 게시글 목록, 작성, 상세, 댓글 중 최소 1개 흐름을 확인한다. | 미실행 | `docs/13-validation-report.md` |  |
 | TA-06 | 로그아웃 후 재로그인 | 제출용 계정으로 다시 로그인 가능하다. | 미실행 | `docs/13-validation-report.md` |  |
 
@@ -129,6 +131,8 @@
 - AI-SEC-07 사용자별 호출 제한
 - AI-SEC-08 서버 측 입력 검증
 - AI-SEC-09 로그 민감정보 마스킹
+- AI-SEC-10 Firebase Auth ID token 검증
+- AI-SEC-11 미인증 요청 거부
 - PDF-01 제공 양식 사용
 - PDF-02 페이지 수
 - PDF-03 글자 크기
@@ -139,6 +143,15 @@
 - SUB-01 부문 오첨부 방지
 - SUB-02 파일 버전 확인
 - SUB-03 제출 후 수정 제한 확인
+
+## 비차단 검증 항목
+
+아래 항목은 세부 품질과 증빙을 보강하기 위한 비차단 항목이다. 다만 비차단 항목의 실패가 위 차단 조건의 근거 항목에 영향을 주면 해당 차단 항목의 판정에 반영한다.
+
+- VE-02~VE-05: 제출 페이지의 팀·서비스·지역 특화 입력값 정합성 확인
+- URL-01~URL-07: 서비스 URL smoke test의 세부 경로별 확인
+- TA-01~TA-06: 테스트 계정 기반 핵심 기능 세부 확인
+- PDF-07~PDF-08: 기능설명서 화면 캡처와 데이터 활용 목록의 보조 검수
 
 ## 최종 판정
 
