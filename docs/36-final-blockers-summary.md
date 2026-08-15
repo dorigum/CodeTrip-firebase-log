@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출 보류`다.
 
-문서 체계와 제출용 초안은 준비되어 있지만, 제출 가능 판정을 내리려면 외부 제출 페이지와 실제 서비스 상태에서 확인해야 하는 값이 남아 있다. 특히 접수 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 화면 캡처, 최종 PDF 검증은 문서만으로 완료 처리할 수 없다.
+문서 체계와 제출용 초안은 준비되어 있지만, 제출 가능 판정을 내리려면 외부 제출 페이지와 실제 서비스 상태에서 확인해야 하는 값이 남아 있다. 특히 접수 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 화면 캡처, 최종 PDF 검증은 문서만으로 완료 처리할 수 없다. 또한 공개 URL에서 Gemini AI 생성 기능을 시연할 경우, 클라이언트 키 노출을 막기 위한 Functions 프록시 이전 또는 임시 호출 제한·키 교체 절차를 별도 P0 차단 조건으로 관리한다.
 
 ## 차단 항목 그룹
 
@@ -17,6 +17,7 @@
 | G3 OpenAPI 제출 정보 | 공공데이터포털과 배포 환경 대조 필요 | 인코딩키·디코딩키, 활용 API 목록, 최종 PDF API 문구 | 부분 준비 |
 | G4 기능설명서 최종 산출물 | PPTX/PDF 최종본 생성 후 확인 가능 | 팀명 반영, 캡처 교체, 5페이지, 12pt, 10MB, checksum | 미완료 |
 | G5 제출 리스크 | 제출 페이지에서 최종 확인 필요 | 부문 오첨부, 양식 일치, 제출 후 수정 제한 | 미확인 |
+| G6 AI 공개 시연 보안 | 공개 배포 환경에서 남용 가능성 차단 필요 | Gemini Functions 프록시, Secret, 호출량 제한, 키 교체 | 미완료 |
 
 ## 우선순위별 해결 순서
 
@@ -28,12 +29,13 @@
 | 4 | 테스트 계정 시연 데이터 세팅 | 로그인 가능한 테스트 계정 | 찜·폴더·AI 일정·커뮤니티 데이터 확인 | `docs/33-test-account-demo-data-runbook.md` |
 | 5 | OpenAPI 인증키 확인 | 공공데이터포털 계정 접근 | 제출 계정 키와 배포 환경변수 대조 완료 | `docs/20-openapi-submission-verification.md` |
 | 6 | OpenAPI 활용 목록 최종 대조 | 코드 endpoint, 제출 페이지, 기능설명서 5페이지 | `KorService2`, `PhotoGalleryService1` 목록 일치 | `docs/34-openapi-submission-copy-sheet.md` |
-| 7 | 서비스 URL smoke test | 최신 배포본 | 공개 URL, 직접 경로, 로그인 후 화면 확인 | `docs/32-service-url-smoke-test-runbook.md` |
-| 8 | 로그인 후 화면 캡처 확보 | 테스트 계정과 시연 데이터 | SC-04, SC-05, SC-06 캡처 후보 확보 | `docs/31-submission-screenshot-plan.md` |
-| 9 | 최종 PPTX 수정 | 팀명, 캡처, OpenAPI 목록, 제출 문구 | 최종 PPTX 파일 생성 | `docs/26-pptx-final-editing-guide.md` |
-| 10 | 최종 PDF 변환·검수 | 최종 PPTX | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 | `docs/35-pptx-slide-final-review-checklist.md` |
-| 11 | manifest·검증 보고서 갱신 | 최종 PPTX/PDF | 파일명, 크기, SHA-256, 외부 전달 위치 기록 | `docs/17-submission-artifact-manifest.md`, `docs/13-validation-report.md` |
-| 12 | 제출 페이지 최종 확인 | 최종 PDF와 제출 입력값 | 부문·양식·첨부파일·마감 리스크 확인 | `docs/27-final-validation-execution-sheet.md` |
+| 7 | Gemini 공개 AI 시연 보안 게이트 | 공개 URL에서 AI 생성 기능을 시연할지 결정 | Functions 프록시·Secret 이전 완료 또는 호출량 제한·키 교체·시연 범위 제한 기록 | `docs/10-ai-harness-engineering.md`, `docs/24-submission-copywriting.md` |
+| 8 | 서비스 URL smoke test | 최신 배포본 | 공개 URL, 직접 경로, 로그인 후 화면 확인 | `docs/32-service-url-smoke-test-runbook.md` |
+| 9 | 로그인 후 화면 캡처 확보 | 테스트 계정과 시연 데이터 | SC-04, SC-05, SC-06 캡처 후보 확보 | `docs/31-submission-screenshot-plan.md` |
+| 10 | 최종 PPTX 수정 | 팀명, 캡처, OpenAPI 목록, 제출 문구 | 최종 PPTX 파일 생성 | `docs/26-pptx-final-editing-guide.md` |
+| 11 | 최종 PDF 변환·검수 | 최종 PPTX | 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 | `docs/35-pptx-slide-final-review-checklist.md` |
+| 12 | manifest·검증 보고서 갱신 | 최종 PPTX/PDF | 파일명, 크기, SHA-256, 외부 전달 위치 기록 | `docs/17-submission-artifact-manifest.md`, `docs/13-validation-report.md` |
+| 13 | 제출 페이지 최종 확인 | 최종 PDF와 제출 입력값 | 부문·양식·첨부파일·마감 리스크 확인 | `docs/27-final-validation-execution-sheet.md` |
 
 ## 사용자 제공 필요 항목
 
@@ -76,11 +78,12 @@
 3. 테스트 계정에 찜·폴더·AI 일정·커뮤니티 시연 데이터가 준비되어 있다.
 4. OpenAPI 인증키는 제출 페이지에만 입력되고, 기능설명서에는 활용 API 목록만 기록되어 있다.
 5. 제출 후보 URL에서 공개 화면, 직접 경로 새로고침, 로그인 후 핵심 기능이 확인되어 있다.
-6. 최종 PPTX/PDF에 팀명, 로그인 후 캡처, OpenAPI 목록, 발전계획이 반영되어 있다.
-7. PDF가 5페이지 이하, 12포인트 이상, 10MB 미만이며 정상 열람된다.
-8. 최종 산출물의 파일명, 크기, SHA-256, 외부 전달 위치가 manifest에 기록되어 있다.
-9. 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간이 확인되어 있다.
-10. `docs/27-final-validation-execution-sheet.md`의 제출 직전 차단 조건이 모두 `통과` 또는 `완료` 상태다.
+6. 공개 URL에서 AI 생성 기능을 시연할 경우 Gemini Functions 프록시·Secret 이전을 완료하거나, 임시 호출 제한·키 교체·시연 범위 제한이 기록되어 있다.
+7. 최종 PPTX/PDF에 팀명, 로그인 후 캡처, OpenAPI 목록, 발전계획이 반영되어 있다.
+8. PDF가 5페이지 이하, 12포인트 이상, 10MB 미만이며 정상 열람된다.
+9. 최종 산출물의 파일명, 크기, SHA-256, 외부 전달 위치가 manifest에 기록되어 있다.
+10. 동일 서비스 중복 출품 없음, 웹·앱 개발 부문 양식 일치, 마감 전 수정 가능 시간이 확인되어 있다.
+11. `docs/27-final-validation-execution-sheet.md`의 제출 직전 차단 조건이 모두 `통과` 또는 `완료` 상태다.
 
 ## 현재 다음 작업 제안
 
