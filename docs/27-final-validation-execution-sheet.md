@@ -61,6 +61,8 @@
 | AI-SEC-10 | Firebase Auth ID token 검증 | Functions 프록시는 클라이언트 요청의 Firebase Auth ID token을 서버에서 검증하고, 검증된 사용자 식별자만 Gemini 호출에 사용한다. | 미실행 | 코드 검토 기록, 인증 성공 케이스 |  |
 | AI-SEC-11 | 미인증 요청 거부 | Firebase Auth ID token이 없거나 유효하지 않은 요청은 Gemini 호출 전에 401 또는 403으로 거부한다. | 미실행 | 인증 실패 케이스, Functions 로그 마스킹 기록 |  |
 
+현재 구현 메모: 2026-08-16 브랜치 `security/gemini-functions-proxy`에서 클라이언트 직접 Gemini 호출을 Firebase Callable Function 호출로 교체하고, `functions/index.js`에 `generateTripPlan` 프록시를 추가했다. 이 메모는 코드 반영 상태만 의미하며, 최종 제출 통과를 위해서는 Functions 배포, `GEMINI_API_KEY` Secret 등록, 기존 노출 가능 키 폐기·거부 확인, 공개 URL smoke test 결과를 별도로 기록해야 한다.
+
 ## 서비스 URL smoke test
 
 상세 실행 순서는 `docs/32-service-url-smoke-test-runbook.md`를 따른다. 이 표에는 제출 직전 요약 결과만 기록한다.
