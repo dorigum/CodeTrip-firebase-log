@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출 보류`다.
 
-문서 체계와 제출용 초안은 준비되어 있지만, 제출 가능 판정을 내리려면 외부 제출 페이지와 실제 서비스 상태에서 확인해야 하는 값이 남아 있다. 특히 접수 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 화면 캡처, 최종 PDF 검증은 문서만으로 완료 처리할 수 없다. 또한 Gemini 호출부는 Firebase Callable Function 프록시 코드로 전환되었지만, 공개 URL에서 Gemini AI 생성 기능을 제공하려면 Functions 배포, Gemini API 키의 서버 측 Secret 등록, 기존 노출 가능 키 폐기·거부 확인까지 완료해야 한다.
+문서 체계와 제출용 초안은 준비되어 있지만, 제출 가능 판정을 내리려면 외부 제출 페이지와 실제 서비스 상태에서 확인해야 하는 값이 남아 있다. 특히 접수 팀명, 테스트 계정, OpenAPI 인증키, 로그인 후 화면 캡처, 최종 PDF 검증은 문서만으로 완료 처리할 수 없다. Gemini 호출부는 Firebase Callable Function 프록시로 전환되어 배포되었고, Secret 등록과 미인증 차단도 확인했다. 남은 AI 보안 차단 항목은 로그인 상태 실제 AI 생성 smoke test와 기존 노출 가능 키 폐기·거부 확인이다.
 
 ## 차단 항목 그룹
 
@@ -17,7 +17,7 @@
 | G3 OpenAPI 제출 정보 | 공공데이터포털과 배포 환경 대조 필요 | 인코딩키·디코딩키, 활용 API 목록, 최종 PDF API 문구 | 부분 준비 |
 | G4 기능설명서 최종 산출물 | PPTX/PDF 최종본 생성 후 확인 가능 | 팀명 반영, 캡처 교체, 5페이지, 12pt, 10MB, checksum | 미완료 |
 | G5 제출 리스크 | 제출 페이지에서 최종 확인 필요 | 부문 오첨부, 양식 일치, 제출 후 수정 제한 | 미확인 |
-| G6 AI 공개 시연 보안 | 공개 배포 환경에서 클라이언트 키 노출 차단 필요 | Gemini Callable Function 코드 전환 완료, Functions 배포·서버 측 Secret 저장·기존 키 폐기 검증 필요 | 부분 완료 |
+| G6 AI 공개 시연 보안 | 공개 배포 환경에서 클라이언트 키 노출 차단 필요 | Callable Function·Secret·Hosting 배포 완료, 배포 산출물 키 미포함과 미인증 401 차단 확인, 기존 키 폐기와 로그인 성공 케이스 검증 필요 | 부분 완료 |
 
 ## 우선순위별 해결 순서
 
@@ -29,7 +29,7 @@
 | 4 | 테스트 계정 시연 데이터 세팅 | 로그인 가능한 테스트 계정 | 찜·폴더·AI 일정·커뮤니티 데이터 확인 | `docs/33-test-account-demo-data-runbook.md` |
 | 5 | OpenAPI 인증키 확인 | 공공데이터포털 계정 접근 | 제출 계정 키와 배포 환경변수 대조 완료 | `docs/20-openapi-submission-verification.md` |
 | 6 | OpenAPI 활용 목록 최종 대조 | 코드 endpoint, 제출 페이지, 기능설명서 5페이지 | `KorService2`, `PhotoGalleryService1` 목록 일치 | `docs/34-openapi-submission-copy-sheet.md` |
-| 7 | Gemini 공개 AI 시연 보안 게이트 | Callable Function 전환 코드의 배포와 Secret 등록 | Functions 프록시 배포, 서버 측 Secret 저장, 기존 노출 가능 키 폐기·거부 확인 완료 | `docs/10-ai-harness-engineering.md`, `docs/24-submission-copywriting.md`, `docs/27-final-validation-execution-sheet.md` |
+| 7 | Gemini 공개 AI 시연 보안 게이트 | 로그인 상태 실제 생성 검증과 기존 노출 가능 키 폐기 | AI 생성 성공 smoke test, 기존 키 폐기·거부 확인 완료 | `docs/10-ai-harness-engineering.md`, `docs/24-submission-copywriting.md`, `docs/27-final-validation-execution-sheet.md` |
 | 8 | 서비스 URL smoke test | 최신 배포본 | 공개 URL, 직접 경로, 로그인 후 화면 확인 | `docs/32-service-url-smoke-test-runbook.md` |
 | 9 | 로그인 후 화면 캡처 확보 | 테스트 계정과 시연 데이터 | SC-04, SC-05, SC-06 캡처 후보 확보 | `docs/31-submission-screenshot-plan.md` |
 | 10 | 최종 PPTX 수정 | 팀명, 캡처, OpenAPI 목록, 제출 문구 | 최종 PPTX 파일 생성 | `docs/26-pptx-final-editing-guide.md` |
