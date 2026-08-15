@@ -27,7 +27,7 @@
 | FI-04 | 서비스명 | 완료 후보 | `CodeTrip` 표기가 제출 페이지와 기능설명서에서 일치한다. | 제출 페이지, 기능설명서 | 최종 PDF |
 | FI-05 | 서비스 유형 | 완료 후보 | 웹 서비스로 선택한다. | 제출 페이지, 기능설명서 | 최종 PDF |
 | FI-06 | 서비스 개요 | 초안 준비 | `docs/24-submission-copywriting.md`의 축약 문구를 기준으로 제출 페이지와 기능설명서 문구를 맞춘다. | 제출 페이지, 기능설명서 2페이지 | 최종 PDF |
-| FI-07 | 지역 특화 여부 | 확인됨: 지역 특화 서비스 없음 | 전국 단위 제출 또는 특정 지역 특화 제출 여부를 확정하고 제출 페이지와 기능설명서에 동일하게 반영한다. | 제출 페이지, 기능설명서 | 신청 정보 화면, `docs/23-regional-specialization-strategy.md`, 최종 PDF |
+| FI-07 | 지역 특화 여부 | 미확정 | 전국 단위 제출 또는 특정 지역 특화 제출 여부를 확정하고 제출 페이지와 기능설명서에 동일하게 반영한다. | 제출 페이지, 기능설명서 | 신청 정보 화면, `docs/23-regional-specialization-strategy.md`, 최종 PDF |
 | FI-08 | 서비스 URL | 후보 확인 | `https://dorigum-codetrip.web.app` 접속, 직접 경로 새로고침, 주요 공개 화면 로딩을 확인한다. | 제출 페이지 | `docs/21-service-url-verification.md`, `docs/13-validation-report.md` |
 | FI-09 | 테스트 계정 ID/PW | 미완료 | 지정 형식의 제출용 전용 계정을 생성하고 로그인, AI, 마이페이지, 커뮤니티 접근을 확인한다. | 제출 페이지 | `docs/19-test-account-verification.md`, `docs/13-validation-report.md` |
 | FI-10 | 한국관광공사 OpenAPI 인증키 | 확인 필요: 원문 기록 금지 | 공공데이터포털에서 인코딩키·디코딩키를 확인하고 제출 페이지에만 입력한다. 저장소에는 확인 여부만 기록한다. | 제출 페이지 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` |

@@ -48,8 +48,8 @@
 ## 최종 제출 전 우선순위
 
 1. `docs/22-final-submission-runbook.md` 순서에 따라 최종 제출 전 확인을 진행한다.
-2. `docs/25-final-input-checklist.md`의 FI-01~FI-16을 기준으로 최종 입력값 누락 여부를 점검한다.
-3. `docs/28-submission-readiness-dashboard.md`의 차단 항목 B-01~B-09를 순서대로 해소한다.
+2. `docs/25-final-input-checklist.md`의 FI-01~FI-19를 기준으로 최종 입력값 누락 여부를 점검한다.
+3. `docs/28-submission-readiness-dashboard.md`의 차단 항목 B-01~B-10을 순서대로 해소한다.
 4. 접수 팀명과 최종 팀원 정보를 확인해 기능설명서 1페이지와 제출 페이지에 반영한다.
 5. `docs/19-test-account-verification.md` 절차에 따라 심사용 테스트 전용 계정을 생성하고 로그인 가능 여부를 확인한다.
 6. 로그인 후 AI 일정 생성, 마이페이지 또는 찜/폴더, 커뮤니티 내부 화면을 캡처해 3페이지 이미지를 교체한다.

@@ -18,7 +18,7 @@
 - 제공 PPTX 양식의 필수 항목을 삭제하거나 임의로 바꾸지 않는다.
 - PDF 변환 후 5페이지 이하, 12포인트 이상, 10MB 미만, 정상 열람을 다시 확인한다.
 - 서비스 소개 문구는 `docs/24-submission-copywriting.md`의 축약 문구를 우선 사용한다.
-- 제출 페이지 입력값은 `docs/25-final-input-checklist.md`의 FI-01~FI-16과 일치시킨다.
+- 제출 페이지 입력값은 `docs/25-final-input-checklist.md`의 FI-01~FI-19와 일치시킨다.
 - 비밀번호, OpenAPI 인증키, 개인 이메일, 팀원 개인정보는 PPTX와 저장소에 노출하지 않는다.
 - 실제 화면 캡처에는 API 키, 개인 계정, 개인정보, 관리자 콘솔 정보가 보이지 않아야 한다.
 

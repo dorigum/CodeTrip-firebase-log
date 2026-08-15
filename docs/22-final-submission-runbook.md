@@ -59,7 +59,7 @@
 | 지역 특화 여부 | 전국 단위 유지 또는 특정 지역 특화 전환 여부가 제출 페이지·기능설명서와 일치 | `docs/23-regional-specialization-strategy.md` |
 | 화면 캡처 | 대표 이미지 1장, 상세 이미지 3~5장, 개인정보·키 노출 없음 | `docs/17-submission-artifact-manifest.md` |
 | 최종 manifest | 파일명, 생성일, checksum, 외부 전달 위치 기록 | `docs/17-submission-artifact-manifest.md` |
-| 최종 입력값 | FI-01~FI-16 항목의 제출 전 확인 상태 기록 | `docs/25-final-input-checklist.md` |
+| 최종 입력값 | FI-01~FI-19 항목의 제출 전 확인 상태 기록 | `docs/25-final-input-checklist.md` |
 | 최종 검증 실행 | 제출 페이지 입력값, URL, 테스트 계정, PDF 제약, checksum의 실행 결과 기록 | `docs/27-final-validation-execution-sheet.md` |
 | 제출 준비도 | 제출 초안, 차단 항목, 심사 기준 대응 상태 요약 | `docs/28-submission-readiness-dashboard.md` |
 
@@ -81,7 +81,7 @@
 
 1. 접수 팀명과 최종 팀원 정보 확인
 2. 전국 단위 제출 또는 지역 특화 제출 여부 최종 결정
-3. `docs/25-final-input-checklist.md`의 FI-01~FI-16 상태 확인
+3. `docs/25-final-input-checklist.md`의 FI-01~FI-19 상태 확인
 4. 테스트 전용 계정 생성 및 로그인 후 기능 검증
 5. 로그인 후 AI·마이페이지·커뮤니티 실제 화면 캡처 교체
 6. OpenAPI 인증키와 제출 계정 기준 호출 정보 확인
