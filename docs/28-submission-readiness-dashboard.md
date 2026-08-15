@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출은 보류`로 분류한다.
 
-문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었다. Gemini 호출 코드는 Firebase Callable Function 프록시 구조로 전환되었고, `GEMINI_API_KEY` Secret 등록, `generateTripPlan` 배포, Hosting 배포, 배포 산출물 키 미포함, 미인증 요청 차단, 로그인 상태 인증 성공 smoke test까지 확인했다. 신규 Gemini 키도 Secret version 2로 반영해 재검증했다. 다만 기존 `Gemini API Key_temp` 삭제·거부 확인은 아직 남아 있다. 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증도 계속 남아 있다.
+문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었다. Gemini 호출 코드는 Firebase Callable Function 프록시 구조로 전환되었고, `GEMINI_API_KEY` Secret 등록, `generateTripPlan` 배포, Hosting 배포, 배포 산출물 키 미포함, 미인증 요청 차단, 로그인 상태 인증 성공 smoke test까지 확인했다. 신규 Gemini 키도 Secret version 2로 반영해 재검증했으며, 기존 `Gemini API Key_temp`는 AI Studio에서 삭제 완료했다. 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 계속 남아 있다.
 
 따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다. 남은 차단 항목의 우선순위와 책임 범위는 `docs/36-final-blockers-summary.md`에서 별도로 요약한다.
 
