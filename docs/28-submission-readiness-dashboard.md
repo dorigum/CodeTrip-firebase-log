@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출은 보류`로 분류한다.
 
-문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `없음`으로 확인되었다. 다만 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
+문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었다. 다만 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 아직 완료되지 않았다.
 
 따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 한다. 남은 차단 항목의 우선순위와 책임 범위는 `docs/36-final-blockers-summary.md`에서 별도로 요약한다.
 
@@ -18,7 +18,7 @@
 | 사용자 제공 입력값 | 저장소 기록 가능 값과 금지 값을 분리함 | 준비됨 | `docs/30-user-provided-submission-inputs.md` | UI-01~UI-13 실제 값 확인 |
 | 기능설명서 초안 | 5페이지 제출 항목 정리본 초안 존재 | 부분 준비 | `docs/17-submission-artifact-manifest.md`, `docs/18-submission-gap-analysis.md` | 팀명·캡처·최종 입력값 반영 |
 | 제출용 문구 | 서비스 개요, 주제 선정 이유, 차별성, 발전계획 문구 정리 | 준비됨 | `docs/24-submission-copywriting.md` | PPTX 공간에 맞춰 최종 반영 |
-| 지역 특화 전략 | 지역 특화 서비스 없음 확인 | 준비됨 | `docs/23-regional-specialization-strategy.md`, 신청 정보 화면 | 기능설명서와 제출 페이지 표현 일치 |
+| 지역 특화 전략 | 전국 단위 제출, 지역 특화 서비스 `아니오`로 결정 | 준비됨 | `docs/23-regional-specialization-strategy.md`, 신청 정보 화면 | 최종 제출 직전 제출 페이지 값 재확인 |
 | 서비스 URL | 후보 URL, 검증 기준, smoke test 실행표 문서화 | 부분 준비 | `docs/21-service-url-verification.md`, `docs/32-service-url-smoke-test-runbook.md` | 제출 직전 smoke test 실행 |
 | 테스트 계정 | 생성·검증 절차와 시연 데이터 세팅 기준 문서화 | 미완료 | `docs/19-test-account-verification.md`, `docs/33-test-account-demo-data-runbook.md` | 제출용 전용 계정 생성 및 시연 데이터 준비 |
 | OpenAPI 제출 정보 | 활용 API 목록, 검증 절차, 제출용 작성표 문서화 | 미완료 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 인코딩키·디코딩키를 공공데이터포털에서 확인하고 제출 페이지에만 입력 |
@@ -72,7 +72,7 @@
 
 1. 접수 페이지에서 팀명과 최종 팀원 정보를 확인한다.
 2. `docs/30-user-provided-submission-inputs.md` 기준으로 사용자 제공 입력값과 민감정보 기록 금지 범위를 확인한다.
-3. 지역 특화 여부를 전국 단위 제출로 유지할지 최종 결정한다.
+3. 지역 특화 여부가 제출 페이지와 기능설명서에서 `아니오`로 일치하는지 최종 확인한다.
 4. 테스트 전용 계정을 생성하고 로그인·AI·마이페이지·커뮤니티 접근을 검증한다.
 5. OpenAPI 인증키와 활용 API 목록을 제출 계정 기준으로 확인한다.
 6. 로그인 후 내부 화면 캡처를 확보한다.
