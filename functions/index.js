@@ -229,12 +229,18 @@ const validateTripPlan = (plan) => {
 };
 
 const readResponseJson = async (response) => {
+  let timeoutId;
   const timeout = new Promise((_, reject) => {
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       reject(new HttpsError('deadline-exceeded', 'AI 코스 응답 읽기 시간이 초과되었습니다.'));
     }, GEMINI_RESPONSE_BODY_TIMEOUT_MS);
   });
-  return Promise.race([response.json(), timeout]);
+
+  try {
+    return await Promise.race([response.json(), timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 const createGeminiError = (response) => {
@@ -290,6 +296,8 @@ const fetchGeminiWithRetry = async (payload) => {
       if (response.ok || !isRetryableStatus(response.status) || attempt === GEMINI_MAX_RETRIES) {
         return response;
       }
+
+      await response.body?.cancel().catch(() => {});
     } catch (error) {
       if (!isRetryableFetchError(error) || attempt === GEMINI_MAX_RETRIES) {
         if (error?.name === 'AbortError') {
