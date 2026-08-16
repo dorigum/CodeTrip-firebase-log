@@ -52,6 +52,7 @@
 | 2026-08-16 | `로컬 수정` | 상세 댓글 지연 로딩 | 부분 검증. 상세 TourAPI 조회와 Firebase 댓글 조회를 분리하고 댓글 전용 loading/error/retry UI를 추가했습니다. 실제 본문 선표시와 댓글 별도 로딩 수동 로그는 아직 없습니다. | 정적 증빙: `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 상세 페이지에서 본문 선표시, 댓글 로딩, 실패 후 재시도 흐름을 수행 환경과 함께 기록 필요 |
 | 2026-08-16 | `로컬 수정` | API 캐시 측정표 작성 | 통과. 캐시 이벤트를 memory, local, remote, network, stale로 분리하고 fresh hit과 stale fallback 계산식을 정의했습니다. | `docs/38-cache-measurement-sheet.md`, `docs/README.md` | 실제 세션별 측정값은 아직 미측정 |
 | 2026-08-16 | `로컬 수정` | 카카오 지도 SDK 배포 표시 검증 | 통과. 무료 쿼터가 적용된 카카오 앱의 JavaScript SDK 도메인에 `http://localhost:5180`과 `https://dorigum-codetrip.web.app`을 등록하고, `.env`의 `VITE_KAKAO_MAP_API_KEY`를 JavaScript 키로 교체했습니다. 로컬 상세 페이지와 Firebase Hosting 배포 상세 페이지에서 카카오 지도가 정상 표시되는 것을 확인했습니다. | `src/pages/TravelDetail.jsx`, `CodeTrip_Firebase/project-log/2026-08-16.md`, `CodeTrip_Firebase/TROUBLESHOOTING.md`, 사용자 제공 배포 화면 캡처, `npm run lint`, `npm run build` | 배포 도메인 또는 로컬 포트 변경 시 Kakao Developers JavaScript SDK 도메인 목록을 함께 갱신해야 합니다. |
+| 2026-08-16 | `9a3da63` | Firebase Hosting 서비스 URL smoke test | 부분 통과. 공개 URL `/`, `/explore`, `/festivals`, `/login`, `/board`와 직접 경로 접근은 정상 확인했습니다. 비로그인 `/ai-planner`와 `/board` 보호 안내, 로그인 후 홈·여행지 탐색·마이페이지·AI Planner 입력 화면·게시판 목록 접근도 확인했습니다. Gemini 신규 생성은 API 비용과 quota 관리를 위해 미실행으로 분리했습니다. | `docs/32-service-url-smoke-test-runbook.md`, `docs/27-final-validation-execution-sheet.md`, Hosting URL `https://dorigum-codetrip.web.app` | 최종 제출 직전 로그아웃 후 재로그인, 댓글 작성·수정·삭제, Gemini 생성 또는 저장된 AI 일정 결과 표시 증빙을 추가 확인해야 합니다. |
 
 ## 핵심 사용자 흐름 체크리스트
 

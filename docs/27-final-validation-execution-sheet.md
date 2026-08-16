@@ -71,23 +71,23 @@
 
 | ID | 경로 | 확인 항목 | 결과 | 증빙 위치 | 후속 조치 |
 |---|---|---|---|---|---|
-| URL-01 | `/` | 홈 화면이 로딩되고 서비스 소개 또는 주요 카드가 보입니다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-02 | `/explore` | 여행지 목록, 검색 또는 필터 UI가 보입니다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-03 | `/festivals` | 축제·행사 목록 또는 빈 결과·오류 상태가 구분되어 표시됩니다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-04 | `/login` | 이메일·비밀번호 로그인 폼이 보입니다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-05 | `/ai-planner` | 비로그인 상태에서는 보호 안내, 로그인 상태에서는 보안 프록시 기반 AI 일정 입력·생성 결과 또는 보안 게이트 통과 후 저장된 기존 결과 화면이 보입니다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-06 | `/board` | 커뮤니티 화면 또는 인증 흐름이 정상 표시됩니다. | 미실행 | `docs/13-validation-report.md` |  |
-| URL-07 | 직접 경로 새로고침 | `/explore`, `/festivals`, `/login`, `/ai-planner`, `/board` 직접 접근 시 404가 발생하지 않습니다. | 미실행 | `docs/13-validation-report.md` |  |
+| URL-01 | `/` | 홈 화면이 로딩되고 서비스 소개 또는 주요 카드가 보입니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| URL-02 | `/explore` | 여행지 목록, 검색 또는 필터 UI가 보입니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| URL-03 | `/festivals` | 축제·행사 목록 또는 빈 결과·오류 상태가 구분되어 표시됩니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| URL-04 | `/login` | 이메일·비밀번호 로그인 폼이 보입니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| URL-05 | `/ai-planner` | 비로그인 상태에서는 보호 안내, 로그인 상태에서는 보안 프록시 기반 AI 일정 입력·생성 결과 또는 보안 게이트 통과 후 저장된 기존 결과 화면이 보입니다. | 부분 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 화면 접근과 보호 라우트는 확인했습니다. Gemini 신규 생성은 비용 관리상 미실행입니다. |
+| URL-06 | `/board` | 커뮤니티 화면 또는 인증 흐름이 정상 표시됩니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| URL-07 | 직접 경로 새로고침 | `/explore`, `/festivals`, `/login`, `/ai-planner`, `/board` 직접 접근 시 404가 발생하지 않습니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
 
 ## 테스트 계정 기능 검증
 
 | ID | 화면 | 확인 항목 | 결과 | 증빙 위치 | 후속 조치 |
 |---|---|---|---|---|---|
-| TA-01 | 홈 | 로그인 상태에서 홈 화면이 정상 표시됩니다. | 미실행 | `docs/13-validation-report.md` |  |
-| TA-02 | 여행지 탐색 | 목록과 필터가 표시되고 찜 버튼 또는 보호 흐름을 확인할 수 있습니다. | 미실행 | `docs/13-validation-report.md` |  |
-| TA-03 | 찜·폴더 또는 마이페이지 | 사용자 소유 데이터 화면에 접근 가능합니다. | 미실행 | `docs/13-validation-report.md` |  |
-| TA-04 | AI Planner | 로그인 상태에서 보안 프록시 기반 Gemini 생성이 성공하거나, AI-SEC 필수 항목 통과 후 저장된 기존 AI 일정 결과가 표시됩니다. 명시적 비활성화 안내 화면만으로는 통과하지 않습니다. | 미실행 | `docs/13-validation-report.md`, `AI-SEC` 검증 결과 |  |
-| TA-05 | 커뮤니티 | 게시글 목록, 작성, 상세, 댓글 중 최소 1개 흐름을 확인합니다. | 미실행 | `docs/13-validation-report.md` |  |
+| TA-01 | 홈 | 로그인 상태에서 홈 화면이 정상 표시됩니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| TA-02 | 여행지 탐색 | 목록과 필터가 표시되고 찜 버튼 또는 보호 흐름을 확인할 수 있습니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| TA-03 | 찜·폴더 또는 마이페이지 | 사용자 소유 데이터 화면에 접근 가능합니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| TA-04 | AI Planner | 로그인 상태에서 보안 프록시 기반 Gemini 생성이 성공하거나, AI-SEC 필수 항목 통과 후 저장된 기존 AI 일정 결과가 표시됩니다. 명시적 비활성화 안내 화면만으로는 통과하지 않습니다. | 부분 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md`, `AI-SEC` 검증 결과 | AI Planner 화면 접근은 확인했습니다. Gemini 신규 생성은 비용 관리상 미실행이며, 사용자 수동 확인값과 별도 기록합니다. |
+| TA-05 | 커뮤니티 | 게시글 목록, 작성, 상세, 댓글 중 최소 1개 흐름을 확인합니다. | 부분 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 게시글 목록은 확인했습니다. 작성·상세·댓글 작성은 미실행입니다. |
 | TA-06 | 로그아웃 후 재로그인 | 제출용 계정으로 다시 로그인 가능합니다. | 미실행 | `docs/13-validation-report.md` |  |
 
 ## 기능설명서 최종 PDF 검증

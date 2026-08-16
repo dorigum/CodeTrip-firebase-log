@@ -105,3 +105,30 @@ SPA Hosting에서는 직접 경로 새로고침 시 404가 나면 제출 URL 안
 ## 현재 상태
 
 현재 문서 기준으로 공개 URL 후보와 검증 절차는 준비되어 있으나, 최종 제출 직전 smoke test는 아직 실행되지 않았습니다. 테스트 전용 계정 생성, 로그인 후 AI·마이페이지·커뮤니티 화면 확인, 최종 캡처 확보가 완료되어야 `통과`로 판정할 수 있습니다.
+
+## 2026-08-16 배포 URL Smoke Test 결과
+
+이 기록은 Firebase Hosting 최신 배포 후 진행한 중간 smoke test입니다. Gemini 신규 생성은 API 비용과 quota 관리를 위해 실행하지 않고, 사용자가 별도로 생성·저장 정상 동작을 수동 확인한 값과 분리해 기록합니다.
+
+| ID | 확인 항목 | 결과 | 확인 환경 | 증빙 | 비고 |
+|---|---|---|---|---|---|
+| URL-P01 | 홈 화면 로딩 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 서비스 소개와 주요 진입 요소 표시 확인 |
+| URL-P02 | 여행지 탐색 목록 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 여행지 목록, 검색, 필터 UI 표시 확인 |
+| URL-P03 | 축제·행사 목록 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 축제 목록 표시 확인 |
+| URL-P04 | 로그인 화면 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 이메일·비밀번호 로그인 폼 표시 확인 |
+| URL-P05 | 비로그인 AI Planner 보호 라우트 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 로그인 필요 안내 표시 확인 |
+| URL-P06 | 비로그인 Board 보호 라우트 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 로그인 필요 안내 표시 확인 |
+| URL-R01~R05 | 직접 경로 접근 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | `/explore`, `/festivals`, `/login`, `/ai-planner`, `/board`가 404 없이 앱 화면으로 열림 |
+| URL-A01 | 로그인 후 홈 | 통과 | Chrome, 테스트 계정 | `docs/13-validation-report.md` | 인증 상태와 홈 대시보드 표시 확인 |
+| URL-A02 | 로그인 후 여행지 탐색 | 통과 | Chrome, 테스트 계정 | `docs/13-validation-report.md` | 목록과 찜 진입 요소 확인 |
+| URL-A03 | 마이페이지 | 통과 | Chrome, 테스트 계정 | `docs/13-validation-report.md` | 사용자 소유 위시리스트·폴더 화면 표시 확인 |
+| URL-A04 | AI Planner 화면 접근 | 부분 통과 | Chrome, 테스트 계정 | `docs/13-validation-report.md` | 입력 화면 접근 확인. Gemini 신규 생성은 비용 관리상 미실행 |
+| URL-A05 | 커뮤니티 게시판 | 통과 | Chrome, 테스트 계정 | `docs/13-validation-report.md` | 게시글 목록 표시 확인 |
+| MAP-01 | 여행지 상세 카카오 지도 표시 | 통과 | Chrome, Firebase Hosting | 사용자 제공 배포 화면 캡처, `CodeTrip_Firebase/project-log/2026-08-16.md` | Kakao JavaScript SDK 도메인 등록 및 키 교체 후 정상 표시 |
+
+### 2026-08-16 판정
+
+- **판정**: Gemini 신규 생성 제외 기준 `부분 통과`
+- **통과 항목**: 공개 URL, 직접 경로, 로그인 후 주요 화면 접근, 카카오 지도 표시
+- **미실행 항목**: Gemini 신규 생성, 로그아웃 후 재로그인 재검증, 댓글 작성·수정·삭제 세부 흐름
+- **다음 확인 필요**: 최종 제출 직전에는 Gemini 생성 여부를 사용량 정책에 맞춰 별도 확인하거나, 이미 저장된 AI 일정 결과 표시를 증빙으로 연결합니다.
