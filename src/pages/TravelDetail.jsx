@@ -57,6 +57,7 @@ const TravelDetail = () => {
   const [infoItems, setInfoItems] = useState([]);
   const [images, setImages] = useState([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState('');
   const [travelCommentText, setTravelCommentText] = useState('');
   const [travelComments, setTravelComments] = useState([]);
   const [travelCommentSubmitting, setTravelCommentSubmitting] = useState(false);
@@ -74,6 +75,10 @@ const TravelDetail = () => {
   const showToast = useToast();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
   const { addItem: addRecentlyViewed } = useRecentlyViewedStore();
+  const kakaoMapApiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+  const effectiveMapLoadError = kakaoMapApiKey
+    ? mapLoadError
+    : '카카오 지도 API 키가 설정되지 않았습니다.';
 
   useEffect(() => {
     if (!common?.title) return;
@@ -88,7 +93,7 @@ const TravelDetail = () => {
   // 창 크기 변경 시 지도 중심 재조정
   useEffect(() => {
     const handleResize = () => {
-      if (!mapRef.current || !common?.mapy || !common?.mapx) return;
+      if (!mapRef.current || !common?.mapy || !common?.mapx || !window.kakao?.maps) return;
       mapRef.current.relayout();
       mapRef.current.setCenter(new window.kakao.maps.LatLng(Number(common.mapy), Number(common.mapx)));
     };
@@ -132,28 +137,51 @@ const TravelDetail = () => {
 
   // 1. 카카오 맵 스크립트 안정 로딩 (핵심 수정)
   useEffect(() => {
-    const appKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
     const scriptId = 'kakao-map-script';
+    let cancelled = false;
+    let timeoutId;
 
     const initializeMap = () => {
       if (window.kakao && window.kakao.maps) {
         window.kakao.maps.load(() => {
+          if (cancelled) return;
+          clearTimeout(timeoutId);
+          setMapLoadError('');
           setIsMapLoaded(true);
         });
       }
     };
 
+    if (!kakaoMapApiKey) {
+      return undefined;
+    }
+
+    timeoutId = window.setTimeout(() => {
+      if (cancelled || isMapLoaded) return;
+      setMapLoadError('카카오 지도 SDK 응답이 지연되고 있습니다.');
+    }, 8000);
+
     if (!document.getElementById(scriptId)) {
       const script = document.createElement('script');
       script.id = scriptId;
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&libraries=services,clusterer,drawing&autoload=false`;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapApiKey}&libraries=services,clusterer,drawing&autoload=false`;
       script.async = true;
       document.head.appendChild(script);
       script.onload = initializeMap;
+      script.onerror = () => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
+        setMapLoadError('카카오 지도 SDK를 불러오지 못했습니다.');
+      };
     } else {
       initializeMap();
     }
-  }, []);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [isMapLoaded, kakaoMapApiKey]);
 
   // 2. 상세 데이터 페칭
   useEffect(() => {
@@ -566,7 +594,18 @@ const TravelDetail = () => {
                 window.open(`https://map.kakao.com/link/to/${common.title},${common.mapy},${common.mapx}`, '_blank');
               }}
             >
-              {!isMapLoaded ? (
+              {effectiveMapLoadError ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center gap-3">
+                  <span className="material-symbols-outlined text-5xl text-slate-300">map_off</span>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-500">지도를 불러오지 못했습니다.</p>
+                    <p className="text-[10px] text-outline font-mono">{effectiveMapLoadError}</p>
+                  </div>
+                  <span className="text-[10px] text-primary font-bold font-label tracking-widest uppercase">
+                    OPEN_KAKAO_MAP →
+                  </span>
+                </div>
+              ) : !isMapLoaded ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center gap-2">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   <p className="text-[10px] text-outline font-mono animate-pulse">Initializing Map SDK...</p>

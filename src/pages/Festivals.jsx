@@ -14,7 +14,7 @@ const Festivals = () => {
   const [festivals, setFestivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
-  const ITEMS_PER_PAGE = 8;
+  const ITEMS_PER_PAGE = 9;
 
   // URL 파라미터에서 현재 상태 읽기
   const page = parseInt(searchParams.get('page')) || 1;
