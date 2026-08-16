@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getFestivalList } from '../api/travelApi';
 import { getSubRegions } from '../api/travelInfoApi';
@@ -41,6 +41,7 @@ const Festivals = () => {
   const [subRegions, setSubRegions] = useState([]);
   const [subRegionLoading, setSubRegionLoading] = useState(false);
   const [festivalError, setFestivalError] = useState('');
+  const previousItemsPerPageRef = useRef(itemsPerPage);
 
   useEffect(() => {
     let frameId = null;
@@ -121,6 +122,22 @@ const Festivals = () => {
     let cancelled = false;
 
     const fetchFestivals = async () => {
+      const previousItemsPerPage = previousItemsPerPageRef.current;
+      if (previousItemsPerPage !== itemsPerPage && totalPages > 0) {
+        const estimatedTotalItems = Math.max(
+          festivals.length,
+          ((totalPages - 1) * previousItemsPerPage) + festivals.length,
+        );
+        const nextTotalPages = Math.max(1, Math.ceil(estimatedTotalItems / itemsPerPage));
+        previousItemsPerPageRef.current = itemsPerPage;
+        if (page > nextTotalPages) {
+          setSearchParams(makeFestivalParams({ nextPage: nextTotalPages }));
+          return;
+        }
+      } else {
+        previousItemsPerPageRef.current = itemsPerPage;
+      }
+
       setLoading(true);
       setFestivalError('');
       try {
@@ -153,7 +170,7 @@ const Festivals = () => {
     return () => {
       cancelled = true;
     };
-  }, [page, itemsPerPage, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
+  }, [page, itemsPerPage, totalPages, festivals.length, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (isLoggedIn && !wishlistInitialized) {

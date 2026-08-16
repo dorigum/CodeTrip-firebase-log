@@ -36,13 +36,15 @@ network_rate = network / total_cache_event_count
 
 ## 4. 측정 절차
 
-1. 로컬 또는 배포 URL을 엽니다.
+1. 개발 모드 로컬 URL을 엽니다.
 2. 개발 모드 측정이면 `ApiCacheStatus` 패널과 브라우저 콘솔 이벤트를 확인합니다.
 3. 브라우저 DevTools Console에서 필요한 경우 아래 임시 수집 코드를 실행합니다.
 4. 동일 흐름을 1회차 cold-ish 세션, 2회차 warm 세션으로 나눠 기록합니다.
 5. `memory`, `local`, `remote`, `network`, `stale` 개수를 세션별 측정표에 옮깁니다.
 6. 캐시 적중률과 stale fallback 비율을 계산합니다.
 7. 측정 환경, 브라우저, 로그인 여부, 커밋, URL을 함께 기록합니다.
+
+배포 URL 측정은 별도 운영 계측을 추가한 뒤 수행합니다. 현재 `ApiCacheStatus`와 `codetrip:api-cache-status` 이벤트는 개발 모드에서만 측정 증빙으로 사용합니다.
 
 ## 5. 개발 모드 임시 이벤트 수집 코드
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getDetailCommon, getDetailIntro, getDetailInfo, getDetailImage } from '../api/travelInfoApi';
 import { getTravelComments, postTravelComment, updateTravelComment, deleteTravelComment, toggleTravelCommentLike } from '../api/travelCommentApi';
@@ -72,6 +72,7 @@ const TravelDetail = () => {
   const [selectedTravel, setSelectedTravel] = useState(null);
 
   const mapRef = useRef(null);
+  const commentsRequestIdRef = useRef(0);
 
   const { isLoggedIn, user } = useAuthStore();
   const showToast = useToast();
@@ -81,6 +82,9 @@ const TravelDetail = () => {
   const effectiveMapLoadError = kakaoMapApiKey
     ? mapLoadError
     : '카카오 지도 API 키가 설정되지 않았습니다.';
+  const kakaoMapLink = common?.mapx && common?.mapy
+    ? `https://map.kakao.com/link/to/${encodeURIComponent(common.title || 'CodeTrip')},${common.mapy},${common.mapx}`
+    : '';
 
   useEffect(() => {
     if (!common?.title) return;
@@ -233,32 +237,35 @@ const TravelDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [contentId]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchComments = async () => {
-      if (!contentId) return;
-      setTravelCommentsLoading(true);
-      setTravelCommentsError('');
-      try {
-        const comments = await getTravelComments(contentId);
-        if (cancelled) return;
-        setTravelComments(comments ?? []);
-      } catch (err) {
-        if (cancelled) return;
-        console.error('Fetch travel comments error:', err);
-        setTravelCommentsError('코멘트를 불러오지 못했습니다.');
-        setTravelComments([]);
-      } finally {
-        if (!cancelled) setTravelCommentsLoading(false);
+  const reloadComments = useCallback(async () => {
+    if (!contentId) return;
+    const requestId = ++commentsRequestIdRef.current;
+    setTravelCommentsLoading(true);
+    setTravelCommentsError('');
+    try {
+      const comments = await getTravelComments(contentId);
+      if (requestId !== commentsRequestIdRef.current) return;
+      setTravelComments(comments ?? []);
+    } catch (err) {
+      if (requestId !== commentsRequestIdRef.current) return;
+      console.error('Fetch travel comments error:', err);
+      setTravelCommentsError('코멘트를 불러오지 못했습니다.');
+      setTravelComments([]);
+    } finally {
+      if (requestId === commentsRequestIdRef.current) {
+        setTravelCommentsLoading(false);
       }
-    };
-
-    fetchComments();
-    return () => {
-      cancelled = true;
-    };
+    }
   }, [contentId]);
+
+  useEffect(() => {
+    window.queueMicrotask(() => {
+      reloadComments();
+    });
+    return () => {
+      commentsRequestIdRef.current += 1;
+    };
+  }, [reloadComments]);
 
   const handleTravelCommentFocus = (e) => {
     if (!isLoggedIn) {
@@ -273,8 +280,7 @@ const TravelDetail = () => {
       setTravelCommentSubmitting(true);
       await postTravelComment({ contentId, nickname: user.name, body: travelCommentText.trim() });
       setTravelCommentText('');
-      const updated = await getTravelComments(contentId);
-      setTravelComments(updated);
+      await reloadComments();
     } catch (err) {
       console.error('Comment post error:', err);
     } finally {
@@ -298,7 +304,7 @@ const TravelDetail = () => {
       await updateTravelComment(id, travelCommentEditText.trim());
       setTravelCommentEditingId(null);
       setTravelCommentEditText('');
-      setTravelComments(await getTravelComments(contentId));
+      await reloadComments();
     } catch (err) {
       console.error('Comment update error:', err);
     }
@@ -308,7 +314,7 @@ const TravelDetail = () => {
     if (!window.confirm('코멘트를 삭제하시겠습니까?')) return;
     try {
       await deleteTravelComment(id);
-      setTravelComments(await getTravelComments(contentId));
+      await reloadComments();
     } catch (err) {
       console.error('Comment delete error:', err);
     }
@@ -633,7 +639,9 @@ const TravelDetail = () => {
             <div
               className="rounded-2xl overflow-hidden border border-outline-variant/10 shadow-sm h-[300px] relative bg-slate-100 cursor-pointer group"
               onClick={() => {
-                window.open(`https://map.kakao.com/link/to/${common.title},${common.mapy},${common.mapx}`, '_blank');
+                if (!effectiveMapLoadError) {
+                  window.open(kakaoMapLink, '_blank', 'noopener,noreferrer');
+                }
               }}
             >
               {effectiveMapLoadError ? (
@@ -643,9 +651,15 @@ const TravelDetail = () => {
                     <p className="text-xs font-bold text-slate-500">지도를 불러오지 못했습니다.</p>
                     <p className="text-[10px] text-outline font-mono">{effectiveMapLoadError}</p>
                   </div>
-                  <span className="text-[10px] text-primary font-bold font-label tracking-widest uppercase">
+                  <a
+                    href={kakaoMapLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${common.title} 카카오맵에서 열기`}
+                    className="text-[10px] text-primary font-bold font-label tracking-widest uppercase hover:underline"
+                  >
                     OPEN_KAKAO_MAP →
-                  </span>
+                  </a>
                 </div>
               ) : !isMapLoaded ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center gap-2">
@@ -734,18 +748,7 @@ const TravelDetail = () => {
               <p className="text-sm font-mono text-error">{travelCommentsError}</p>
               <button
                 type="button"
-                onClick={async () => {
-                  setTravelCommentsLoading(true);
-                  setTravelCommentsError('');
-                  try {
-                    setTravelComments(await getTravelComments(contentId));
-                  } catch (err) {
-                    console.error('Retry travel comments error:', err);
-                    setTravelCommentsError('코멘트를 불러오지 못했습니다.');
-                  } finally {
-                    setTravelCommentsLoading(false);
-                  }
-                }}
+                onClick={reloadComments}
                 className="text-[11px] font-bold font-label text-primary hover:underline uppercase tracking-widest"
               >
                 RETRY_COMMENTS

@@ -11,4 +11,4 @@
 
 ## CodeTrip 적용 위치
 
-배포 전 `npm run lint`, `npm run build`, 핵심 사용자 흐름, Firebase Rules를 확인한다. 배포 후 공개 URL에서 인증·탐색·상세·AI·커뮤니티의 대표 흐름을 smoke test한다.
+배포 전 `npm run lint`, `npm run build`, 핵심 사용자 흐름, Firebase Rules를 확인합니다. 배포 후 공개 URL에서 인증·탐색·상세·AI·커뮤니티의 대표 흐름을 smoke test합니다.

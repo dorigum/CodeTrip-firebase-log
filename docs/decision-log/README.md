@@ -1,6 +1,6 @@
 # 의사결정 로그
 
-파일명은 `YYYY-MM-DD-topic.md`로 작성한다.
+파일명은 `YYYY-MM-DD-topic.md`로 작성합니다.
 
 ```markdown
 # 제목

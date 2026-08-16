@@ -292,6 +292,7 @@ const AiPlanner = () => {
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isPlanSaved, setIsPlanSaved] = useState(false);
   const generationInFlightRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const folderSelectionRequestRef = useRef(0);
@@ -347,6 +348,7 @@ const AiPlanner = () => {
   const handlePlanningModeChange = (mode) => {
     setPlanningMode(mode);
     setPlan(null);
+    setIsPlanSaved(false);
     setSelectedContentIds(new Set());
     if (mode === PLAN_MODE.CUSTOM) {
       folderSelectionRequestRef.current += 1;
@@ -436,6 +438,7 @@ const AiPlanner = () => {
     generationInFlightRef.current = true;
     setGenerating(true);
     setPlan(null);
+    setIsPlanSaved(false);
     try {
       let preferredPlaces = selectedPlaces;
 
@@ -498,14 +501,21 @@ const AiPlanner = () => {
   };
 
   const handleSave = async () => {
-    if (!plan || saveInFlightRef.current) return;
+    if (!plan || saveInFlightRef.current || isPlanSaved) return;
     saveInFlightRef.current = true;
     setSaving(true);
     try {
       const result = await saveAiTripToFolder(plan, {
         folderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
       });
-      await syncWithServer();
+      setIsPlanSaved(true);
+      try {
+        await syncWithServer();
+      } catch (syncError) {
+        console.error('AI trip sync failed after save:', syncError);
+        showToast('CodeTrip 여행 코스는 저장했지만 목록 동기화에 실패했습니다. 새로고침 후 확인해주세요.');
+        return;
+      }
       if (result.savedPlaces > 0) {
         const documentOnlyMessage = result.documentOnlyPlaces > 0
           ? ` / 미검증 추천 장소 ${result.documentOnlyPlaces}개는 코스 문서에만 보관`
@@ -828,12 +838,12 @@ const AiPlanner = () => {
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || isPlanSaved}
                   aria-busy={saving}
                   className="h-11 px-4 rounded-lg bg-slate-950 text-white text-xs font-black uppercase tracking-wider inline-flex items-center justify-center gap-2 hover:bg-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <span className="material-symbols-outlined text-base">{saving ? 'hourglass_top' : 'save'}</span>
-                  {saving ? 'Saving...' : 'Save Folder'}
+                  <span className="material-symbols-outlined text-base">{saving ? 'hourglass_top' : isPlanSaved ? 'check_circle' : 'save'}</span>
+                  {saving ? 'Saving...' : isPlanSaved ? 'Saved' : 'Save Folder'}
                 </button>
               </div>
 

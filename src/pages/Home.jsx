@@ -455,10 +455,38 @@ const Home = () => {
   const [typedBriefing, setTypedBriefing] = useState('');
   
   const isInitialMount = useRef(true); 
+  const initializedUserRef = useRef(null);
+  const homeRequestIdRef = useRef(0);
   const currentProvinceRef = useRef(''); // 현재 지역 고정용
   const topImgTimerRef = useRef(null);
 
-  const fetchMainData = useCallback(async (locProv = '서울', locCity = '서울', lat = 37.5665, lon = 126.9780, isUpdate = false) => {
+  const resetHomeState = useCallback(() => {
+    setWeather({ temp: 24, label: 'Sunny', icon: 'sunny', keywords: ['여행'], location: '서울' });
+    setProvince('서울');
+    setTopImgList(MOCK_NODE_HEADER);
+    setTopImgIndex(0);
+    setNearbyPlaces([]);
+    setNearbyIndex(0);
+    setWeatherRec(null);
+    setSpontaneousMeta(null);
+    setSlotImg(FALLBACK_TRAVEL_IMAGE);
+    setTrendingItems([]);
+    setLoading({ nearby: true, trending: true, weather: true });
+    setIsSlotSpinning(false);
+    setHasPicked(false);
+    setTypedBriefing('');
+    currentProvinceRef.current = '';
+  }, []);
+
+  const fetchMainData = useCallback(async (
+    locProv = '서울',
+    locCity = '서울',
+    lat = 37.5665,
+    lon = 126.9780,
+    isUpdate = false,
+    requestId = homeRequestIdRef.current
+  ) => {
+    const isActiveRequest = () => requestId === homeRequestIdRef.current;
     try {
       // 1. 지역이 같으면 불필요한 재호출 방지
       const isProvinceChanged = locProv !== currentProvinceRef.current;
@@ -466,13 +494,14 @@ const Home = () => {
       if (isUpdate && !isProvinceChanged) {
         // 지역은 같지만 상세 위치(City)나 날씨가 바뀔 수 있으므로 날씨 데이터만 업데이트
         const weatherData = await getWeather(lat, lon);
+        if (!isActiveRequest()) return false;
         setWeather({ ...weatherData, location: locCity });
-        return; 
+        return true; 
       }
 
       if (isProvinceChanged) {
+        if (!isActiveRequest()) return false;
         setProvince(locProv);
-        currentProvinceRef.current = locProv;
         setNearbyPlaces([]); // 이전 지역 데이터 즉시 초기화
         setLoading(prev => ({ ...prev, nearby: true }));
       }
@@ -485,6 +514,7 @@ const Home = () => {
           getFestivalList(1, 10, 'default', '', '', '', { poolMaxRows: 100 }) // 홈 트렌딩 미리보기는 작은 pool만 조회
         ]);
 
+        if (!isActiveRequest()) return false;
         if (tops.length > 0) setTopImgList(tops);
 
         if (near && near.length > 0) {
@@ -510,30 +540,69 @@ const Home = () => {
         }));
         setTrendingItems(festItems);
         setLoading(prev => ({ ...prev, trending: false }));
+        currentProvinceRef.current = locProv;
       }
 
       // 3. 날씨 데이터 (매 호출마다 업데이트 가능하지만 슬롯머신 결과는 보호)
       const weatherData = await getWeather(lat, lon);
+      if (!isActiveRequest()) return false;
       setWeather({ ...weatherData, location: locCity });
       setLoading(prev => ({ ...prev, weather: false }));
-    } catch (err) { console.error('Data fetch error:', err); }
+      return true;
+    } catch (err) {
+      if (isActiveRequest()) console.error('Data fetch error:', err);
+      return false;
+    }
   }, []); // 의존성 배열을 비워 함수 안정화 (Ref 사용)
 
   useEffect(() => {
-    if (!isLoggedIn) return undefined;
+    const userKey = user?.id || user?.uid || user?.email || '';
+    let effectActive = true;
+    const requestId = ++homeRequestIdRef.current;
+
+    if (!isLoggedIn || !userKey) {
+      initializedUserRef.current = null;
+      isInitialMount.current = true;
+      window.queueMicrotask(() => {
+        if (effectActive && requestId === homeRequestIdRef.current) {
+          resetHomeState();
+        }
+      });
+      return () => {
+        effectActive = false;
+        homeRequestIdRef.current += 1;
+      };
+    }
+
+    if (initializedUserRef.current !== userKey) {
+      initializedUserRef.current = null;
+      isInitialMount.current = true;
+      window.queueMicrotask(() => {
+        if (effectActive && requestId === homeRequestIdRef.current) {
+          resetHomeState();
+        }
+      });
+    }
 
     if (isInitialMount.current) {
-      fetchMainData();
-      isInitialMount.current = false;
+      fetchMainData('서울', '서울', 37.5665, 126.9780, false, requestId).then((success) => {
+        if (effectActive && requestId === homeRequestIdRef.current && success) {
+          isInitialMount.current = false;
+          initializedUserRef.current = userKey;
+        }
+      });
     }
 
     let geolocationDelayId = null;
     if (navigator.geolocation) {
       geolocationDelayId = window.setTimeout(() => {
+        if (!effectActive || requestId !== homeRequestIdRef.current) return;
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
+            if (!effectActive || requestId !== homeRequestIdRef.current) return;
             const locData = await getLocationName(pos.coords.latitude, pos.coords.longitude);
-            fetchMainData(locData.state, locData.city, pos.coords.latitude, pos.coords.longitude, true);
+            if (!effectActive || requestId !== homeRequestIdRef.current) return;
+            fetchMainData(locData.state, locData.city, pos.coords.latitude, pos.coords.longitude, true, requestId);
           },
           () => {}, { timeout: 10000 }
         );
@@ -541,9 +610,10 @@ const Home = () => {
     }
 
     return () => {
+      effectActive = false;
       if (geolocationDelayId) window.clearTimeout(geolocationDelayId);
     };
-  }, [fetchMainData, isLoggedIn]);
+  }, [fetchMainData, isLoggedIn, resetHomeState, user?.email, user?.id, user?.uid]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
