@@ -488,7 +488,7 @@ const Home = () => {
         const [tops, near, festData] = await Promise.all([
           getPhotoList(null, 20),
           getCityBasedPlaces(locProv),
-          getFestivalList(1, 10) // 1페이지에서 10개 요청
+          getFestivalList(1, 10, 'default', '', '', '', { poolMaxRows: 100 }) // 홈 트렌딩 미리보기는 작은 pool만 조회
         ]);
 
         if (tops.length > 0) setTopImgList(tops);
