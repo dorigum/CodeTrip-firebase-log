@@ -453,16 +453,10 @@ const Home = () => {
   const [isSlotSpinning, setIsSlotSpinning] = useState(false);
   const [hasPicked, setHasPicked] = useState(false);
   const [typedBriefing, setTypedBriefing] = useState('');
-  const hasPickedRef = useRef(false); // fetchMainData에서 최신 상태 참조용
   
   const isInitialMount = useRef(true); 
   const currentProvinceRef = useRef(''); // 현재 지역 고정용
   const topImgTimerRef = useRef(null);
-
-  // hasPicked 상태와 Ref 동기화
-  useEffect(() => {
-    hasPickedRef.current = hasPicked;
-  }, [hasPicked]);
 
   const fetchMainData = useCallback(async (locProv = '서울', locCity = '서울', lat = 37.5665, lon = 126.9780, isUpdate = false) => {
     try {
@@ -521,32 +515,34 @@ const Home = () => {
       // 3. 날씨 데이터 (매 호출마다 업데이트 가능하지만 슬롯머신 결과는 보호)
       const weatherData = await getWeather(lat, lon);
       setWeather({ ...weatherData, location: locCity });
-      
-      const recs = await searchKeywordPlaces(weatherData.keywords[0], 1);
-      if (recs.length > 0 && !hasPickedRef.current) {
-        setWeatherRec(recs[0]);
-      }
       setLoading(prev => ({ ...prev, weather: false }));
     } catch (err) { console.error('Data fetch error:', err); }
   }, []); // 의존성 배열을 비워 함수 안정화 (Ref 사용)
 
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) return undefined;
 
     if (isInitialMount.current) {
       fetchMainData();
       isInitialMount.current = false;
     }
 
+    let geolocationDelayId = null;
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const locData = await getLocationName(pos.coords.latitude, pos.coords.longitude);
-          fetchMainData(locData.state, locData.city, pos.coords.latitude, pos.coords.longitude, true);
-        },
-        () => {}, { timeout: 10000 }
-      );
+      geolocationDelayId = window.setTimeout(() => {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const locData = await getLocationName(pos.coords.latitude, pos.coords.longitude);
+            fetchMainData(locData.state, locData.city, pos.coords.latitude, pos.coords.longitude, true);
+          },
+          () => {}, { timeout: 10000 }
+        );
+      }, 1500);
     }
+
+    return () => {
+      if (geolocationDelayId) window.clearTimeout(geolocationDelayId);
+    };
   }, [fetchMainData, isLoggedIn]);
 
   useEffect(() => {
