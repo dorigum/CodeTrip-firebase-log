@@ -37,8 +37,8 @@
 | VE-05 | 지역 특화 여부 | 전국 단위 또는 특정 지역 특화 선택이 제출 페이지와 기능설명서에서 일치하는지 확인 | 미실행 | `docs/23-regional-specialization-strategy.md`, 최종 PDF |  |
 | VE-06 | 서비스 URL | 제출 URL 접속, 직접 경로 새로고침, 공개 화면 로딩 확인 | 미실행 | `docs/21-service-url-verification.md`, `docs/13-validation-report.md` |  |
 | VE-07 | 테스트 계정 | 제출용 계정으로 로그인, 로그아웃 후 재로그인 확인 | 미실행 | `docs/19-test-account-verification.md`, `docs/13-validation-report.md` |  |
-| VE-08 | OpenAPI 인증키 | 공공데이터포털의 인코딩키·디코딩키를 제출 페이지에만 입력했는지 확인하고, 배포 서비스가 사용하는 키와 제출 계정 키의 마스킹된 식별자가 일치하는지 대조합니다. 불일치하면 제출을 보류합니다. | 미실행 | `docs/20-openapi-submission-verification.md`, 마스킹된 키 대조 기록 |  |
-| VE-09 | OpenAPI 활용 목록 | 제출 페이지, 기능설명서, 실제 코드 endpoint 목록이 일치하는지 확인 | 미실행 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md`, 최종 PDF |  |
+| VE-08 | OpenAPI 인증키 | 공공데이터포털의 인코딩키·디코딩키 또는 일반 인증키를 제출 페이지에만 입력했는지 확인하고, 배포 서비스가 사용하는 키와 제출 계정 키가 일치하는지 대조합니다. 불일치하면 제출을 보류합니다. | 부분 통과 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md` | 코드·로컬·배포 동작은 확인했습니다. 제출 페이지 입력값은 원문 기록 없이 사용자가 직접 확인해야 합니다. |
+| VE-09 | OpenAPI 활용 목록 | 제출 페이지, 기능설명서, 실제 코드 endpoint 목록이 일치하는지 확인 | 부분 통과 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md`, 최종 PDF | 코드 endpoint 목록은 확인했습니다. 최종 PDF 5페이지와 제출 페이지 입력 목록 대조가 필요합니다. |
 | VE-10 | 동일 서비스 중복 출품 여부 | 동일 서비스로 타 부문 또는 공사 주관 지원 사업 수상·수혜 이력이 없는지 확인 | 미실행 | 팀 내부 확인 기록 |  |
 | VE-11 | 제출 부문·양식 일치 여부 | 웹·앱 개발 부문 제출 페이지와 웹·앱 개발 부문 기능설명서 양식이 일치하는지 확인 | 미실행 | 제출 페이지, 최종 PDF |  |
 | VE-12 | 마감 전 수정 가능 시간 | 2026-09-21 16:00 전 제출·수정 가능 시간을 확보했는지 확인 | 미실행 | 제출 일정 확인 기록 |  |
@@ -77,7 +77,7 @@
 | URL-04 | `/login` | 이메일·비밀번호 로그인 폼이 보입니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
 | URL-05 | `/ai-planner` | 비로그인 상태에서는 보호 안내, 로그인 상태에서는 보안 프록시 기반 AI 일정 입력·생성 결과 또는 보안 게이트 통과 후 저장된 기존 결과 화면이 보입니다. | 부분 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 화면 접근과 보호 라우트는 확인했습니다. Gemini 신규 생성은 비용 관리상 미실행입니다. |
 | URL-06 | `/board` | 커뮤니티 화면 또는 인증 흐름이 정상 표시됩니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
-| URL-07 | 직접 경로 새로고침 | `/explore`, `/festivals`, `/login`, `/ai-planner`, `/board` 직접 접근 시 404가 발생하지 않습니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 중간 smoke test 기준 |
+| URL-07 | 직접 경로 새로고침 | `/explore`, `/festivals`, `/login`, `/ai-planner`, `/board` 직접 접근 시 404가 발생하지 않습니다. | 통과 | `docs/32-service-url-smoke-test-runbook.md`, `docs/13-validation-report.md` | 2026-08-16 HTTP HEAD 기준 전체 200 확인 |
 
 ## 테스트 계정 기능 검증
 
@@ -102,8 +102,8 @@
 | PDF-04 | 파일 용량 | 10MB 미만 | 미실행 | `docs/17-submission-artifact-manifest.md` |  |
 | PDF-05 | 정상 열람 | PDF가 열리고 슬라이드 잘림, 깨짐, 원본 가이드 문구 잔존이 없습니다. | 미실행 | `docs/13-validation-report.md` |  |
 | PDF-06 | 팀명 placeholder 제거 | `[접수 팀명 입력]` 문구가 남아 있지 않습니다. | 미실행 | 최종 PDF 1페이지 |  |
-| PDF-07 | 화면 캡처 적절성 | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 화면이며 개인정보·키 노출이 없습니다. | 미실행 | 최종 PDF 3페이지, `output/contest/screenshots/` |  |
-| PDF-08 | 데이터 활용 목록 | 한국관광공사 OpenAPI 활용 목록이 제출 페이지와 일치합니다. | 미실행 | 최종 PDF 5페이지 |  |
+| PDF-07 | 화면 캡처 적절성 | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 화면이며 개인정보·키 노출이 없습니다. | 부분 통과 | `docs/17-submission-artifact-manifest.md`, 최종 PDF 3페이지 | 화면 캡처 후보는 확보했습니다. 최종 PPTX/PDF 반영 후 재확인합니다. |
+| PDF-08 | 데이터 활용 목록 | 한국관광공사 OpenAPI 활용 목록이 제출 페이지와 일치합니다. | 부분 통과 | `docs/20-openapi-submission-verification.md`, `docs/34-openapi-submission-copy-sheet.md`, 최종 PDF 5페이지 | 코드 기준 목록은 확인했습니다. 최종 PDF와 제출 페이지 대조가 필요합니다. |
 | PDF-09 | checksum 기록 | 최종 PPTX/PDF의 SHA-256, 생성일, 파일 크기, 전달 위치를 manifest에 기록했습니다. | 미실행 | `docs/17-submission-artifact-manifest.md` |  |
 
 ## 제출 리스크 최종 확인

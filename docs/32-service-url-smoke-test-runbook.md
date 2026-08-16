@@ -110,6 +110,19 @@ SPA Hosting에서는 직접 경로 새로고침 시 404가 나면 제출 URL 안
 
 이 기록은 Firebase Hosting 최신 배포 후 진행한 중간 smoke test입니다. Gemini 신규 생성은 API 비용과 quota 관리를 위해 실행하지 않고, 사용자가 별도로 생성·저장 정상 동작을 수동 확인한 값과 분리해 기록합니다.
 
+### 2026-08-16 HTTP 경로 응답 확인
+
+아래 결과는 2026-08-16에 `Invoke-WebRequest -Method Head`로 Firebase Hosting 공개 URL의 주요 SPA 경로가 404 없이 응답하는지 확인한 값입니다. 화면의 세부 UI 동작은 사용자가 제공한 캡처와 별도 수동 확인값을 기준으로 보완합니다.
+
+| 경로 | HTTP 상태 | Content-Type | 판정 |
+|---|---:|---|---|
+| `/` | 200 | `text/html; charset=utf-8` | 통과 |
+| `/explore` | 200 | `text/html; charset=utf-8` | 통과 |
+| `/festivals` | 200 | `text/html; charset=utf-8` | 통과 |
+| `/login` | 200 | `text/html; charset=utf-8` | 통과 |
+| `/board` | 200 | `text/html; charset=utf-8` | 통과 |
+| `/ai-planner` | 200 | `text/html; charset=utf-8` | 통과 |
+
 | ID | 확인 항목 | 결과 | 확인 환경 | 증빙 | 비고 |
 |---|---|---|---|---|---|
 | URL-P01 | 홈 화면 로딩 | 통과 | Chrome, Firebase Hosting | `docs/13-validation-report.md` | 서비스 소개와 주요 진입 요소 표시 확인 |
