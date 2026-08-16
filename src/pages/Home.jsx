@@ -457,6 +457,7 @@ const Home = () => {
   const isInitialMount = useRef(true); 
   const initializedUserRef = useRef(null);
   const homeRequestIdRef = useRef(0);
+  const homeDataSequenceRef = useRef(0);
   const currentProvinceRef = useRef(''); // 현재 지역 고정용
   const topImgTimerRef = useRef(null);
 
@@ -486,7 +487,10 @@ const Home = () => {
     isUpdate = false,
     requestId = homeRequestIdRef.current
   ) => {
-    const isActiveRequest = () => requestId === homeRequestIdRef.current;
+    const dataSequence = ++homeDataSequenceRef.current;
+    const isActiveRequest = () => (
+      requestId === homeRequestIdRef.current && dataSequence === homeDataSequenceRef.current
+    );
     try {
       // 1. 지역이 같으면 불필요한 재호출 방지
       const isProvinceChanged = locProv !== currentProvinceRef.current;
@@ -611,6 +615,7 @@ const Home = () => {
 
     return () => {
       effectActive = false;
+      homeRequestIdRef.current += 1;
       if (geolocationDelayId) window.clearTimeout(geolocationDelayId);
     };
   }, [fetchMainData, isLoggedIn, resetHomeState, user?.email, user?.id, user?.uid]);

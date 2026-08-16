@@ -295,6 +295,7 @@ const AiPlanner = () => {
   const [isPlanSaved, setIsPlanSaved] = useState(false);
   const generationInFlightRef = useRef(false);
   const saveInFlightRef = useRef(false);
+  const plannerRevisionRef = useRef(0);
   const folderSelectionRequestRef = useRef(0);
   const regenerationHydratedRef = useRef(false);
 
@@ -317,12 +318,25 @@ const AiPlanner = () => {
     [wishlistItems, selectedContentIds]
   );
 
+  const plannerBusy = generating || saving;
+
+  const invalidateCurrentPlan = useCallback(() => {
+    plannerRevisionRef.current += 1;
+    setPlan(null);
+    setIsPlanSaved(false);
+  }, []);
+
   const updateForm = useCallback(
-    (key, value) => setForm((prev) => ({ ...prev, [key]: value })),
-    []
+    (key, value) => {
+      invalidateCurrentPlan();
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    [invalidateCurrentPlan]
   );
 
   const handleCompanionChange = (value) => {
+    if (plannerBusy) return;
+    invalidateCurrentPlan();
     setForm((prev) => ({
       ...prev,
       companionType: value,
@@ -335,6 +349,7 @@ const AiPlanner = () => {
   };
 
   const handlePeopleCountChange = (value) => {
+    if (plannerBusy) return;
     const nextCount = Math.max(1, Number(value) || 1);
     if (form.companionType === '혼자' && nextCount > 1) {
       updateForm('peopleCount', 1);
@@ -346,9 +361,9 @@ const AiPlanner = () => {
   };
 
   const handlePlanningModeChange = (mode) => {
+    if (plannerBusy) return;
     setPlanningMode(mode);
-    setPlan(null);
-    setIsPlanSaved(false);
+    invalidateCurrentPlan();
     setSelectedContentIds(new Set());
     if (mode === PLAN_MODE.CUSTOM) {
       folderSelectionRequestRef.current += 1;
@@ -357,7 +372,9 @@ const AiPlanner = () => {
   };
 
   const handleFolderChange = useCallback(async (folderId) => {
+    if (plannerBusy) return;
     const requestId = ++folderSelectionRequestRef.current;
+    invalidateCurrentPlan();
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
@@ -376,7 +393,7 @@ const AiPlanner = () => {
     if (folderRegion) {
       updateForm('regionName', folderRegion);
     }
-  }, [folders, updateForm, wishlistItems]);
+  }, [folders, invalidateCurrentPlan, plannerBusy, updateForm, wishlistItems]);
 
   useEffect(() => {
     if (!regeneratePlan || regenerationHydratedRef.current) return;
@@ -409,7 +426,7 @@ const AiPlanner = () => {
   ]);
 
   const handleGenerate = async () => {
-    if (generationInFlightRef.current) {
+    if (plannerBusy || generationInFlightRef.current) {
       return;
     }
 
@@ -436,6 +453,7 @@ const AiPlanner = () => {
     }
 
     generationInFlightRef.current = true;
+    const generationRevision = ++plannerRevisionRef.current;
     setGenerating(true);
     setPlan(null);
     setIsPlanSaved(false);
@@ -467,6 +485,7 @@ const AiPlanner = () => {
         totalBudgetLabel: getTotalBudgetLabel(form.budgetLevel, form.peopleCount),
         preferredPlaces,
       });
+      if (generationRevision !== plannerRevisionRef.current) return;
       setPlan({
         ...result,
         generationContext: {
@@ -492,6 +511,7 @@ const AiPlanner = () => {
         'success'
       );
     } catch (error) {
+      if (generationRevision !== plannerRevisionRef.current) return;
       console.error('CodeTrip trip generation failed:', error);
       showToast(error.message || 'CodeTrip이 여행 코스를 생성하지 못했습니다.');
     } finally {
@@ -502,13 +522,23 @@ const AiPlanner = () => {
 
   const handleSave = async () => {
     if (!plan || saveInFlightRef.current || isPlanSaved) return;
+    const saveRevision = plannerRevisionRef.current;
+    const planToSave = plan;
+    const targetFolderId = planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null;
     saveInFlightRef.current = true;
     setSaving(true);
     try {
-      const result = await saveAiTripToFolder(plan, {
-        folderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
+      const result = await saveAiTripToFolder(planToSave, {
+        folderId: targetFolderId,
       });
-      setIsPlanSaved(true);
+      const isSamePlanTarget = (
+        saveRevision === plannerRevisionRef.current
+        && planToSave === plan
+        && targetFolderId === (planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null)
+      );
+      if (isSamePlanTarget) {
+        setIsPlanSaved(true);
+      }
       try {
         await syncWithServer();
       } catch (syncError) {
@@ -531,6 +561,7 @@ const AiPlanner = () => {
         );
       }
     } catch (error) {
+      if (saveRevision !== plannerRevisionRef.current) return;
       console.error('Save AI trip failed:', error);
       showToast(error.message || 'CodeTrip 여행 코스를 저장하지 못했습니다.');
     } finally {
@@ -565,6 +596,7 @@ const AiPlanner = () => {
               <button
                 type="button"
                 onClick={() => handlePlanningModeChange(PLAN_MODE.CUSTOM)}
+                disabled={plannerBusy}
                 className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
                   planningMode === PLAN_MODE.CUSTOM
                     ? 'bg-primary text-white shadow-sm'
@@ -576,6 +608,7 @@ const AiPlanner = () => {
               <button
                 type="button"
                 onClick={() => handlePlanningModeChange(PLAN_MODE.FOLDER)}
+                disabled={plannerBusy}
                 className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
                   planningMode === PLAN_MODE.FOLDER
                     ? 'bg-primary text-white shadow-sm'
@@ -597,6 +630,7 @@ const AiPlanner = () => {
                 <select
                   value={selectedFolderId}
                   onChange={(e) => handleFolderChange(e.target.value)}
+                  disabled={plannerBusy}
                   className="w-full h-11 px-3 rounded-lg border border-primary/20 focus:border-primary focus:outline-none text-sm bg-white"
                 >
                   <option value="">폴더를 선택해주세요</option>
@@ -633,7 +667,9 @@ const AiPlanner = () => {
                           <button
                             key={id}
                             type="button"
+                            disabled={plannerBusy}
                             onClick={() => setSelectedContentIds((prev) => {
+                              invalidateCurrentPlan();
                               const next = new Set(prev);
                               if (next.has(id)) next.delete(id);
                               else next.add(id);
@@ -661,6 +697,7 @@ const AiPlanner = () => {
               <input
                 value={form.regionName}
                 onChange={(e) => updateForm('regionName', e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
                 placeholder="서울"
               />
@@ -674,6 +711,7 @@ const AiPlanner = () => {
                 max="5"
                 value={form.durationDays}
                 onChange={(e) => updateForm('durationDays', e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
@@ -685,6 +723,7 @@ const AiPlanner = () => {
               <select
                 value={form.companionType}
                 onChange={(e) => handleCompanionChange(e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
               >
                 {['혼자', '연인', '가족', '친구'].map((item) => <option key={item}>{item}</option>)}
@@ -698,6 +737,7 @@ const AiPlanner = () => {
                 max={form.companionType === '혼자' ? '1' : '10'}
                 value={form.peopleCount}
                 onChange={(e) => handlePeopleCountChange(e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
@@ -709,6 +749,7 @@ const AiPlanner = () => {
               <select
                 value={form.budgetLevel}
                 onChange={(e) => updateForm('budgetLevel', e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
               >
                 {['낮음', '보통', '높음'].map((item) => <option key={item}>{item}</option>)}
@@ -728,6 +769,7 @@ const AiPlanner = () => {
               <select
                 value={form.pace}
                 onChange={(e) => updateForm('pace', e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
               >
                 {['여유', '보통', '알참'].map((item) => <option key={item}>{item}</option>)}
@@ -739,6 +781,7 @@ const AiPlanner = () => {
                 type="time"
                 value={form.startTime}
                 onChange={(e) => updateForm('startTime', e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
@@ -748,6 +791,7 @@ const AiPlanner = () => {
                 type="time"
                 value={form.endTime}
                 onChange={(e) => updateForm('endTime', e.target.value)}
+                disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
@@ -758,6 +802,7 @@ const AiPlanner = () => {
             <input
               value={form.weatherKeyword}
               onChange={(e) => updateForm('weatherKeyword', e.target.value)}
+              disabled={plannerBusy}
               className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               placeholder="비, 맑음, 더움"
             />
@@ -770,6 +815,7 @@ const AiPlanner = () => {
                 <button
                   key={style}
                   type="button"
+                  disabled={plannerBusy}
                   onClick={() => updateForm('travelStyle', toggleValue(form.travelStyle, style))}
                   className={`px-3 h-9 rounded-lg border text-xs font-bold transition-colors ${
                     form.travelStyle.includes(style)
@@ -790,6 +836,7 @@ const AiPlanner = () => {
                 <button
                   key={item}
                   type="button"
+                  disabled={plannerBusy}
                   onClick={() => updateForm('avoidKeywords', toggleValue(form.avoidKeywords, item))}
                   className={`px-3 h-9 rounded-lg border text-xs font-bold transition-colors ${
                     form.avoidKeywords.includes(item)
@@ -806,7 +853,7 @@ const AiPlanner = () => {
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={generating}
+            disabled={plannerBusy}
             aria-busy={generating}
             className="w-full h-12 rounded-lg bg-primary text-white font-black text-sm uppercase tracking-wider hover:bg-primary-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
           >

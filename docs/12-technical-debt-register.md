@@ -15,7 +15,7 @@
 | ID | 기술 부채 | 영향 | 현재 상태 | 우선순위 | 해결 기준 | 증빙 |
 |---|---|---|---|---|---|---|
 | TD-01 | Vite 500kB 초과 청크 경고 | 초기 로딩 성능 저하, 모바일 네트워크 체감 지연 가능성 | planned | P1 | 라우트 단위 코드 스플리팅 적용 전후 `npm run build` 청크 크기 비교, 남은 500kB 초과 청크 원인 기록 | `docs/04-architecture.md`, `docs/06-quality-plan.md`, `docs/09-metrics.md` |
-| TD-02 | Gemini API 키의 클라이언트 번들 노출 가능성 | 공개 배포 환경에서 비밀키 보호 한계, 호출 남용 가능성 | planned | P0 | Firebase Functions 또는 동등한 서버 프록시로 Gemini 호출 이전, 클라이언트 번들에서 `VITE_GEMINI_API_KEY` 제거 확인 | `docs/10-ai-harness-engineering.md`, `docs/05-data-security.md` |
+| TD-02 | Gemini API 키의 클라이언트 번들 노출 가능성 | 공개 배포 환경에서 비밀키 보호 한계, 호출 남용 가능성 | resolved | P0 | Firebase Callable Function과 Functions Secret으로 Gemini 호출 이전, 클라이언트 번들에서 `VITE_GEMINI_API_KEY` 제거 확인 | `docs/10-ai-harness-engineering.md`, `docs/05-data-security.md`, `docs/13-validation-report.md`, `CodeTrip_Firebase/project-log/2026-08-16.md` |
 | TD-03 | 성능·캐시·AI 성공률의 누적 측정값 부재 | KPI를 정량 성과로 주장하기 어려움 | planned | P1 | 릴리스별 측정표에 로딩, API 응답, 캐시 이벤트, AI 성공·실패 이벤트를 기록 | `docs/06-quality-plan.md`, `docs/09-metrics.md` |
 | TD-04 | 핵심 사용자 여정 자동 테스트 부재 | 회귀 위험을 수동 확인에 의존 | identified | P1 | 대표 여정 E2E 또는 시나리오 테스트 도입 여부 결정, 최소 수동 검증 보고서 작성 | `docs/06-quality-plan.md`, `docs/07-wbs-roadmap.md` |
 | TD-05 | Firebase Rules 검증의 자동화 부족 | 사용자 소유 데이터와 커뮤니티 권한 회귀 위험 | identified | P0 | Rules 변경 시 권한 시나리오 검증 결과 기록, 가능하면 Emulator 기반 테스트 도입 | `docs/05-data-security.md`, `database.rules.json` |

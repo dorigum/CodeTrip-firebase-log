@@ -22,7 +22,7 @@
 
 | ID | 작업 | 우선순위 | 상태 | 연결 항목 | 완료 기준 | 증빙 위치 |
 |---|---|---|---|---|---|---|
-| BL-01 | Gemini API 호출을 Firebase Functions 프록시로 이전 | P0 | todo | `TD-02`, `FR-05` | 클라이언트 번들에서 Gemini API 키 제거, Function 인증·입력 검증·오류 메시지 정제 확인 | `docs/10-ai-harness-engineering.md`, 배포 로그 |
+| BL-01 | Gemini API 호출을 Firebase Functions 프록시로 이전 | P0 | done | `TD-02`, `FR-05` | 클라이언트 번들에서 Gemini API 키 제거, Function 인증·입력 검증·오류 메시지 정제 확인 | `docs/10-ai-harness-engineering.md`, `docs/13-validation-report.md`, `CodeTrip_Firebase/project-log/2026-08-16.md` |
 | BL-02 | Firebase Rules 권한 시나리오 검증표 작성 | P0 | ready | `TD-05`, 비기능 요구사항 | 사용자 소유 데이터, 커뮤니티 수정·삭제, API cache 권한 시나리오 결과 기록 | `docs/13-validation-report.md`, `database.rules.json` |
 | BL-03 | 라우트 단위 코드 스플리팅 적용 여부 결정 및 구현 | P1 | ready | `TD-01` | 적용 전후 `npm run build` 청크 크기 비교, 남은 500kB 초과 경고 원인 기록 | `docs/09-metrics.md`, 빌드 로그 |
 | BL-04 | 번들 크기 기준선 측정표 작성 | P1 | ready | `TD-01`, 성능 지표 | 현재 빌드의 주요 청크 크기와 경고 여부 기록 | `docs/13-validation-report.md` |
@@ -39,13 +39,12 @@
 
 ## 추천 처리 순서
 
-1. BL-01: Gemini API Functions 프록시 이전 설계와 구현
-2. BL-02: Firebase Rules 권한 시나리오 검증표 작성
-3. BL-14: 기능설명서 PPTX 작성 및 PDF 변환
-4. BL-04: 번들 크기 기준선 측정표 작성
-5. BL-03: 라우트 단위 코드 스플리팅 적용 여부 결정 및 구현
-6. BL-05: 핵심 사용자 여정 수동 검증 보고서 작성
-7. BL-09: 주요 의사결정 로그 작성
+1. BL-02: Firebase Rules 권한 시나리오 검증표 작성
+2. BL-14: 기능설명서 PPTX 작성 및 PDF 변환
+3. BL-04: 번들 크기 기준선 측정표 작성
+4. BL-03: 라우트 단위 코드 스플리팅 적용 여부 결정 및 구현
+5. BL-05: 핵심 사용자 여정 수동 검증 보고서 작성
+6. BL-09: 주요 의사결정 로그 작성
 
 ## 운영 규칙
 

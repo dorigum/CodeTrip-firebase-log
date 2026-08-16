@@ -73,6 +73,11 @@ const TravelDetail = () => {
 
   const mapRef = useRef(null);
   const commentsRequestIdRef = useRef(0);
+  const currentContentIdRef = useRef(contentId);
+
+  useEffect(() => {
+    currentContentIdRef.current = contentId;
+  }, [contentId]);
 
   const { isLoggedIn, user } = useAuthStore();
   const showToast = useToast();
@@ -238,34 +243,41 @@ const TravelDetail = () => {
   }, [contentId]);
 
   const reloadComments = useCallback(async () => {
-    if (!contentId) return;
+    const targetContentId = contentId;
+    if (!targetContentId || targetContentId !== currentContentIdRef.current) return false;
     const requestId = ++commentsRequestIdRef.current;
     setTravelCommentsLoading(true);
     setTravelCommentsError('');
     try {
-      const comments = await getTravelComments(contentId);
-      if (requestId !== commentsRequestIdRef.current) return;
+      const comments = await getTravelComments(targetContentId);
+      if (requestId !== commentsRequestIdRef.current || targetContentId !== currentContentIdRef.current) return false;
       setTravelComments(comments ?? []);
+      return true;
     } catch (err) {
-      if (requestId !== commentsRequestIdRef.current) return;
+      if (requestId !== commentsRequestIdRef.current || targetContentId !== currentContentIdRef.current) return false;
       console.error('Fetch travel comments error:', err);
       setTravelCommentsError('코멘트를 불러오지 못했습니다.');
       setTravelComments([]);
+      return false;
     } finally {
-      if (requestId === commentsRequestIdRef.current) {
+      if (requestId === commentsRequestIdRef.current && targetContentId === currentContentIdRef.current) {
         setTravelCommentsLoading(false);
       }
     }
   }, [contentId]);
 
   useEffect(() => {
+    let active = true;
     window.queueMicrotask(() => {
-      reloadComments();
+      if (active && contentId === currentContentIdRef.current) {
+        reloadComments();
+      }
     });
     return () => {
+      active = false;
       commentsRequestIdRef.current += 1;
     };
-  }, [reloadComments]);
+  }, [contentId, reloadComments]);
 
   const handleTravelCommentFocus = (e) => {
     if (!isLoggedIn) {
@@ -276,9 +288,11 @@ const TravelDetail = () => {
 
   const handleTravelCommentSubmit = async () => {
     if (!isLoggedIn || !travelCommentText.trim() || travelCommentSubmitting) return;
+    const targetContentId = contentId;
     try {
       setTravelCommentSubmitting(true);
-      await postTravelComment({ contentId, nickname: user.name, body: travelCommentText.trim() });
+      await postTravelComment({ contentId: targetContentId, nickname: user.name, body: travelCommentText.trim() });
+      if (targetContentId !== currentContentIdRef.current) return;
       setTravelCommentText('');
       await reloadComments();
     } catch (err) {
@@ -300,8 +314,10 @@ const TravelDetail = () => {
 
   const handleTravelCommentEditSubmit = async (id) => {
     if (!travelCommentEditText.trim()) return;
+    const targetContentId = contentId;
     try {
       await updateTravelComment(id, travelCommentEditText.trim());
+      if (targetContentId !== currentContentIdRef.current) return;
       setTravelCommentEditingId(null);
       setTravelCommentEditText('');
       await reloadComments();
@@ -312,8 +328,10 @@ const TravelDetail = () => {
 
   const handleTravelCommentDelete = async (id) => {
     if (!window.confirm('코멘트를 삭제하시겠습니까?')) return;
+    const targetContentId = contentId;
     try {
       await deleteTravelComment(id);
+      if (targetContentId !== currentContentIdRef.current) return;
       await reloadComments();
     } catch (err) {
       console.error('Comment delete error:', err);
