@@ -60,6 +60,8 @@ const TravelDetail = () => {
   const [mapLoadError, setMapLoadError] = useState('');
   const [travelCommentText, setTravelCommentText] = useState('');
   const [travelComments, setTravelComments] = useState([]);
+  const [travelCommentsLoading, setTravelCommentsLoading] = useState(false);
+  const [travelCommentsError, setTravelCommentsError] = useState('');
   const [travelCommentSubmitting, setTravelCommentSubmitting] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [travelCommentEditingId, setTravelCommentEditingId] = useState(null);
@@ -212,17 +214,15 @@ const TravelDetail = () => {
         setCommon(commonData);
 
         const contentTypeId = commonData.contenttypeid;
-        const [introData, infoData, imageData, travelCommentsData] = await Promise.all([
+        const [introData, infoData, imageData] = await Promise.all([
           getDetailIntro(contentId, contentTypeId),
           getDetailInfo(contentId, contentTypeId),
           getDetailImage(contentId),
-          getTravelComments(contentId),
         ]);
 
         setIntro(introData);
         setInfoItems(infoData?.items ?? []);
         setImages(imageData?.items ?? []);
-        setTravelComments(travelCommentsData ?? []);
       } catch (err) {
         console.error('Fetch detail error:', err);
       } finally {
@@ -231,6 +231,33 @@ const TravelDetail = () => {
     };
     fetchAll();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [contentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchComments = async () => {
+      if (!contentId) return;
+      setTravelCommentsLoading(true);
+      setTravelCommentsError('');
+      try {
+        const comments = await getTravelComments(contentId);
+        if (cancelled) return;
+        setTravelComments(comments ?? []);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Fetch travel comments error:', err);
+        setTravelCommentsError('코멘트를 불러오지 못했습니다.');
+        setTravelComments([]);
+      } finally {
+        if (!cancelled) setTravelCommentsLoading(false);
+      }
+    };
+
+    fetchComments();
+    return () => {
+      cancelled = true;
+    };
   }, [contentId]);
 
   const handleTravelCommentFocus = (e) => {
@@ -697,7 +724,34 @@ const TravelDetail = () => {
           </div>
 
           {/* Comment List */}
-          {travelComments.length === 0 ? (
+          {travelCommentsLoading ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-outline">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-mono">// loading_comments...</p>
+            </div>
+          ) : travelCommentsError ? (
+            <div className="text-center py-6 space-y-2">
+              <p className="text-sm font-mono text-error">{travelCommentsError}</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  setTravelCommentsLoading(true);
+                  setTravelCommentsError('');
+                  try {
+                    setTravelComments(await getTravelComments(contentId));
+                  } catch (err) {
+                    console.error('Retry travel comments error:', err);
+                    setTravelCommentsError('코멘트를 불러오지 못했습니다.');
+                  } finally {
+                    setTravelCommentsLoading(false);
+                  }
+                }}
+                className="text-[11px] font-bold font-label text-primary hover:underline uppercase tracking-widest"
+              >
+                RETRY_COMMENTS
+              </button>
+            </div>
+          ) : travelComments.length === 0 ? (
             <p className="text-sm font-mono text-outline text-center py-6">// 아직 코멘트가 없습니다.</p>
           ) : (
             <div className="space-y-4">

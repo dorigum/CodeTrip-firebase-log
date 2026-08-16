@@ -49,6 +49,7 @@
 | 2026-08-16 | `3437fe6` | AI Planner 중복 실행 방지 | 통과. `generationInFlightRef`와 `saveInFlightRef`를 추가해 생성·저장 함수 진입 즉시 중복 실행을 차단했다. 생성/저장 버튼에 `aria-busy`를 추가했다. | `src/pages/AiPlanner.jsx`, `npm run lint`, `npm run build` | 배포 후 버튼 연타 시 `generateTripPlan` Network 요청이 1회만 발생하는지 확인 필요 |
 | 2026-08-16 | `로컬 수정` | 카카오 지도 SDK 로딩 대기 보정 | 통과. 기존 `kakao-map-script`가 이미 존재하지만 아직 로딩 중인 경우에도 `load`/`error` 이벤트를 기다리도록 수정했다. timeout은 20초로 늘리고, timeout 직전 Kakao Maps 준비 여부를 재확인하도록 했다. | `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 로컬·배포 상세 페이지에서 실제 지도 표시 여부 육안 확인 필요 |
 | 2026-08-16 | `로컬 수정` | Home 자동 호출 지연·축소 | 통과. Home 초기 진입에서 날씨 키워드 기반 여행지 추천 사전 검색을 제거하고, 위치 기반 보정 호출을 1.5초 지연 실행하도록 했다. | `src/pages/Home.jsx`, `npm run lint`, `npm run build` | 배포 후 Home Network 탭에서 초기 호출 수와 슬롯 실행 시 호출 분리를 확인 필요 |
+| 2026-08-16 | `로컬 수정` | 상세 댓글 지연 로딩 | 통과. 상세 TourAPI 조회와 Firebase 댓글 조회를 분리하고 댓글 전용 loading/error/retry UI를 추가했다. | `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 배포 후 상세 페이지에서 본문 선표시와 댓글 별도 로딩을 육안 확인 필요 |
 
 ## 핵심 사용자 흐름 체크리스트
 
