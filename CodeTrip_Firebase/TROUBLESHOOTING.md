@@ -146,6 +146,33 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: 권한 상승 후 production build가 정상 완료되었습니다.
 - **상세 기록**: [2026-07-29 개발 로그](project-log/2026-07-29.md)의 Vite build 임시 파일 생성 권한 오류 섹션 참고
 
+## 19. Firebase Functions Secret 등록과 배포에 Blaze 요금제가 필요한 문제
+
+- **발생일**: 2026-08-16
+- **영향 범위**: Gemini Callable Function 배포, Functions Secret 등록, 공개 AI 생성 기능
+- **요약**: Gemini API 키를 클라이언트 번들에서 제거하고 Functions Secret으로 이전하려면 Firebase Functions와 Secret Manager 사용이 필요했습니다. 이 과정에서 Spark 요금제만으로는 Secret 등록과 Functions 배포를 완료할 수 없어 Blaze 요금제 전환이 필요했습니다.
+- **처리**: Firebase 프로젝트 `newagent-9c2a8`을 Blaze 요금제로 전환하고 예산 알림을 설정한 뒤, `GEMINI_API_KEY` Secret 등록과 `generateTripPlan` Callable Function 배포를 진행했습니다.
+- **확인**: `generateTripPlan` v2 Callable Function이 `asia-northeast3` 리전에 배포되었고, Hosting 배포 후 인증 smoke test까지 완료했습니다.
+- **상세 기록**: [2026-08-16 개발 로그](project-log/2026-08-16.md)의 Firebase Functions Secret 등록과 배포에 Blaze 요금제가 필요한 문제 섹션 참고
+
+## 20. Gemini 429 RESOURCE_EXHAUSTED와 AI Studio 크레딧 부족 문제
+
+- **발생일**: 2026-08-16
+- **영향 범위**: AI Planner, Gemini Callable Function, 공개 시연용 AI 일정 생성
+- **요약**: Functions 배포와 인증 흐름은 정상임에도 AI Planner 생성 요청이 429로 실패했습니다. 직접 Gemini 최소 호출을 확인한 결과 Google AI Studio 선불 크레딧 부족으로 `RESOURCE_EXHAUSTED`가 발생한 것으로 판단했습니다.
+- **처리**: Google AI Studio에서 선불 크레딧을 충전한 뒤 신규 호출을 재검증했습니다. 이후 quota 보호를 위해 Gemini 429 응답은 재시도하지 않고 사용자에게 대기 안내를 반환하는 방향으로 재시도 정책을 조정했습니다.
+- **확인**: Gemini 최소 호출이 200으로 응답했고, 테스트 계정 기반 `generateTripPlan` Callable smoke test가 성공했습니다.
+- **상세 기록**: [2026-08-16 개발 로그](project-log/2026-08-16.md)의 Gemini 429 RESOURCE_EXHAUSTED와 AI Studio 크레딧 부족 문제 섹션 참고
+
+## 21. Gemini API 키의 클라이언트 노출 가능성 제거
+
+- **발생일**: 2026-08-16
+- **영향 범위**: AI Planner, Gemini API 키 보안, Firebase Hosting 공개 배포
+- **요약**: 기존 구조는 브라우저에서 Gemini API를 직접 호출할 수 있어 공개 Hosting 배포 시 API 키 노출과 호출 남용 위험이 있었습니다.
+- **처리**: Gemini 호출을 Firebase Callable Function `generateTripPlan`으로 이전하고, API 키를 Firebase Functions Secret `GEMINI_API_KEY`로 관리하도록 변경했습니다. 신규 Gemini 키를 Secret version 2로 반영하고 기존 노출 가능 키는 AI Studio에서 삭제했습니다.
+- **확인**: `dist` 산출물에서 Gemini API 키 원문이 발견되지 않았고, 미인증 요청은 401로 차단되었으며, 인증된 테스트 계정의 Callable smoke test가 성공했습니다.
+- **상세 기록**: [2026-08-16 개발 로그](project-log/2026-08-16.md)의 Gemini API 키의 클라이언트 노출 가능성 제거 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
