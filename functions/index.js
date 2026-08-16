@@ -8,10 +8,11 @@ initializeApp();
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-const GEMINI_MAX_RETRIES = 2;
+const GEMINI_MAX_RETRIES = 1;
 const GEMINI_RETRY_BASE_DELAY_MS = 1000;
-const GEMINI_REQUEST_TIMEOUT_MS = 45000;
-const GEMINI_RESPONSE_BODY_TIMEOUT_MS = 45000;
+const GEMINI_REQUEST_TIMEOUT_MS = 20000;
+const GEMINI_RESPONSE_BODY_TIMEOUT_MS = 10000;
+const GEMINI_TOTAL_BUDGET_MS = 45000;
 const REGION = 'asia-northeast3';
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
@@ -26,7 +27,7 @@ const sleep = (delayMs) => new Promise((resolve) => {
   setTimeout(resolve, delayMs);
 });
 
-const isRetryableStatus = (status) => status === 408 || status === 429 || status >= 500;
+const isRetryableStatus = (status) => status === 408 || status >= 500;
 const isRetryableFetchError = (error) => (
   error?.name === 'AbortError' || error instanceof TypeError
 );
@@ -262,11 +263,18 @@ const createGeminiError = (response) => {
 };
 
 const fetchGeminiWithRetry = async (payload) => {
+  const deadline = Date.now() + GEMINI_TOTAL_BUDGET_MS;
+
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
+    const remainingBudget = deadline - Date.now();
+    if (remainingBudget <= 0) {
+      throw new HttpsError('deadline-exceeded', 'AI 코스 생성 응답 시간이 초과되었습니다.');
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, GEMINI_REQUEST_TIMEOUT_MS);
+    }, Math.min(GEMINI_REQUEST_TIMEOUT_MS, remainingBudget));
 
     try {
       const response = await fetch(GEMINI_ENDPOINT, {
@@ -295,7 +303,14 @@ const fetchGeminiWithRetry = async (payload) => {
 
     const exponentialDelay = GEMINI_RETRY_BASE_DELAY_MS * (2 ** attempt);
     const jitter = Math.floor(Math.random() * 250);
-    await sleep(exponentialDelay + jitter);
+    const retryDelay = exponentialDelay + jitter;
+    const nextAttemptMinimumBudget = retryDelay + Math.min(GEMINI_REQUEST_TIMEOUT_MS, GEMINI_TOTAL_BUDGET_MS);
+
+    if (deadline - Date.now() < nextAttemptMinimumBudget) {
+      throw new HttpsError('deadline-exceeded', 'AI 코스 생성 응답 시간이 초과되었습니다.');
+    }
+
+    await sleep(retryDelay);
   }
 
   throw new HttpsError('internal', 'AI 코스 재시도 처리 중 오류가 발생했습니다.');
@@ -303,6 +318,12 @@ const fetchGeminiWithRetry = async (payload) => {
 
 const assertQuota = (uid) => {
   const now = Date.now();
+  if (requestBuckets.size > 1000) {
+    requestBuckets.forEach((entry, key) => {
+      if (now >= entry.resetAt) requestBuckets.delete(key);
+    });
+  }
+
   const bucket = requestBuckets.get(uid) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
   if (now >= bucket.resetAt) {
     bucket.count = 0;
