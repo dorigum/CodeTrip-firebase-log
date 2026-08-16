@@ -47,6 +47,7 @@
 | 2026-08-16 | `ebace7c` | 축제 API pool 호출 최적화 | 통과. 기본 축제 pool 상한을 3000건에서 1000건으로 줄이고, Home 트렌딩 미리보기는 `poolMaxRows: 100`으로 제한했다. | `src/api/travelInfoApi.js`, `src/api/travelApi.js`, `src/pages/Home.jsx`, `npm run lint`, `npm run build` | 실제 API 호출 수는 배포 후 DevTools Network에서 세션별 측정 필요 |
 | 2026-08-16 | `3a36800` | 축제 목록 반응형 표시 개수 보정 | 통과. grid breakpoint에 맞춰 4열 12개, 3열 9개, 2열 10개, 1열 8개로 표시 개수를 동적으로 계산하도록 했다. | `src/pages/Festivals.jsx`, `npm run lint`, `npm run build` | 배포 후 데스크톱·태블릿·모바일 폭에서 육안 확인 필요 |
 | 2026-08-16 | `3437fe6` | AI Planner 중복 실행 방지 | 통과. `generationInFlightRef`와 `saveInFlightRef`를 추가해 생성·저장 함수 진입 즉시 중복 실행을 차단했다. 생성/저장 버튼에 `aria-busy`를 추가했다. | `src/pages/AiPlanner.jsx`, `npm run lint`, `npm run build` | 배포 후 버튼 연타 시 `generateTripPlan` Network 요청이 1회만 발생하는지 확인 필요 |
+| 2026-08-16 | `로컬 수정` | 카카오 지도 SDK 로딩 대기 보정 | 통과. 기존 `kakao-map-script`가 이미 존재하지만 아직 로딩 중인 경우에도 `load`/`error` 이벤트를 기다리도록 수정했다. timeout은 20초로 늘리고, timeout 직전 Kakao Maps 준비 여부를 재확인하도록 했다. | `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 로컬·배포 상세 페이지에서 실제 지도 표시 여부 육안 확인 필요 |
 
 ## 핵심 사용자 흐름 체크리스트
 

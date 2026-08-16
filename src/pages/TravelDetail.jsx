@@ -138,18 +138,32 @@ const TravelDetail = () => {
   // 1. 카카오 맵 스크립트 안정 로딩 (핵심 수정)
   useEffect(() => {
     const scriptId = 'kakao-map-script';
+    const mapLoadTimeoutMs = 20000;
     let cancelled = false;
     let timeoutId;
 
     const initializeMap = () => {
-      if (window.kakao && window.kakao.maps) {
-        window.kakao.maps.load(() => {
-          if (cancelled) return;
-          clearTimeout(timeoutId);
-          setMapLoadError('');
-          setIsMapLoaded(true);
-        });
+      if (!window.kakao?.maps) {
+        return false;
       }
+
+      window.kakao.maps.load(() => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
+        setMapLoadError('');
+        setIsMapLoaded(true);
+      });
+      return true;
+    };
+
+    const handleScriptLoad = () => {
+      initializeMap();
+    };
+
+    const handleScriptError = () => {
+      if (cancelled) return;
+      clearTimeout(timeoutId);
+      setMapLoadError('카카오 지도 SDK를 불러오지 못했습니다.');
     };
 
     if (!kakaoMapApiKey) {
@@ -158,28 +172,29 @@ const TravelDetail = () => {
 
     timeoutId = window.setTimeout(() => {
       if (cancelled || isMapLoaded) return;
+      if (initializeMap()) return;
       setMapLoadError('카카오 지도 SDK 응답이 지연되고 있습니다.');
-    }, 8000);
+    }, mapLoadTimeoutMs);
 
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
+    let script = document.getElementById(scriptId);
+    if (!script) {
+      script = document.createElement('script');
       script.id = scriptId;
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapApiKey}&libraries=services,clusterer,drawing&autoload=false`;
       script.async = true;
+      script.addEventListener('load', handleScriptLoad);
+      script.addEventListener('error', handleScriptError);
       document.head.appendChild(script);
-      script.onload = initializeMap;
-      script.onerror = () => {
-        if (cancelled) return;
-        clearTimeout(timeoutId);
-        setMapLoadError('카카오 지도 SDK를 불러오지 못했습니다.');
-      };
-    } else {
-      initializeMap();
+    } else if (!initializeMap()) {
+      script.addEventListener('load', handleScriptLoad);
+      script.addEventListener('error', handleScriptError);
     }
 
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);
+      script?.removeEventListener('load', handleScriptLoad);
+      script?.removeEventListener('error', handleScriptError);
     };
   }, [isMapLoaded, kakaoMapApiKey]);
 
