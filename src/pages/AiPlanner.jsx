@@ -292,6 +292,8 @@ const AiPlanner = () => {
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const generationInFlightRef = useRef(false);
+  const saveInFlightRef = useRef(false);
   const folderSelectionRequestRef = useRef(0);
   const regenerationHydratedRef = useRef(false);
 
@@ -405,6 +407,10 @@ const AiPlanner = () => {
   ]);
 
   const handleGenerate = async () => {
+    if (generationInFlightRef.current) {
+      return;
+    }
+
     if (!form.regionName.trim()) {
       showToast('여행 지역을 입력해주세요.');
       return;
@@ -427,6 +433,7 @@ const AiPlanner = () => {
       }
     }
 
+    generationInFlightRef.current = true;
     setGenerating(true);
     setPlan(null);
     try {
@@ -485,12 +492,14 @@ const AiPlanner = () => {
       console.error('CodeTrip trip generation failed:', error);
       showToast(error.message || 'CodeTrip이 여행 코스를 생성하지 못했습니다.');
     } finally {
+      generationInFlightRef.current = false;
       setGenerating(false);
     }
   };
 
   const handleSave = async () => {
-    if (!plan) return;
+    if (!plan || saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setSaving(true);
     try {
       const result = await saveAiTripToFolder(plan, {
@@ -515,6 +524,7 @@ const AiPlanner = () => {
       console.error('Save AI trip failed:', error);
       showToast(error.message || 'CodeTrip 여행 코스를 저장하지 못했습니다.');
     } finally {
+      saveInFlightRef.current = false;
       setSaving(false);
     }
   };
@@ -787,6 +797,7 @@ const AiPlanner = () => {
             type="button"
             onClick={handleGenerate}
             disabled={generating}
+            aria-busy={generating}
             className="w-full h-12 rounded-lg bg-primary text-white font-black text-sm uppercase tracking-wider hover:bg-primary-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-lg">{generating ? 'hourglass_top' : 'auto_awesome'}</span>
@@ -818,7 +829,8 @@ const AiPlanner = () => {
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="h-11 px-4 rounded-lg bg-slate-950 text-white text-xs font-black uppercase tracking-wider inline-flex items-center justify-center gap-2 hover:bg-primary transition-colors disabled:opacity-60"
+                  aria-busy={saving}
+                  className="h-11 px-4 rounded-lg bg-slate-950 text-white text-xs font-black uppercase tracking-wider inline-flex items-center justify-center gap-2 hover:bg-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span className="material-symbols-outlined text-base">{saving ? 'hourglass_top' : 'save'}</span>
                   {saving ? 'Saving...' : 'Save Folder'}
