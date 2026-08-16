@@ -173,6 +173,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: `dist` 산출물에서 Gemini API 키 원문이 발견되지 않았고, 미인증 요청은 401로 차단되었으며, 인증된 테스트 계정의 Callable smoke test가 성공했습니다.
 - **상세 기록**: [2026-08-16 개발 로그](project-log/2026-08-16.md)의 Gemini API 키의 클라이언트 노출 가능성 제거 섹션 참고
 
+## 22. 배포 환경에서 카카오 지도 SDK가 로딩되지 않는 문제
+
+- **발생일**: 2026-08-16
+- **영향 범위**: 여행지 상세 페이지, 행사 상세 페이지, 카카오 지도 JavaScript SDK, Firebase Hosting 배포 URL
+- **요약**: 상세 페이지의 지도 영역에서 카카오 지도 SDK가 정상 표시되지 않았습니다. 코드상 fallback은 동작했지만, 실제 배포 환경에서는 카카오 JavaScript 키와 JavaScript SDK 도메인 설정이 CodeTrip 배포 도메인과 맞지 않아 지도가 표시되지 않았습니다.
+- **처리**: 무료 쿼터가 적용된 기존 카카오 앱을 재활성화하고, JavaScript SDK 도메인에 `http://localhost:5180`과 `https://dorigum-codetrip.web.app`을 추가했습니다. `.env`의 `VITE_KAKAO_MAP_API_KEY`를 해당 앱의 JavaScript 키로 교체하고, `TravelDetail.jsx`의 SDK 로딩 방어 로직을 보강했습니다.
+- **확인**: 로컬 상세 페이지와 Firebase Hosting 배포 상세 페이지에서 카카오 지도가 정상 표시되는 것을 확인했습니다. `npm run lint`와 `npm run build`도 통과했습니다.
+- **상세 기록**: [2026-08-16 개발 로그](project-log/2026-08-16.md)의 배포 환경에서 카카오 지도 SDK가 로딩되지 않는 문제 최종 보정 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

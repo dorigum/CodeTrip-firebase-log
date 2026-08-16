@@ -14,7 +14,7 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 
 ## 📅 날짜별 개발 기록
 
-- [2026-08-16](project-log/2026-08-16.md): Gemini API 호출을 Firebase Callable Function 프록시로 전환, Functions Secret 등록과 배포, Hosting 재배포, 신규 Gemini 키 교체와 기존 temp 키 삭제, 인증 smoke test 및 보안 검증 문서 반영
+- [2026-08-16](project-log/2026-08-16.md): Gemini API 호출을 Firebase Callable Function 프록시로 전환, Functions Secret 등록과 배포, Hosting 재배포, 신규 Gemini 키 교체와 기존 temp 키 삭제, 인증 smoke test 및 보안 검증 문서 반영, 카카오 지도 JavaScript 키와 SDK 도메인 설정 보정 후 배포 상세 페이지 지도 표시 확인
 - [2026-08-15](project-log/2026-08-15.md): CodeRabbit 리뷰 대응, Gemini 공개 시연 보안 게이트 강화, Google OAuth 계획 보강, 제출 차단 조건과 민감정보 기록 기준 정리
 - [2026-08-12](project-log/2026-08-12.md): 공모전 1차 심사 제출 문서 체계 세분화, 기능설명서 초안·제출 런북·최종 검증 실행표·대시보드·화면 캡처 계획·OpenAPI 제출표 정리
 - [2026-08-11](project-log/2026-08-11.md): 프로젝트 구조화 문서 체계 추가, AI 문서 분석 규칙·기술 부채 등록부·검증 보고서·백로그·심사 시연 시나리오·공모전 제출 체크리스트 작성

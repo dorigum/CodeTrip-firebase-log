@@ -83,7 +83,7 @@ const TravelDetail = () => {
   const showToast = useToast();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
   const { addItem: addRecentlyViewed } = useRecentlyViewedStore();
-  const kakaoMapApiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+  const kakaoMapApiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY?.trim();
   const effectiveMapLoadError = kakaoMapApiKey
     ? mapLoadError
     : '카카오 지도 API 키가 설정되지 않았습니다.';
@@ -146,7 +146,7 @@ const TravelDetail = () => {
     }
   };
 
-  // 1. 카카오 맵 스크립트 안정 로딩 (핵심 수정)
+  // 1. 카카오 맵 스크립트 안정 로딩
   useEffect(() => {
     const scriptId = 'kakao-map-script';
     const mapLoadTimeoutMs = 20000;
@@ -161,6 +161,10 @@ const TravelDetail = () => {
       window.kakao.maps.load(() => {
         if (cancelled) return;
         clearTimeout(timeoutId);
+        const script = document.getElementById(scriptId);
+        if (script) {
+          script.dataset.status = 'ready';
+        }
         setMapLoadError('');
         setIsMapLoaded(true);
       });
@@ -168,7 +172,15 @@ const TravelDetail = () => {
     };
 
     const handleScriptLoad = () => {
-      initializeMap();
+      const initialized = initializeMap();
+      if (!initialized && !cancelled) {
+        clearTimeout(timeoutId);
+        const script = document.getElementById(scriptId);
+        if (script) {
+          script.dataset.status = 'error';
+        }
+        setMapLoadError('카카오 지도 SDK 키 또는 배포 도메인 설정을 확인해야 합니다.');
+      }
     };
 
     const handleScriptError = () => {
@@ -184,18 +196,32 @@ const TravelDetail = () => {
     timeoutId = window.setTimeout(() => {
       if (cancelled || isMapLoaded) return;
       if (initializeMap()) return;
-      setMapLoadError('카카오 지도 SDK 응답이 지연되고 있습니다.');
+      const script = document.getElementById(scriptId);
+      if (script) {
+        script.dataset.status = 'timeout';
+      }
+      setMapLoadError('카카오 지도 SDK 응답이 지연되고 있습니다. 키와 배포 도메인 설정을 확인해주세요.');
     }, mapLoadTimeoutMs);
 
     let script = document.getElementById(scriptId);
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapApiKey}&libraries=services,clusterer,drawing&autoload=false`;
+      script.dataset.status = 'loading';
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoMapApiKey)}&libraries=services,clusterer,drawing&autoload=false`;
       script.async = true;
+      script.defer = true;
+      script.referrerPolicy = 'origin';
       script.addEventListener('load', handleScriptLoad);
       script.addEventListener('error', handleScriptError);
       document.head.appendChild(script);
+    } else if (script.dataset.status === 'error') {
+      clearTimeout(timeoutId);
+      window.setTimeout(() => {
+        if (!cancelled) {
+          setMapLoadError('카카오 지도 SDK 키 또는 배포 도메인 설정을 확인해야 합니다.');
+        }
+      }, 0);
     } else if (!initializeMap()) {
       script.addEventListener('load', handleScriptLoad);
       script.addEventListener('error', handleScriptError);
