@@ -2,9 +2,9 @@
 
 ## Realtime Database 주요 노드
 
-`users`, `boardPosts`, `boardComments`, `boardCommentsByPost`, `travelComments`, `travelCommentsByContent`, `apiCache`를 사용한다.
+`users`, `boardPosts`, `boardComments`, `boardCommentsByPost`, `travelComments`, `travelCommentsByContent`, `apiCache`를 사용합니다.
 
-사용자 하위 데이터에는 프로필, 찜, 폴더, 메모, 알림, 활동 내역이 저장된다. 댓글 조회용 역색인 노드는 게시글·여행지별 조회를 지원한다.
+사용자 하위 데이터에는 프로필, 찜, 폴더, 메모, 알림, 활동 내역이 저장됩니다. 댓글 조회용 역색인 노드는 게시글·여행지별 조회를 지원합니다.
 
 ## 권한 기준
 
@@ -22,4 +22,4 @@
 - AI 입력에 개인정보·불필요한 비밀정보를 포함하지 않기
 - 외부 API 응답을 그대로 HTML로 렌더링하지 않기
 
-현재 규칙은 `database.rules.json`이 기준이며, 운영 전 규칙 변경은 결정 로그와 검증 결과를 함께 남긴다.
+현재 규칙은 `database.rules.json`이 기준이며, 운영 전 규칙 변경은 결정 로그와 검증 결과를 함께 남깁니다.

@@ -15,7 +15,7 @@ const CACHE_TTL = {
 };
 
 const FESTIVAL_POOL_PAGE_SIZE = 1000;
-const FESTIVAL_POOL_MAX_ROWS = 3000;
+const FESTIVAL_POOL_MAX_ROWS = 1000;
 
 const toDateKey = (date = new Date()) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -163,19 +163,29 @@ const matchesFestivalKeyword = (item, keyword) => {
   ].some((value) => String(value || '').toLowerCase().includes(normalizedKeyword));
 };
 
-export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'default', lDongRegnCd, lDongSignguCd, keyword = '' } = {}) => {
+export const getFestivalInfo = async ({
+  pageNo = 1,
+  numOfRows = 8,
+  sort = 'default',
+  lDongRegnCd,
+  lDongSignguCd,
+  keyword = '',
+  poolMaxRows = FESTIVAL_POOL_MAX_ROWS,
+} = {}) => {
   const todayKey = toDateKey();
   const eventStartDate = `${todayKey.slice(0, 4)}0101`;
   const festivalParams = { eventStartDate, lDongRegnCd, lDongSignguCd, arrange: 'O' };
+  const normalizedPoolMaxRows = Math.max(numOfRows, Number(poolMaxRows) || FESTIVAL_POOL_MAX_ROWS);
+  const poolPageSize = Math.min(FESTIVAL_POOL_PAGE_SIZE, normalizedPoolMaxRows);
   const firstPageData = await fetchTourApi(
     'searchFestival2',
-    { pageNo: 1, numOfRows: FESTIVAL_POOL_PAGE_SIZE, ...festivalParams },
+    { pageNo: 1, numOfRows: poolPageSize, ...festivalParams },
     CACHE_TTL.festival
   );
   const firstBody = firstPageData?.response?.body || {};
   const totalRawCount = Number(firstBody.totalCount || 0);
-  const maxRows = Math.min(totalRawCount || FESTIVAL_POOL_PAGE_SIZE, FESTIVAL_POOL_MAX_ROWS);
-  const totalRawPages = Math.max(1, Math.ceil(maxRows / FESTIVAL_POOL_PAGE_SIZE));
+  const maxRows = Math.min(totalRawCount || poolPageSize, normalizedPoolMaxRows);
+  const totalRawPages = Math.max(1, Math.ceil(maxRows / poolPageSize));
   const rawItems = normalizeItems(firstBody.items?.item);
 
   if (totalRawPages > 1) {
@@ -183,7 +193,7 @@ export const getFestivalInfo = async ({ pageNo = 1, numOfRows = 8, sort = 'defau
       Array.from({ length: totalRawPages - 1 }, (_, index) => index + 2).map((festivalPage) =>
         fetchTourApi(
           'searchFestival2',
-          { pageNo: festivalPage, numOfRows: FESTIVAL_POOL_PAGE_SIZE, ...festivalParams },
+          { pageNo: festivalPage, numOfRows: poolPageSize, ...festivalParams },
           CACHE_TTL.festival
         )
       )

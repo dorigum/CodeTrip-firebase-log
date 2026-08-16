@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getDetailCommon, getDetailIntro, getDetailInfo, getDetailImage } from '../api/travelInfoApi';
 import { getTravelComments, postTravelComment, updateTravelComment, deleteTravelComment, toggleTravelCommentLike } from '../api/travelCommentApi';
@@ -57,8 +57,11 @@ const TravelDetail = () => {
   const [infoItems, setInfoItems] = useState([]);
   const [images, setImages] = useState([]);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState('');
   const [travelCommentText, setTravelCommentText] = useState('');
   const [travelComments, setTravelComments] = useState([]);
+  const [travelCommentsLoading, setTravelCommentsLoading] = useState(false);
+  const [travelCommentsError, setTravelCommentsError] = useState('');
   const [travelCommentSubmitting, setTravelCommentSubmitting] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [travelCommentEditingId, setTravelCommentEditingId] = useState(null);
@@ -69,11 +72,24 @@ const TravelDetail = () => {
   const [selectedTravel, setSelectedTravel] = useState(null);
 
   const mapRef = useRef(null);
+  const commentsRequestIdRef = useRef(0);
+  const currentContentIdRef = useRef(contentId);
+
+  useEffect(() => {
+    currentContentIdRef.current = contentId;
+  }, [contentId]);
 
   const { isLoggedIn, user } = useAuthStore();
   const showToast = useToast();
   const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
   const { addItem: addRecentlyViewed } = useRecentlyViewedStore();
+  const kakaoMapApiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+  const effectiveMapLoadError = kakaoMapApiKey
+    ? mapLoadError
+    : '카카오 지도 API 키가 설정되지 않았습니다.';
+  const kakaoMapLink = common?.mapx && common?.mapy
+    ? `https://map.kakao.com/link/to/${encodeURIComponent(common.title || 'CodeTrip')},${common.mapy},${common.mapx}`
+    : '';
 
   useEffect(() => {
     if (!common?.title) return;
@@ -88,7 +104,7 @@ const TravelDetail = () => {
   // 창 크기 변경 시 지도 중심 재조정
   useEffect(() => {
     const handleResize = () => {
-      if (!mapRef.current || !common?.mapy || !common?.mapx) return;
+      if (!mapRef.current || !common?.mapy || !common?.mapx || !window.kakao?.maps) return;
       mapRef.current.relayout();
       mapRef.current.setCenter(new window.kakao.maps.LatLng(Number(common.mapy), Number(common.mapx)));
     };
@@ -132,28 +148,66 @@ const TravelDetail = () => {
 
   // 1. 카카오 맵 스크립트 안정 로딩 (핵심 수정)
   useEffect(() => {
-    const appKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
     const scriptId = 'kakao-map-script';
+    const mapLoadTimeoutMs = 20000;
+    let cancelled = false;
+    let timeoutId;
 
     const initializeMap = () => {
-      if (window.kakao && window.kakao.maps) {
-        window.kakao.maps.load(() => {
-          setIsMapLoaded(true);
-        });
+      if (!window.kakao?.maps) {
+        return false;
       }
+
+      window.kakao.maps.load(() => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
+        setMapLoadError('');
+        setIsMapLoaded(true);
+      });
+      return true;
     };
 
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&libraries=services,clusterer,drawing&autoload=false`;
-      script.async = true;
-      document.head.appendChild(script);
-      script.onload = initializeMap;
-    } else {
+    const handleScriptLoad = () => {
       initializeMap();
+    };
+
+    const handleScriptError = () => {
+      if (cancelled) return;
+      clearTimeout(timeoutId);
+      setMapLoadError('카카오 지도 SDK를 불러오지 못했습니다.');
+    };
+
+    if (!kakaoMapApiKey) {
+      return undefined;
     }
-  }, []);
+
+    timeoutId = window.setTimeout(() => {
+      if (cancelled || isMapLoaded) return;
+      if (initializeMap()) return;
+      setMapLoadError('카카오 지도 SDK 응답이 지연되고 있습니다.');
+    }, mapLoadTimeoutMs);
+
+    let script = document.getElementById(scriptId);
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapApiKey}&libraries=services,clusterer,drawing&autoload=false`;
+      script.async = true;
+      script.addEventListener('load', handleScriptLoad);
+      script.addEventListener('error', handleScriptError);
+      document.head.appendChild(script);
+    } else if (!initializeMap()) {
+      script.addEventListener('load', handleScriptLoad);
+      script.addEventListener('error', handleScriptError);
+    }
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+      script?.removeEventListener('load', handleScriptLoad);
+      script?.removeEventListener('error', handleScriptError);
+    };
+  }, [isMapLoaded, kakaoMapApiKey]);
 
   // 2. 상세 데이터 페칭
   useEffect(() => {
@@ -169,17 +223,15 @@ const TravelDetail = () => {
         setCommon(commonData);
 
         const contentTypeId = commonData.contenttypeid;
-        const [introData, infoData, imageData, travelCommentsData] = await Promise.all([
+        const [introData, infoData, imageData] = await Promise.all([
           getDetailIntro(contentId, contentTypeId),
           getDetailInfo(contentId, contentTypeId),
           getDetailImage(contentId),
-          getTravelComments(contentId),
         ]);
 
         setIntro(introData);
         setInfoItems(infoData?.items ?? []);
         setImages(imageData?.items ?? []);
-        setTravelComments(travelCommentsData ?? []);
       } catch (err) {
         console.error('Fetch detail error:', err);
       } finally {
@@ -190,6 +242,43 @@ const TravelDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [contentId]);
 
+  const reloadComments = useCallback(async () => {
+    const targetContentId = contentId;
+    if (!targetContentId || targetContentId !== currentContentIdRef.current) return false;
+    const requestId = ++commentsRequestIdRef.current;
+    setTravelCommentsLoading(true);
+    setTravelCommentsError('');
+    try {
+      const comments = await getTravelComments(targetContentId);
+      if (requestId !== commentsRequestIdRef.current || targetContentId !== currentContentIdRef.current) return false;
+      setTravelComments(comments ?? []);
+      return true;
+    } catch (err) {
+      if (requestId !== commentsRequestIdRef.current || targetContentId !== currentContentIdRef.current) return false;
+      console.error('Fetch travel comments error:', err);
+      setTravelCommentsError('코멘트를 불러오지 못했습니다.');
+      setTravelComments([]);
+      return false;
+    } finally {
+      if (requestId === commentsRequestIdRef.current && targetContentId === currentContentIdRef.current) {
+        setTravelCommentsLoading(false);
+      }
+    }
+  }, [contentId]);
+
+  useEffect(() => {
+    let active = true;
+    window.queueMicrotask(() => {
+      if (active && contentId === currentContentIdRef.current) {
+        reloadComments();
+      }
+    });
+    return () => {
+      active = false;
+      commentsRequestIdRef.current += 1;
+    };
+  }, [contentId, reloadComments]);
+
   const handleTravelCommentFocus = (e) => {
     if (!isLoggedIn) {
       e.target.blur();
@@ -199,12 +288,13 @@ const TravelDetail = () => {
 
   const handleTravelCommentSubmit = async () => {
     if (!isLoggedIn || !travelCommentText.trim() || travelCommentSubmitting) return;
+    const targetContentId = contentId;
     try {
       setTravelCommentSubmitting(true);
-      await postTravelComment({ contentId, nickname: user.name, body: travelCommentText.trim() });
+      await postTravelComment({ contentId: targetContentId, nickname: user.name, body: travelCommentText.trim() });
+      if (targetContentId !== currentContentIdRef.current) return;
       setTravelCommentText('');
-      const updated = await getTravelComments(contentId);
-      setTravelComments(updated);
+      await reloadComments();
     } catch (err) {
       console.error('Comment post error:', err);
     } finally {
@@ -224,11 +314,13 @@ const TravelDetail = () => {
 
   const handleTravelCommentEditSubmit = async (id) => {
     if (!travelCommentEditText.trim()) return;
+    const targetContentId = contentId;
     try {
       await updateTravelComment(id, travelCommentEditText.trim());
+      if (targetContentId !== currentContentIdRef.current) return;
       setTravelCommentEditingId(null);
       setTravelCommentEditText('');
-      setTravelComments(await getTravelComments(contentId));
+      await reloadComments();
     } catch (err) {
       console.error('Comment update error:', err);
     }
@@ -236,9 +328,11 @@ const TravelDetail = () => {
 
   const handleTravelCommentDelete = async (id) => {
     if (!window.confirm('코멘트를 삭제하시겠습니까?')) return;
+    const targetContentId = contentId;
     try {
       await deleteTravelComment(id);
-      setTravelComments(await getTravelComments(contentId));
+      if (targetContentId !== currentContentIdRef.current) return;
+      await reloadComments();
     } catch (err) {
       console.error('Comment delete error:', err);
     }
@@ -563,10 +657,29 @@ const TravelDetail = () => {
             <div
               className="rounded-2xl overflow-hidden border border-outline-variant/10 shadow-sm h-[300px] relative bg-slate-100 cursor-pointer group"
               onClick={() => {
-                window.open(`https://map.kakao.com/link/to/${common.title},${common.mapy},${common.mapx}`, '_blank');
+                if (!effectiveMapLoadError) {
+                  window.open(kakaoMapLink, '_blank', 'noopener,noreferrer');
+                }
               }}
             >
-              {!isMapLoaded ? (
+              {effectiveMapLoadError ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center gap-3">
+                  <span className="material-symbols-outlined text-5xl text-slate-300">map_off</span>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-500">지도를 불러오지 못했습니다.</p>
+                    <p className="text-[10px] text-outline font-mono">{effectiveMapLoadError}</p>
+                  </div>
+                  <a
+                    href={kakaoMapLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${common.title} 카카오맵에서 열기`}
+                    className="text-[10px] text-primary font-bold font-label tracking-widest uppercase hover:underline"
+                  >
+                    OPEN_KAKAO_MAP →
+                  </a>
+                </div>
+              ) : !isMapLoaded ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center gap-2">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   <p className="text-[10px] text-outline font-mono animate-pulse">Initializing Map SDK...</p>
@@ -643,7 +756,23 @@ const TravelDetail = () => {
           </div>
 
           {/* Comment List */}
-          {travelComments.length === 0 ? (
+          {travelCommentsLoading ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-outline">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-mono">// loading_comments...</p>
+            </div>
+          ) : travelCommentsError ? (
+            <div className="text-center py-6 space-y-2">
+              <p className="text-sm font-mono text-error">{travelCommentsError}</p>
+              <button
+                type="button"
+                onClick={reloadComments}
+                className="text-[11px] font-bold font-label text-primary hover:underline uppercase tracking-widest"
+              >
+                RETRY_COMMENTS
+              </button>
+            </div>
+          ) : travelComments.length === 0 ? (
             <p className="text-sm font-mono text-outline text-center py-6">// 아직 코멘트가 없습니다.</p>
           ) : (
             <div className="space-y-4">

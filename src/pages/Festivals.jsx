@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getFestivalList } from '../api/travelApi';
 import { getSubRegions } from '../api/travelInfoApi';
@@ -9,12 +9,20 @@ import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
 import { DEFAULT_REGIONS } from '../constants/regions';
 
+const getFestivalItemsPerPage = () => {
+  if (typeof window === 'undefined') return 9;
+  if (window.innerWidth >= 1280) return 12;
+  if (window.innerWidth >= 1024) return 9;
+  if (window.innerWidth >= 640) return 10;
+  return 8;
+};
+
 const Festivals = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [festivals, setFestivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
-  const ITEMS_PER_PAGE = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(getFestivalItemsPerPage);
 
   // URL 파라미터에서 현재 상태 읽기
   const page = parseInt(searchParams.get('page')) || 1;
@@ -33,6 +41,28 @@ const Festivals = () => {
   const [subRegions, setSubRegions] = useState([]);
   const [subRegionLoading, setSubRegionLoading] = useState(false);
   const [festivalError, setFestivalError] = useState('');
+  const previousItemsPerPageRef = useRef(itemsPerPage);
+
+  useEffect(() => {
+    let frameId = null;
+
+    const handleResize = () => {
+      if (frameId) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        setItemsPerPage((current) => {
+          const next = getFestivalItemsPerPage();
+          return current === next ? current : next;
+        });
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const makeFestivalParams = useCallback(({
     nextPage = page,
@@ -92,12 +122,28 @@ const Festivals = () => {
     let cancelled = false;
 
     const fetchFestivals = async () => {
+      const previousItemsPerPage = previousItemsPerPageRef.current;
+      if (previousItemsPerPage !== itemsPerPage && totalPages > 0) {
+        const estimatedTotalItems = Math.max(
+          festivals.length,
+          ((totalPages - 1) * previousItemsPerPage) + festivals.length,
+        );
+        const nextTotalPages = Math.max(1, Math.ceil(estimatedTotalItems / itemsPerPage));
+        previousItemsPerPageRef.current = itemsPerPage;
+        if (page > nextTotalPages) {
+          setSearchParams(makeFestivalParams({ nextPage: nextTotalPages }));
+          return;
+        }
+      } else {
+        previousItemsPerPageRef.current = itemsPerPage;
+      }
+
       setLoading(true);
       setFestivalError('');
       try {
         const data = await getFestivalList(
           page,
-          ITEMS_PER_PAGE,
+          itemsPerPage,
           sortOrder,
           regionCode,
           keyword,
@@ -124,7 +170,7 @@ const Festivals = () => {
     return () => {
       cancelled = true;
     };
-  }, [page, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
+  }, [page, itemsPerPage, totalPages, festivals.length, sortOrder, regionCode, subRegionCode, keyword, showToast, setSearchParams, makeFestivalParams]);
 
   useEffect(() => {
     if (isLoggedIn && !wishlistInitialized) {

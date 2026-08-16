@@ -11,4 +11,4 @@
 
 ## CodeTrip 적용 위치
 
-Firebase 설정은 `firebase.json`, `.firebaserc`, `src/firebase.js`, `database.rules.json`에 분산되어 있다. 이 네 파일의 변경은 배포·보안·데이터 접근에 영향을 주므로 의사결정 로그와 검증 결과를 남긴다.
+Firebase 설정은 `firebase.json`, `.firebaserc`, `src/firebase.js`, `database.rules.json`에 분산되어 있습니다. 이 네 파일의 변경은 배포·보안·데이터 접근에 영향을 주므로 의사결정 로그와 검증 결과를 남깁니다.

@@ -1,14 +1,14 @@
 # 검증 보고서
 
-이 문서는 CodeTrip의 릴리스 또는 주요 변경 단위 검증 결과를 기록한다. 검증 보고서는 완료 주장보다 증빙 위치를 우선한다. 실행하지 않은 항목은 `미실행`, 측정값이 없는 항목은 `측정값 없음`으로 기록한다.
+이 문서는 CodeTrip의 릴리스 또는 주요 변경 단위 검증 결과를 기록합니다. 검증 보고서는 완료 주장보다 증빙 위치를 우선합니다. 실행하지 않은 항목은 `미실행`, 측정값이 없는 항목은 `측정값 없음`으로 기록합니다.
 
 ## 기록 기준
 
-- 검증 단위는 커밋, PR, 릴리스, 배포 중 하나로 잡는다.
-- `npm run lint`, `npm run build`, 핵심 시나리오, 권한 점검, 성능 측정, 배포 확인을 분리해 기록한다.
-- 수동 검증은 수행자, 환경, 확인 흐름, 실패 지점을 남긴다.
-- 정량 지표는 측정 방법과 원본 위치가 있을 때만 실제값으로 기록한다.
-- 미해결 이슈는 기술 부채 등록부 또는 백로그와 연결한다.
+- 검증 단위는 커밋, PR, 릴리스, 배포 중 하나로 잡습니다.
+- `npm run lint`, `npm run build`, 핵심 시나리오, 권한 점검, 성능 측정, 배포 확인을 분리해 기록합니다.
+- 수동 검증은 수행자, 환경, 확인 흐름, 실패 지점을 남깁니다.
+- 정량 지표는 측정 방법과 원본 위치가 있을 때만 실제값으로 기록합니다.
+- 미해결 이슈는 기술 부채 등록부 또는 백로그와 연결합니다.
 
 ## 검증 결과 기록
 
@@ -40,13 +40,21 @@
 | 2026-08-12 | `2046133` | 기능설명서 슬라이드별 최종 검수표 추가 후 문서 링크 무결성 검사 | 통과. 슬라이드 1~5와 PDF 제약을 제출 직전에 확인하는 `docs/35-pptx-slide-final-review-checklist.md`를 추가하고 README, PPTX 지시서, 런북, 최종 검증표, 대시보드 연결을 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/35-pptx-slide-final-review-checklist.md`, `docs/README.md`, `docs/26-pptx-final-editing-guide.md`, `docs/22-final-submission-runbook.md`, `docs/27-final-validation-execution-sheet.md`, `docs/28-submission-readiness-dashboard.md` | 실제 최종 PPTX/PDF 생성 후 슬라이드별 검수와 PDF 제약 검증은 제출 직전에 수행 필요. `output/` 산출물은 커밋 제외 정책 유지 |
 | 2026-08-12 | `4753dc7` | 최종 제출 차단 항목 요약 추가 후 문서 링크 무결성 검사 | 통과. 남은 차단 항목을 사용자·팀 확인값, 계정·서비스 검증, OpenAPI, 최종 산출물, 제출 리스크로 묶은 `docs/36-final-blockers-summary.md`를 추가하고 README, 런북, 대시보드 연결을 확인 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/36-final-blockers-summary.md`, `docs/README.md`, `docs/22-final-submission-runbook.md`, `docs/28-submission-readiness-dashboard.md` | 실제 제출 가능 판정은 사용자 제공값, 테스트 계정, OpenAPI 키, 최종 PPTX/PDF, 제출 페이지 검증이 끝난 뒤에만 가능. `output/` 산출물은 커밋 제외 정책 유지 |
 | 2026-08-12 | `de2822f` | Google OAuth 계획 문서와 제출 입력값 일부 반영 후 링크 무결성 검사 | 통과. Google OAuth를 선택 로그인 후보로 정리한 `docs/37-google-oauth-plan.md`를 추가하고, 접수 팀명 `CodeTrip`, 지역 특화 서비스 없음, OpenAPI 키 원문 비기록 기준을 제출 준비 문서에 반영 | 로컬 링크 검사 스크립트 출력 `OK`, `docs/37-google-oauth-plan.md`, `docs/README.md`, `docs/25-final-input-checklist.md`, `docs/28-submission-readiness-dashboard.md`, `docs/36-final-blockers-summary.md` | Google OAuth는 계획됨 상태이며 코드 구현 미진행. OpenAPI 인코딩키·디코딩키는 공공데이터포털에서 확인 후 제출 페이지에만 입력 필요. `output/` 산출물은 커밋 제외 정책 유지 |
-| 2026-08-16 | `security/gemini-functions-proxy` | Gemini Callable Function 프록시 배포 검증 | 통과. `GEMINI_API_KEY` Functions Secret 등록, `generateTripPlan` v2 callable Function 배포, Artifact Registry 1일 cleanup policy 설정, Hosting 배포, 배포 산출물 Gemini 키 원문 미포함, 미인증 Callable 요청 401 차단, 인증 성공 smoke test, 기존 노출 가능 키 삭제를 확인했다. | Firebase CLI 배포 로그, `functions:list` 결과, `dist secret scan: not found`, `callable unauth blocked: 401`, `Callable authenticated smoke test: success`, Hosting URL `https://dorigum-codetrip.web.app` | 없음 |
+| 2026-08-16 | `security/gemini-functions-proxy` | Gemini Callable Function 프록시 배포 검증 | 통과. `GEMINI_API_KEY` Functions Secret 등록, `generateTripPlan` v2 callable Function 배포, Artifact Registry 1일 cleanup policy 설정, Hosting 배포, 배포 산출물 Gemini 키 원문 미포함, 미인증 Callable 요청 401 차단, 인증 성공 smoke test, 기존 노출 가능 키 삭제를 확인했습니다. | Firebase CLI 배포 로그, `functions:list` 결과, `dist secret scan: not found`, `callable unauth blocked: 401`, `Callable authenticated smoke test: success`, Hosting URL `https://dorigum-codetrip.web.app` | 없음 |
 | 2026-08-16 | `security/gemini-functions-proxy` | Gemini Callable Function 인증 성공 smoke test | 통과. AI Studio 선불 크레딧 충전 후 Gemini 최소 호출 200 확인, 제출용 테스트 계정 Firebase ID token 기반 `generateTripPlan` Callable 호출 성공, 1일 코스 title과 days 응답 확인, Functions 로그에 `Gemini trip plan generated` 기록 확인 | `Gemini minimal call status: 200`, `Callable authenticated smoke test: success`, Functions 로그 `auth: VALID`, `Gemini trip plan generated` | 없음 |
-| 2026-08-16 | `security/gemini-functions-proxy` | Gemini API 키 교체 및 Secret version 2 smoke test | 통과. 기존 2026-07-22 키를 `Gemini API Key_temp`로 식별 가능하게 이름 변경한 뒤 삭제했고, 2026-08-16 신규 키를 `.env`와 Firebase Secret `GEMINI_API_KEY` version 2로 등록했다. `generateTripPlan` 재배포 후 신규 키 최소 호출 200과 Callable 인증 호출 성공을 확인했다. | AI Studio 키 목록에서 기존 `Gemini API Key_temp` 미표시, 마스킹된 신규 키 suffix `...7nFQ`, Secret version 2 생성 로그, `Gemini new key minimal call status: 200`, `Callable new secret smoke test: success` | 없음 |
+| 2026-08-16 | `security/gemini-functions-proxy` | Gemini API 키 교체 및 Secret version 2 smoke test | 통과. 기존 2026-07-22 키를 `Gemini API Key_temp`로 식별 가능하게 이름 변경한 뒤 삭제했고, 2026-08-16 신규 키를 `.env`와 Firebase Secret `GEMINI_API_KEY` version 2로 등록했습니다. `generateTripPlan` 재배포 후 신규 키 최소 호출 200과 Callable 인증 호출 성공을 확인했습니다. | AI Studio 키 목록에서 기존 `Gemini API Key_temp` 미표시, Secret version 2 생성 로그, 검증일 2026-08-16, `Gemini new key minimal call status: 200`, `Callable new secret smoke test: success` | 없음 |
+| 2026-08-16 | `f96c944` | 상세 지도 fallback과 축제 목록 9개 표시 보정 | 부분 검증. Kakao SDK 로딩 지연·로드 실패·API 키 누락 시 fallback UI를 표시하도록 했고, 데스크톱 3열 축제 목록 기준 페이지당 표시 개수를 9개로 조정했습니다. 정적 검증과 빌드는 통과했지만 실제 브라우저 수동 검증 로그는 별도로 필요합니다. | 정적 증빙: `src/pages/TravelDetail.jsx`, `src/pages/Festivals.jsx`, `npm run lint`, `npm run build` | 배포 후 Kakao Developers 도메인·키 설정, 상세 화면 fallback, 데스크톱 3열 표시를 수행 환경·브라우저·실패 지점과 함께 기록 필요 |
+| 2026-08-16 | `ebace7c` | 축제 API pool 호출 최적화 | 부분 검증. 기본 축제 pool 상한을 3000건에서 1000건으로 줄이고, Home 트렌딩 미리보기는 `poolMaxRows: 100`으로 제한했습니다. 코드와 빌드는 확인했지만 실제 호출 수 감소는 아직 측정하지 않았습니다. | 정적 증빙: `src/api/travelInfoApi.js`, `src/api/travelApi.js`, `src/pages/Home.jsx`, `npm run lint`, `npm run build` | 개발 모드 Network 탭 또는 캐시 측정표로 호출 수를 세션별 기록 필요 |
+| 2026-08-16 | `3a36800` | 축제 목록 반응형 표시 개수 보정 | 부분 검증. grid breakpoint에 맞춰 4열 12개, 3열 9개, 2열 10개, 1열 8개로 표시 개수를 동적으로 계산하도록 했습니다. 실제 화면 폭별 육안 검증 로그는 아직 없습니다. | 정적 증빙: `src/pages/Festivals.jsx`, `npm run lint`, `npm run build` | 데스크톱·태블릿·모바일 폭에서 표시 개수와 페이지 보정 결과를 수동 검증표에 기록 필요 |
+| 2026-08-16 | `3437fe6` | AI Planner 중복 실행 방지 | 부분 검증. `generationInFlightRef`와 `saveInFlightRef`를 추가해 생성·저장 함수 진입 즉시 중복 실행을 차단했습니다. 생성/저장 버튼에 `aria-busy`를 추가했습니다. 실제 버튼 연타 Network 검증 로그는 아직 없습니다. | 정적 증빙: `src/pages/AiPlanner.jsx`, `npm run lint`, `npm run build` | 배포 후 버튼 연타 시 `generateTripPlan` Network 요청과 저장 요청이 1회만 발생하는지 기록 필요 |
+| 2026-08-16 | `로컬 수정` | 카카오 지도 SDK 로딩 대기 보정 | 부분 검증. 기존 `kakao-map-script`가 이미 존재하지만 아직 로딩 중인 경우에도 `load`/`error` 이벤트를 기다리도록 수정했습니다. timeout은 20초로 늘리고, timeout 직전 Kakao Maps 준비 여부를 재확인하도록 했습니다. 실제 상세 화면 지도 표시 수동 로그는 별도로 필요합니다. | 정적 증빙: `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 로컬·배포 상세 페이지에서 실제 지도 표시 여부와 실패 시 fallback 링크 동작을 기록 필요 |
+| 2026-08-16 | `로컬 수정` | Home 자동 호출 지연·축소 | 부분 검증. Home 초기 진입에서 날씨 키워드 기반 여행지 추천 사전 검색을 제거하고, 위치 기반 보정 호출을 1.5초 지연 실행하도록 했습니다. 실제 호출 감소 수치는 아직 측정하지 않았습니다. | 정적 증빙: `src/pages/Home.jsx`, `npm run lint`, `npm run build` | 개발 모드 Home Network 탭에서 초기 호출 수와 슬롯 실행 시 호출 분리를 측정표에 기록 필요 |
+| 2026-08-16 | `로컬 수정` | 상세 댓글 지연 로딩 | 부분 검증. 상세 TourAPI 조회와 Firebase 댓글 조회를 분리하고 댓글 전용 loading/error/retry UI를 추가했습니다. 실제 본문 선표시와 댓글 별도 로딩 수동 로그는 아직 없습니다. | 정적 증빙: `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 상세 페이지에서 본문 선표시, 댓글 로딩, 실패 후 재시도 흐름을 수행 환경과 함께 기록 필요 |
+| 2026-08-16 | `로컬 수정` | API 캐시 측정표 작성 | 통과. 캐시 이벤트를 memory, local, remote, network, stale로 분리하고 fresh hit과 stale fallback 계산식을 정의했습니다. | `docs/38-cache-measurement-sheet.md`, `docs/README.md` | 실제 세션별 측정값은 아직 미측정 |
 
 ## 핵심 사용자 흐름 체크리스트
 
-릴리스 전 아래 흐름을 최소 1회 확인한다.
+릴리스 전 아래 흐름을 최소 1회 확인합니다.
 
 | ID | 흐름 | 결과 | 증빙 | 비고 |
 |---|---|---|---|---|
@@ -64,12 +72,12 @@
 |---|---|---|---|---|---|---|---|
 | YYYY-MM-DD | `commit` | 브라우저·네트워크·기기 | 초기 로딩 청크 크기 | 미측정 | TBD | 빌드 로그 | 적용 전후 비교 필요 |
 | YYYY-MM-DD | `commit` | 브라우저·네트워크·기기 | Lighthouse LCP | 미측정 | TBD | Lighthouse 결과 | 동일 환경 반복 측정 |
-| YYYY-MM-DD | `commit` | 시연 세션 | 캐시 적중률 | 미측정 | TBD | 캐시 측정표 | memory/local/remote/network/stale 구분 |
+| YYYY-MM-DD | `commit` | 시연 세션 | 캐시 적중률 | 미측정 | TBD | `docs/38-cache-measurement-sheet.md` | memory/local/remote/network/stale 구분 |
 | YYYY-MM-DD | `commit` | AI 생성 시나리오 | AI 생성 성공률 | 미측정 | TBD | 운영 로그 또는 수동 기록 | timeout/429/JSON 실패 구분 |
 
 ## 보고 규칙
 
-- `통과`는 실행 결과와 증빙 위치가 있을 때만 사용한다.
-- `최근 검증 기록 있음`은 현재 커밋에서 재실행하지 않았다는 의미이며, 릴리스 통과와 동일하게 취급하지 않는다.
-- 문서만 변경된 커밋도 README 링크, 문서 번호, 증빙 경로가 깨지지 않았는지 확인한다.
-- 검증 중 발견한 리스크는 `docs/12-technical-debt-register.md` 또는 백로그 문서에 연결한다.
+- `통과`는 실행 결과와 증빙 위치가 있을 때만 사용합니다.
+- `최근 검증 기록 있음`은 현재 커밋에서 재실행하지 않았다는 의미이며, 릴리스 통과와 동일하게 취급하지 않습니다.
+- 문서만 변경된 커밋도 README 링크, 문서 번호, 증빙 경로가 깨지지 않았는지 확인합니다.
+- 검증 중 발견한 리스크는 `docs/12-technical-debt-register.md` 또는 백로그 문서에 연결합니다.

@@ -11,4 +11,4 @@
 
 ## CodeTrip 적용 위치
 
-`src/pages`는 화면 단위, `src/components`는 재사용 UI, `src/store`는 전역 상태, `src/api`는 외부 데이터 연계를 담당한다. 새로운 기능은 화면·상태·API·문서의 책임을 분리해서 추가한다.
+`src/pages`는 화면 단위, `src/components`는 재사용 UI, `src/store`는 전역 상태, `src/api`는 외부 데이터 연계를 담당합니다. 새로운 기능은 화면·상태·API·문서의 책임을 분리해서 추가합니다.

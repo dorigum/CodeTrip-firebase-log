@@ -10,4 +10,4 @@
 
 ## CodeTrip 적용 위치
 
-공공 여행 정보, 날씨, 지오코딩, 지도, Gemini 연계는 `src/api`에서 관리한다. `src/api/apiCache.js`의 공통 정책과 각 API의 TTL을 함께 기록해야 실제 동작과 문서가 어긋나지 않는다.
+공공 여행 정보, 날씨, 지오코딩, 지도, Gemini 연계는 `src/api`에서 관리합니다. `src/api/apiCache.js`의 공통 정책과 각 API의 TTL을 함께 기록해야 실제 동작과 문서가 어긋나지 않습니다.

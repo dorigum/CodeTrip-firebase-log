@@ -1,15 +1,15 @@
 # 공모전 사용자 제공 입력값 준비 패킷
 
-이 문서는 CodeTrip의 2026 관광데이터 활용 공모전 웹·앱 개발 부문 1차 심사 자료를 최종화하기 전에 사용자 또는 팀이 직접 확인해야 하는 입력값을 분리해 관리하기 위한 문서다.
+이 문서는 CodeTrip의 2026 관광데이터 활용 공모전 웹·앱 개발 부문 1차 심사 자료를 최종화하기 전에 사용자 또는 팀이 직접 확인해야 하는 입력값을 분리해 관리하기 위한 문서입니다.
 
-기능설명서 PPTX/PDF 최종본은 코드와 문서만으로 완성할 수 없다. 접수 페이지의 팀명, 테스트 전용 계정, OpenAPI 인증키, 로그인 후 화면 캡처처럼 외부 계정 또는 실제 제출 환경에서 확인해야 하는 값이 남아 있기 때문이다.
+기능설명서 PPTX/PDF 최종본은 코드와 문서만으로 완성할 수 없습니다. 접수 페이지의 팀명, 테스트 전용 계정, OpenAPI 인증키, 로그인 후 화면 캡처처럼 외부 계정 또는 실제 제출 환경에서 확인해야 하는 값이 남아 있기 때문입니다.
 
 ## 사용 원칙
 
-- 이 문서는 제출 준비를 위한 체크리스트이며, 비밀번호·인증키·개인정보 원문을 저장소에 기록하지 않는다.
-- 민감정보는 한국관광 콘텐츠랩 제출 페이지, 공공데이터포털, Firebase Console 등 원래 입력해야 하는 시스템에서만 확인한다.
-- Codex가 화면 캡처나 검증을 도와야 하는 경우에도 결과 문서에는 `확인 완료`, `미확인`, `실패 사유`만 남기고 원문 비밀값은 남기지 않는다.
-- `output/` 산출물은 별도 지시 전까지 커밋하지 않는다.
+- 이 문서는 제출 준비를 위한 체크리스트이며, 비밀번호·인증키·개인정보 원문을 저장소에 기록하지 않습니다.
+- 민감정보는 한국관광 콘텐츠랩 제출 페이지, 공공데이터포털, Firebase Console 등 원래 입력해야 하는 시스템에서만 확인합니다.
+- Codex가 화면 캡처나 검증을 도와야 하는 경우에도 결과 문서에는 `확인 완료`, `미확인`, `실패 사유`만 남기고 원문 비밀값은 남기지 않습니다.
+- `output/` 산출물은 별도 지시 전까지 커밋하지 않습니다.
 
 ## 기록 가능 여부 기준
 
@@ -26,23 +26,23 @@
 
 | ID | 항목 | 현재 처리 방침 | 저장소 기록 | 연결 문서 |
 |---|---|---|---|---|
-| UI-01 | 공모전 접수 계정 로그인 가능 여부 | 제출 페이지 접근과 이메일 인증 가능 여부만 확인한다. | 확인 여부만 기록 | `docs/16-contest-submission-checklist.md` |
-| UI-02 | 접수 팀명 | 기능설명서 1페이지 placeholder 교체에 필요하다. | 팀명은 필요 시 기록 가능 | `docs/25-final-input-checklist.md` |
-| UI-03 | 최종 팀원 정보 | 제출 페이지에만 입력한다. | 원문 기록 금지 | `docs/22-final-submission-runbook.md` |
-| UI-04 | 지역 특화 여부 | 기본 권장안은 전국 단위 제출이다. 특정 지역 특화로 전환하려면 비서울 지역명과 화면 증빙이 필요하다. | 결정 결과만 기록 | `docs/23-regional-specialization-strategy.md` |
-| UI-05 | 서비스 URL 최종값 | 현재 후보는 `https://dorigum-codetrip.web.app`이다. 제출 직전 smoke test 후 확정한다. | 가능 | `docs/21-service-url-verification.md` |
-| UI-06 | 테스트 전용 계정 | 개인 계정이 아닌 제출용 전용 계정을 생성한다. 비밀번호는 저장소에 기록하지 않는다. | ID 기록도 최소화, PW 기록 금지 | `docs/19-test-account-verification.md` |
-| UI-07 | OpenAPI 인코딩키·디코딩키 | 공공데이터포털에서 확인하고 제출 페이지에만 입력한다. | 원문 기록 금지 | `docs/20-openapi-submission-verification.md` |
-| UI-08 | OpenAPI 활용 API 최종 목록 | 코드 endpoint, 기능설명서, 제출 페이지 입력 목록이 일치해야 한다. | API명은 기록 가능 | `docs/20-openapi-submission-verification.md` |
-| UI-09 | 로그인 후 화면 캡처 | AI 일정, 마이페이지 또는 찜·폴더, 커뮤니티 화면을 우선 확보한다. | 파일은 `output/`에서 관리 | `docs/26-pptx-final-editing-guide.md` |
-| UI-10 | 중복 출품·수혜 이력 확인 | 동일 서비스 중복 출품 및 공사 주관 지원 사업 수혜 여부를 확인한다. | 확인 여부만 기록 | `docs/25-final-input-checklist.md` |
-| UI-11 | 제출 부문과 양식 일치 확인 | 웹·앱 개발 부문 양식인지 확인한다. | 확인 여부만 기록 | `docs/16-contest-submission-checklist.md` |
-| UI-12 | 마감 전 내부 제출 목표 시각 | 2026-09-21 16:00 마감 전에 수정 여유 시간을 확보한다. | 목표 시각 기록 가능 | `docs/27-final-validation-execution-sheet.md` |
-| UI-13 | 최종 산출물 외부 전달 위치 | 제출용 PPTX/PDF의 외부 보관 또는 전달 위치를 manifest에 기록한다. | 위치 기록 가능, 접근권한 주의 | `docs/17-submission-artifact-manifest.md` |
+| UI-01 | 공모전 접수 계정 로그인 가능 여부 | 제출 페이지 접근과 이메일 인증 가능 여부만 확인합니다. | 확인 여부만 기록 | `docs/16-contest-submission-checklist.md` |
+| UI-02 | 접수 팀명 | 기능설명서 1페이지 placeholder 교체에 필요합니다. | 팀명은 필요 시 기록 가능 | `docs/25-final-input-checklist.md` |
+| UI-03 | 최종 팀원 정보 | 제출 페이지에만 입력합니다. | 원문 기록 금지 | `docs/22-final-submission-runbook.md` |
+| UI-04 | 지역 특화 여부 | 기본 권장안은 전국 단위 제출입니다. 특정 지역 특화로 전환하려면 비서울 지역명과 화면 증빙이 필요합니다. | 결정 결과만 기록 | `docs/23-regional-specialization-strategy.md` |
+| UI-05 | 서비스 URL 최종값 | 현재 후보는 `https://dorigum-codetrip.web.app`입니다. 제출 직전 smoke test 후 확정합니다. | 가능 | `docs/21-service-url-verification.md` |
+| UI-06 | 테스트 전용 계정 | 개인 계정이 아닌 제출용 전용 계정을 생성합니다. 비밀번호는 저장소에 기록하지 않습니다. | ID 기록도 최소화, PW 기록 금지 | `docs/19-test-account-verification.md` |
+| UI-07 | OpenAPI 인코딩키·디코딩키 | 공공데이터포털에서 확인하고 제출 페이지에만 입력합니다. | 원문 기록 금지 | `docs/20-openapi-submission-verification.md` |
+| UI-08 | OpenAPI 활용 API 최종 목록 | 코드 endpoint, 기능설명서, 제출 페이지 입력 목록이 일치해야 합니다. | API명은 기록 가능 | `docs/20-openapi-submission-verification.md` |
+| UI-09 | 로그인 후 화면 캡처 | AI 일정, 마이페이지 또는 찜·폴더, 커뮤니티 화면을 우선 확보합니다. | 파일은 `output/`에서 관리 | `docs/26-pptx-final-editing-guide.md` |
+| UI-10 | 중복 출품·수혜 이력 확인 | 동일 서비스 중복 출품 및 공사 주관 지원 사업 수혜 여부를 확인합니다. | 확인 여부만 기록 | `docs/25-final-input-checklist.md` |
+| UI-11 | 제출 부문과 양식 일치 확인 | 웹·앱 개발 부문 양식인지 확인합니다. | 확인 여부만 기록 | `docs/16-contest-submission-checklist.md` |
+| UI-12 | 마감 전 내부 제출 목표 시각 | 2026-09-21 16:00 마감 전에 수정 여유 시간을 확보합니다. | 목표 시각 기록 가능 | `docs/27-final-validation-execution-sheet.md` |
+| UI-13 | 최종 산출물 외부 전달 위치 | 제출용 PPTX/PDF의 외부 보관 또는 전달 위치를 manifest에 기록합니다. | 위치 기록 가능, 접근권한 주의 | `docs/17-submission-artifact-manifest.md` |
 
 ## 사용자 제공값 수집 양식
 
-아래 양식은 작업 진행용 메모다. 비밀번호, 인증키, 개인 이메일, 팀원 개인정보는 이 양식에 적지 않는다.
+아래 양식은 작업 진행용 메모입니다. 비밀번호, 인증키, 개인 이메일, 팀원 개인정보는 이 양식에 적지 않습니다.
 
 ```text
 1. 접수 계정 로그인·이메일 인증 가능 여부:
@@ -100,12 +100,12 @@
 
 ## 이 값들이 준비된 뒤 진행할 작업
 
-사용자 제공 입력값이 준비되면 다음 순서로 최종 제출물을 정리한다.
+사용자 제공 입력값이 준비되면 다음 순서로 최종 제출물을 정리합니다.
 
-1. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정한다.
-2. 로그인 후 화면 캡처를 PPTX에 반영한다.
-3. 최종 PDF로 변환한다.
-4. `docs/27-final-validation-execution-sheet.md` 기준으로 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 여부를 검증한다.
-5. `docs/17-submission-artifact-manifest.md`에 최종 파일명, 생성일, 파일 크기, checksum, 외부 전달 위치를 기록한다.
-6. `docs/13-validation-report.md`에 최종 URL, 테스트 계정 검증, OpenAPI 대조, PDF 검증 결과를 기록한다.
-7. `docs/28-submission-readiness-dashboard.md`의 B-01~B-10 차단 항목을 최종 상태로 갱신한다.
+1. `docs/26-pptx-final-editing-guide.md` 기준으로 최종 PPTX를 수정합니다.
+2. 로그인 후 화면 캡처를 PPTX에 반영합니다.
+3. 최종 PDF로 변환합니다.
+4. `docs/27-final-validation-execution-sheet.md` 기준으로 5페이지 이하, 12pt 이상, 10MB 미만, 정상 열람 여부를 검증합니다.
+5. `docs/17-submission-artifact-manifest.md`에 최종 파일명, 생성일, 파일 크기, checksum, 외부 전달 위치를 기록합니다.
+6. `docs/13-validation-report.md`에 최종 URL, 테스트 계정 검증, OpenAPI 대조, PDF 검증 결과를 기록합니다.
+7. `docs/28-submission-readiness-dashboard.md`의 B-01~B-10 차단 항목을 최종 상태로 갱신합니다.
