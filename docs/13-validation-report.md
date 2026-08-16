@@ -50,6 +50,7 @@
 | 2026-08-16 | `로컬 수정` | 카카오 지도 SDK 로딩 대기 보정 | 통과. 기존 `kakao-map-script`가 이미 존재하지만 아직 로딩 중인 경우에도 `load`/`error` 이벤트를 기다리도록 수정했다. timeout은 20초로 늘리고, timeout 직전 Kakao Maps 준비 여부를 재확인하도록 했다. | `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 로컬·배포 상세 페이지에서 실제 지도 표시 여부 육안 확인 필요 |
 | 2026-08-16 | `로컬 수정` | Home 자동 호출 지연·축소 | 통과. Home 초기 진입에서 날씨 키워드 기반 여행지 추천 사전 검색을 제거하고, 위치 기반 보정 호출을 1.5초 지연 실행하도록 했다. | `src/pages/Home.jsx`, `npm run lint`, `npm run build` | 배포 후 Home Network 탭에서 초기 호출 수와 슬롯 실행 시 호출 분리를 확인 필요 |
 | 2026-08-16 | `로컬 수정` | 상세 댓글 지연 로딩 | 통과. 상세 TourAPI 조회와 Firebase 댓글 조회를 분리하고 댓글 전용 loading/error/retry UI를 추가했다. | `src/pages/TravelDetail.jsx`, `npm run lint`, `npm run build` | 배포 후 상세 페이지에서 본문 선표시와 댓글 별도 로딩을 육안 확인 필요 |
+| 2026-08-16 | `로컬 수정` | API 캐시 측정표 작성 | 통과. 캐시 이벤트를 memory, local, remote, network, stale로 분리하고 fresh hit과 stale fallback 계산식을 정의했다. | `docs/38-cache-measurement-sheet.md`, `docs/README.md` | 실제 세션별 측정값은 아직 미측정 |
 
 ## 핵심 사용자 흐름 체크리스트
 
@@ -71,7 +72,7 @@
 |---|---|---|---|---|---|---|---|
 | YYYY-MM-DD | `commit` | 브라우저·네트워크·기기 | 초기 로딩 청크 크기 | 미측정 | TBD | 빌드 로그 | 적용 전후 비교 필요 |
 | YYYY-MM-DD | `commit` | 브라우저·네트워크·기기 | Lighthouse LCP | 미측정 | TBD | Lighthouse 결과 | 동일 환경 반복 측정 |
-| YYYY-MM-DD | `commit` | 시연 세션 | 캐시 적중률 | 미측정 | TBD | 캐시 측정표 | memory/local/remote/network/stale 구분 |
+| YYYY-MM-DD | `commit` | 시연 세션 | 캐시 적중률 | 미측정 | TBD | `docs/38-cache-measurement-sheet.md` | memory/local/remote/network/stale 구분 |
 | YYYY-MM-DD | `commit` | AI 생성 시나리오 | AI 생성 성공률 | 미측정 | TBD | 운영 로그 또는 수동 기록 | timeout/429/JSON 실패 구분 |
 
 ## 보고 규칙
