@@ -50,12 +50,12 @@
 | ID | 검증 항목 | 기준 | 결과 | 증빙 위치 | 후속 조치 |
 |---|---|---|---|---|---|
 | AI-SEC-01 | Functions 프록시 배포 | Gemini 호출이 클라이언트가 아닌 Firebase Functions 프록시를 통해 실행된다. | 통과 | `generateTripPlan` v2 callable Function 배포, `functions:list`, `docs/13-validation-report.md` |  |
-| AI-SEC-02 | 서버 측 Secret 저장 | Gemini API 키가 Functions Secret 또는 승인된 Secret Manager에 저장되고 클라이언트 번들에 포함되지 않는다. | 통과 | `GEMINI_API_KEY` Secret version 1 생성, secretAccessor 권한 부여 로그 |  |
+| AI-SEC-02 | 서버 측 Secret 저장 | Gemini API 키가 Functions Secret 또는 승인된 Secret Manager에 저장되고 클라이언트 번들에 포함되지 않는다. | 통과 | `GEMINI_API_KEY` Secret version 2 등록 및 `generateTripPlan` 재배포, 과거 version 1은 교체 전 이력으로만 취급 |  |
 | AI-SEC-03 | 클라이언트 키 제거 | 공개 빌드에서 Gemini API 키를 직접 참조하거나 `x-goog-api-key`를 브라우저에서 전송하지 않는다. | 통과 | `dist secret scan: not found`, `src/api/geminiApi.js` Callable 호출 구조 |  |
-| AI-SEC-04 | Gemini 공개 생성 보안 게이트 | AI-SEC-01~AI-SEC-03, AI-SEC-07~AI-SEC-11이 미완료이면 공개 URL의 Gemini 신규 생성을 제출 통과 상태로 보지 않는다. | 통과 | Functions·Hosting 배포 완료, 미인증 401 차단, 인증 성공 smoke test 확인 |  |
+| AI-SEC-04 | Gemini 공개 생성 보안 게이트 | AI-SEC-01~AI-SEC-03, AI-SEC-07~AI-SEC-11이 미완료이면 공개 URL의 Gemini 신규 생성을 제출 통과 상태로 보지 않는다. | 부분 통과 | Functions·Hosting 배포 완료, 미인증 401 차단, 인증 성공 smoke test 확인. 단, AI-SEC-07·AI-SEC-08 반복 검증 전까지 최종 제출 통과로 보지 않는다. | 반복 호출 및 잘못된 입력 검증 필요 |
 | AI-SEC-05 | 키 교체·만료 완료 | 기존 클라이언트 노출 가능 키는 실제로 폐기 또는 만료 처리되어야 한다. 서버는 신규 Secret을 사용해야 하며, 기존 키 삭제 상태와 신규 키 사용 상태를 마스킹된 식별자로 확인한다. | 통과 | AI Studio 키 목록에서 기존 `Gemini API Key_temp` 미표시, 신규 키 suffix `...7nFQ`를 Secret version 2로 등록하고 Function 재배포 후 smoke test 성공 |  |
 | AI-SEC-06 | 민감정보 기록 제한 | 검증 보고서와 캡처에는 키 원문 없이 성공 여부와 마스킹된 식별자만 기록한다. | 통과 | `docs/13-validation-report.md`, `docs/36-final-blockers-summary.md`에 키 원문 없이 신규 키 suffix와 삭제 상태만 기록 |  |
-| AI-SEC-07 | 사용자별 호출 제한 | Functions 프록시에서 Firebase Auth로 검증된 `uid` 기준 rate limit, quota, 동시 요청 제한을 적용한다. | 부분 통과 | `functions/index.js`의 `uid` 기준 rate limit·동시 요청 제한 코드 | 반복 호출 검증 필요 |
+| AI-SEC-07 | 사용자별 호출 제한 | Functions 프록시에서 Firebase Auth로 검증된 `uid` 기준 rate limit, quota, 동시 요청 제한을 적용한다. | 부분 통과 | `functions/index.js`의 `uid` 기준 rate limit·동시 요청 제한 코드. 현재 구현은 인스턴스 로컬 메모리 기반 근사 제한이며 전역 한도는 아니다. | 반복 호출 검증 필요. 전역 한도가 필요하면 DB 기반 카운터로 이전 |
 | AI-SEC-08 | 서버 측 입력 검증 | Functions 프록시에서 입력 크기, 필수 필드, 형식, 민감정보 포함 여부를 검증한다. | 부분 통과 | `functions/index.js`의 입력 정규화·길이·범위 제한 코드 | 잘못된 입력 케이스 검증 필요 |
 | AI-SEC-09 | 로그 민감정보 마스킹 | 요청 원문, 응답 원문, API 키, 사용자 민감정보가 Functions 로그와 브라우저 콘솔에 남지 않는지 확인한다. | 통과 | Functions 로그에 `uid`, `durationDays`, `preferredPlaces`만 기록. 키·프롬프트·응답 원문 미기록 |  |
 | AI-SEC-10 | Firebase Auth ID token 검증 | Functions 프록시는 클라이언트 요청의 Firebase Auth ID token을 서버에서 검증하고, 검증된 사용자 식별자만 Gemini 호출에 사용한다. | 통과 | 테스트 계정 ID token 기반 Callable 호출 성공, Functions 로그 `auth: VALID` |  |

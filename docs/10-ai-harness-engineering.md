@@ -34,7 +34,7 @@ Gemini API 키 로드, Gemini API 호출, timeout·retry, 프롬프트 생성, J
 - JSON 파싱
 - 기본 응답 검증
 
-이전 구조는 MVP 실험에는 빠르지만, `VITE_GEMINI_API_KEY`가 브라우저 번들에 포함될 수 있어 공개 서비스의 비밀키 보호에는 적합하지 않았다. 현재 코드에서는 브라우저의 `VITE_GEMINI_API_KEY` 의존성을 제거했으며, 남은 작업은 Functions 배포, `GEMINI_API_KEY` Secret 등록, 기존 노출 가능 키 폐기·거부 확인이다.
+이전 구조는 MVP 실험에는 빠르지만, `VITE_GEMINI_API_KEY`가 브라우저 번들에 포함될 수 있어 공개 서비스의 비밀키 보호에는 적합하지 않았다. 현재 코드에서는 브라우저의 `VITE_GEMINI_API_KEY` 의존성을 제거했고, `generateTripPlan` Callable Function 배포, `GEMINI_API_KEY` Secret version 2 등록, Hosting 재배포, 신규 키 smoke test, 기존 노출 가능 키 삭제까지 완료했다. 남은 검증은 사용자별 호출 제한 반복 검증과 잘못된 입력 케이스 검증이다.
 
 ## 3. 목표 실행 흐름
 
@@ -170,7 +170,8 @@ JSON 여부, 필수 필드, 타입, 배열 구조, 시간 형식을 확인한다
 
 네트워크 재시도와 결과 재생성을 구분한다.
 
-- 네트워크 재시도: 408, 429, 5xx, timeout, 일시적 fetch 실패
+- 네트워크 재시도: 408, 5xx, timeout, 일시적 fetch 실패
+- 429: quota·요청 한도 보호를 위해 재시도하지 않고 즉시 사용자에게 대기 안내를 반환한다.
 - 결과 재생성: JSON 파싱 실패, 스키마 실패, 시간·일수·지역 규칙 위반
 - 치명적 검증 실패: 사용자에게 실패 안내 및 재시도 제공
 - 경고 수준: 결과를 표시하되 `warnings`와 UI 안내로 노출
@@ -213,7 +214,7 @@ Gemini API 키는 Secret Manager의 `defineSecret('GEMINI_API_KEY')`으로 관�
 4. **프롬프트 불일치**: 시스템 프롬프트는 Markdown 본문을 요구하면서 JSON 반환을 요구한다. 구조화된 JSON만 반환하도록 한 가지 계약으로 통일한다.
 5. **의존성·배포 구조**: `functions/` 디렉터리와 Functions용 `package.json`을 추가했다. Node.js 20 런타임의 기본 `fetch`를 사용하므로 `node-fetch` 의존성은 추가하지 않는다.
 6. **모델명 하드코딩**: 모델명을 Function 코드에 고정하지 말고 환경 설정 또는 버전이 기록되는 설정으로 분리한다.
-7. **요청 제한 부재**: 인증 사용자라면 무제한 호출할 수 있다. 사용자별 rate limit, 입력 크기 제한, 동시 요청 제한이 필요하다.
+7. **요청 제한 검증 부족**: 사용자별 rate limit, 입력 크기 제한, 동시 요청 제한 코드는 반영했다. 현재 제한은 Functions 인스턴스 로컬 메모리 기반의 근사 방어선이므로 전역 quota를 보장하지 않는다. 전역 한도가 필요하면 Firestore 또는 Realtime Database 기반 uid별 카운터로 이전한다.
 8. **민감정보 반환**: Function 반환값에 `uid`를 포함할 필요가 없다. 인증 정보는 서버 내부 로그에서만 관리한다.
 9. **오류 원문 노출**: Gemini 응답 원문을 `HttpsError` 메시지에 그대로 포함하면 내부 정보가 사용자에게 노출될 수 있다. 상세 원문은 서버 로그, 사용자는 정제 메시지만 받아야 한다.
 10. **Callable 클라이언트 초기화**: `getFunctions(undefined, ...)`보다 초기화된 Firebase App을 명시하고, 프로젝트의 실제 배포 리전과 일치하는지 확인한다.
@@ -234,10 +235,15 @@ Gemini API 키는 Secret Manager의 `defineSecret('GEMINI_API_KEY')`으로 관�
 
 ### 3단계: 서버 프록시 전환
 
-- `functions/` 프로젝트 구성: 코드 반영
-- Secret Manager 설정: 배포 전 필요
-- Callable 인증·rate limit·입력 제한: 코드 반영, 배포 후 실제 검증 필요
-- Functions에서 동일한 출력 검증 수행: 코드 반영, 실제 Gemini 응답 검증 필요
+- `functions/` 프로젝트 구성: 완료
+- `GEMINI_API_KEY` Secret Manager 설정: 완료, 현재 배포는 Secret version 2 기준
+- `generateTripPlan` Callable Function 배포: 완료
+- Firebase Hosting 재배포: 완료
+- 배포 산출물 Gemini 키 미포함 확인: 완료
+- 기존 노출 가능 Gemini 키 삭제: 완료
+- Callable 인증 smoke test: 완료
+- rate limit·입력 제한 반복 검증: 미완료
+- 잘못된 입력 케이스 검증: 미완료
 
 ### 4단계: 평가·운영
 
