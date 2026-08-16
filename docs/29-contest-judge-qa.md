@@ -54,7 +54,7 @@
 | 질문 | 답변 방향 | 연결 문서 |
 |---|---|---|
 | MVP 이후 가장 먼저 개선할 항목은 무엇인가요? | Firebase Rules 검증, 테스트 계정 기반 핵심 흐름 검증, 성능 기준선 측정, 코드 스플리팅, AI 운영 모니터링, E2E 테스트를 우선순위로 둡니다. | `docs/14-backlog.md`, `docs/28-submission-readiness-dashboard.md` |
-| 상용화하려면 무엇이 더 필요한가요? | API 키 보호, 운영 로그, 성능 측정, 장애 대응, E2E 테스트, 운영 지표 수집이 필요합니다. 현재 문서는 심사 가능한 MVP와 이후 운영 고도화 항목을 분리합니다. | `docs/08-operations-release.md`, `docs/12-technical-debt-register.md` |
+| 상용화하려면 무엇이 더 필요한가요? | Gemini API 키 보호는 Callable Function과 Functions Secret 전환으로 1차 완료했습니다. 상용화 전에는 전역 호출량 제한 검증, 운영 모니터링, 운영 로그, 성능 측정, 장애 대응, E2E 테스트, 운영 지표 수집을 보강해야 합니다. 현재 문서는 심사 가능한 MVP와 이후 운영 고도화 항목을 분리합니다. | `docs/08-operations-release.md`, `docs/12-technical-debt-register.md` |
 | 지역 특화 확장 가능성은 있나요? | 현재는 전국 단위 MVP지만, 향후 특정 지역 큐레이션, 지역 축제 특화 일정, 로컬 관광 사업자 연계 기능으로 확장할 수 있습니다. 다만 지역 특화 제출은 별도 화면 증빙과 지역 문제 정의가 필요합니다. | `docs/23-regional-specialization-strategy.md`, `docs/24-submission-copywriting.md` |
 
 ## 답변 시 피해야 할 표현

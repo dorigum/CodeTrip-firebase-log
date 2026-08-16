@@ -196,11 +196,15 @@ Gemini API 키는 루트 `.env`에 두지 않고 Firebase Functions Secret에 �
 firebase functions:secrets:set GEMINI_API_KEY
 ```
 
-필요한 경우 Functions 런타임 모델명은 Functions 환경에서 관리합니다.
+필요한 경우 Functions 런타임 모델명은 Functions 환경에서 관리합니다. `functions/index.js`는 `process.env.GEMINI_MODEL`을 읽으며, 값이 없으면 기본값 `gemini-3.5-flash-lite`를 사용합니다.
+
+로컬 또는 Firebase Functions 배포 시 명시적으로 모델을 바꾸려면 `functions/.env`에 아래처럼 설정합니다. 이 값은 비밀정보가 아니어야 하며, API 키 같은 민감정보는 반드시 Functions Secret으로 관리합니다.
 
 ```text
 GEMINI_MODEL=gemini-3.5-flash-lite
 ```
+
+환경별로 분리해야 하면 Firebase Functions의 `.env.<project-id>` 방식 또는 배포 환경 변수 주입 방식을 사용합니다. 어떤 방식을 쓰더라도 실제 배포 후에는 `generateTripPlan` smoke test로 적용 모델과 응답 형식을 확인합니다.
 
 실제 API 키, 테스트 계정 비밀번호, 개인 이메일, 팀원 개인정보는 저장소 문서에 원문으로 기록하지 않습니다.
 
