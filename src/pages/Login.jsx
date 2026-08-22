@@ -1,7 +1,20 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import authApi from '../api/authApi';
+
+const RETURN_AFTER_LOGIN_KEY = 'codetrip:return_after_login';
+const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
+let preserveExploreCleanupTimer = null;
+
+const getSafeReturnPath = (stateFrom) => {
+  const storedFrom = sessionStorage.getItem(RETURN_AFTER_LOGIN_KEY);
+  const candidate = typeof stateFrom === 'string' ? stateFrom : storedFrom;
+  if (!candidate?.startsWith('/') || candidate.startsWith('//') || candidate.startsWith('/login')) {
+    return '/';
+  }
+  return candidate;
+};
 
 const Login = () => {
   const [email, setEmail] = useState(() => localStorage.getItem('remembered_email') || '');
@@ -11,6 +24,25 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login, prepareLogin, cancelLogin } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnPath = getSafeReturnPath(location.state?.from);
+  const shouldKeepExploreStateRef = useRef(false);
+
+  useEffect(() => {
+    if (preserveExploreCleanupTimer) {
+      clearTimeout(preserveExploreCleanupTimer);
+      preserveExploreCleanupTimer = null;
+    }
+
+    return () => {
+      preserveExploreCleanupTimer = setTimeout(() => {
+        if (!shouldKeepExploreStateRef.current) {
+          sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
+        }
+        preserveExploreCleanupTimer = null;
+      }, 0);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,9 +63,16 @@ const Login = () => {
       // Store token and user data in Zustand + LocalStorage
       login(data.user);
       localStorage.setItem('trip_token', data.token);
+      sessionStorage.removeItem(RETURN_AFTER_LOGIN_KEY);
+      if (returnPath.startsWith('/explore')) {
+        shouldKeepExploreStateRef.current = true;
+      } else {
+        sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
+      }
       
-      navigate('/');
+      navigate(returnPath, { replace: true });
     } catch (err) {
+      shouldKeepExploreStateRef.current = false;
       cancelLogin();
       setError(err.message || 'Invalid email or password');
     } finally {

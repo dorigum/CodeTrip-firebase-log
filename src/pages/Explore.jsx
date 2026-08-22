@@ -6,10 +6,12 @@ import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
 import PageHeader from '../components/PageHeader';
+import ConfirmModal from '../components/ConfirmModal';
 import { DEFAULT_THEMES } from '../constants/themes';
 import authApi from '../api/authApi';
 import useToast from '../hooks/useToast';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
+const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
 
 const Explore = () => {
   const location = useLocation();
@@ -29,10 +31,10 @@ const Explore = () => {
     selectedRegions, toggleRegion,
     selectedThemes, toggleTheme,
     posts, loading, totalCount, currentPage,
-    keyword, setKeyword, clearKeyword,
+    keyword, setKeyword,
     sort, setSort,
     initialized, fetchError,
-    applyFilter, changePage, applyFavoriteRegions, resetFilter,
+    applyFilter, changePage, applyFavoriteRegions, resetFilter, resetPage, resetPageAndClearKeyword,
   } = useExploreStore();
 
   const showToast = useToast();
@@ -43,8 +45,16 @@ const Explore = () => {
   const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
   const [selectedTravel, setSelectedTravel] = useState(null); // 모달용
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [, setShowLoginDialog] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const targetWishlistFolder = location.state?.targetWishlistFolder || null;
+  const loginReturnPath = `${location.pathname}${location.search}`;
+
+  const goToLogin = () => {
+    sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
+    sessionStorage.setItem(PRESERVE_EXPLORE_STATE_KEY, 'true');
+    setShowLoginDialog(false);
+    navigate('/login', { state: { from: loginReturnPath } });
+  };
 
   const handleHeartToggle = async (post) => {
     if (!isLoggedIn) {
@@ -115,6 +125,23 @@ const Explore = () => {
   };
 
   const totalPages = Math.ceil(totalCount / NUM_OF_ROWS);
+  const exploreEntryHandledRef = useRef(false);
+  const shouldPreserveExploreStateRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (exploreEntryHandledRef.current) return;
+    exploreEntryHandledRef.current = true;
+    const shouldPreserveExploreState = sessionStorage.getItem(PRESERVE_EXPLORE_STATE_KEY) === 'true';
+    shouldPreserveExploreStateRef.current = shouldPreserveExploreState;
+    if (shouldPreserveExploreState) {
+      sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
+      return;
+    }
+    if (!queryKeyword && keyword) return;
+    if (!queryKeyword && (initialized || currentPage !== 1)) {
+      resetPage();
+    }
+  }, [currentPage, initialized, keyword, queryKeyword, resetPage]);
 
   useEffect(() => {
     const init = async () => {
@@ -139,10 +166,14 @@ const Explore = () => {
   // DOM 반영 후 스크롤 복원 (즉시 + rAF 재시도로 브라우저 scroll anchor 덮어씀)
   useLayoutEffect(() => {
     if (!initialized) return;
-    const target = getExploreScrollY();
-    if (!target) return;
     const el = document.getElementById('main-scroll');
     if (!el) return;
+    if (!shouldPreserveExploreStateRef.current) {
+      el.scrollTop = 0;
+      return;
+    }
+    const target = getExploreScrollY();
+    if (target == null) return;
     el.scrollTop = target;
     const raf = requestAnimationFrame(() => { el.scrollTop = target; });
     return () => cancelAnimationFrame(raf);
@@ -159,9 +190,9 @@ const Explore = () => {
       setKeyword(queryKeyword);
     }
     if (!queryKeyword && keyword) {
-      clearKeyword();
+      resetPageAndClearKeyword();
     }
-  }, [queryKeyword, keyword, setKeyword, clearKeyword]);
+  }, [queryKeyword, keyword, setKeyword, resetPageAndClearKeyword]);
 
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -176,6 +207,19 @@ const Explore = () => {
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto min-h-screen">
+      <ConfirmModal
+        open={showLoginDialog}
+        title="로그인이 필요합니다"
+        description="위시리스트 저장은 로그인한 회원만 사용할 수 있습니다. 로그인 후 관심 여행지를 폴더에 저장하고 여행 계획으로 이어서 관리해보세요."
+        confirmText="GO_TO_LOGIN.SH"
+        cancelText="CANCEL"
+        icon="lock"
+        tone="primary"
+        onCancel={() => setShowLoginDialog(false)}
+        onClose={() => setShowLoginDialog(false)}
+        onConfirm={goToLogin}
+      />
+
       <header className="mb-10">
         <PageHeader
           label="travel_explore.exe"
@@ -188,7 +232,7 @@ const Explore = () => {
             <span className="text-primary font-bold">"{keyword}"</span>
             <button
               onClick={() => {
-                clearKeyword();
+                resetPageAndClearKeyword();
                 navigate('/explore');
               }}
               className="ml-1 text-outline hover:text-on-surface transition-colors flex items-center"

@@ -12,6 +12,8 @@ const formatDate = (str) => {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 };
 
+const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
+
 const Header = () => {
   const { user, logout, isLoggedIn, isLoading } = useAuthStore();
   const { clearWishlist } = useWishlistStore();
@@ -29,6 +31,7 @@ const Header = () => {
   const [notiOpen, setNotiOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const notiRef = useRef(null);
+  const loginReturnPath = `${location.pathname}${location.search}`;
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -304,6 +307,13 @@ const Header = () => {
         ) : (
           <Link
             to="/login"
+            state={{ from: loginReturnPath }}
+            onClick={() => {
+              sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
+              if (location.pathname === '/explore') {
+                sessionStorage.setItem(PRESERVE_EXPLORE_STATE_KEY, 'true');
+              }
+            }}
             className="px-5 py-2 bg-primary text-white font-headline font-bold rounded-lg hover:brightness-110 transition-all text-sm flex items-center gap-2 shadow-md"
           >
             <span className="material-symbols-outlined text-base font-normal">login</span>
