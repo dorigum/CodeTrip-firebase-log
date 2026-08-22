@@ -52,7 +52,7 @@ const sanitizeStringList = (value, limit = 10) => {
 const sanitizeNumber = (value, fallback, min, max) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
+  return Math.min(max, Math.max(min, Math.trunc(parsed)));
 };
 
 const parseTripDateParts = (dateString) => {

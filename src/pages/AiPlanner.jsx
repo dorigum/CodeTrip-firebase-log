@@ -189,6 +189,23 @@ const addDaysToDate = (dateString, daysToAdd) => {
   return formatDateInput(date);
 };
 
+const subtractDaysFromDate = (dateString, daysToSubtract) => {
+  if (!isValidTripDate(dateString) || !dateString) return '';
+  const date = parseLocalDate(dateString);
+  date.setDate(date.getDate() - daysToSubtract);
+  return formatDateInput(date);
+};
+
+const normalizeDurationDays = (value, fallback = 1) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(MAX_DURATION_DAYS, Math.max(1, Math.trunc(parsed)));
+};
+
+const getMaxTripStartDate = (durationDays) => (
+  subtractDaysFromDate(DATE_MAX, normalizeDurationDays(durationDays) - 1) || DATE_MAX
+);
+
 const getInclusiveDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate || !isValidTripDate(startDate) || !isValidTripDate(endDate)) return null;
   const start = parseLocalDate(startDate);
@@ -321,8 +338,11 @@ const getTotalBudgetLabel = (budgetLevel, peopleCount) => {
   return `1일 총 ${formatWon(min * count)}~${formatWon(max * count)}`;
 };
 
-const FieldLabel = ({ children }) => (
-  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+const FieldLabel = ({ children, htmlFor }) => (
+  <label
+    htmlFor={htmlFor}
+    className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2"
+  >
     {children}
   </label>
 );
@@ -336,10 +356,16 @@ const AiPlanner = () => {
   const regeneratePlan = location.state?.regeneratePlan || null;
   const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
   const regenerateFolderId = location.state?.folderId || regenerationContext.sourceFolderId || '';
-  const [form, setForm] = useState(() => ({
-    ...DEFAULT_FORM,
-    ...regenerationContext,
-  }));
+  const [form, setForm] = useState(() => {
+    const initialForm = {
+      ...DEFAULT_FORM,
+      ...regenerationContext,
+    };
+    return {
+      ...initialForm,
+      durationDays: normalizeDurationDays(initialForm.durationDays),
+    };
+  });
   const [planningMode, setPlanningMode] = useState(
     regenerateFolderId ? PLAN_MODE.FOLDER : (regenerationContext.planningMode || PLAN_MODE.CUSTOM)
   );
@@ -377,6 +403,10 @@ const AiPlanner = () => {
   );
 
   const plannerBusy = generating || saving;
+  const maxTripStartDate = useMemo(
+    () => getMaxTripStartDate(form.durationDays),
+    [form.durationDays]
+  );
 
   const invalidateCurrentPlan = useCallback(() => {
     plannerRevisionRef.current += 1;
@@ -420,7 +450,7 @@ const AiPlanner = () => {
 
   const handleDurationDaysChange = (value) => {
     if (plannerBusy) return;
-    const nextDays = Math.min(MAX_DURATION_DAYS, Math.max(1, Number(value) || 1));
+    const nextDays = normalizeDurationDays(value, normalizeDurationDays(form.durationDays));
     const nextEndDate = form.travelStartDate
       ? addDaysToDate(form.travelStartDate, nextDays - 1)
       : form.travelEndDate;
@@ -445,7 +475,7 @@ const AiPlanner = () => {
       return;
     }
 
-    const nextDays = Math.min(MAX_DURATION_DAYS, Math.max(1, Number(form.durationDays) || 1));
+    const nextDays = normalizeDurationDays(form.durationDays);
     const nextEndDate = value ? addDaysToDate(value, nextDays - 1) : '';
     if (value && !isValidTripDate(nextEndDate)) {
       showToast('여행 종료일이 허용 범위를 넘습니다. 여행 기간 또는 시작일을 조정해주세요.');
@@ -592,6 +622,8 @@ const AiPlanner = () => {
       return;
     }
 
+    const normalizedDurationDays = tripDuration || normalizeDurationDays(form.durationDays);
+
     if (planningMode === PLAN_MODE.FOLDER) {
       if (!selectedFolderId) {
         showToast('코스 기준으로 사용할 위시리스트 폴더를 선택해주세요.');
@@ -631,7 +663,7 @@ const AiPlanner = () => {
         planningMode,
         sourceFolderName: folders.find((folder) => String(folder.id) === String(selectedFolderId))?.name || '',
         regionName: form.regionName.trim(),
-        durationDays: Number(form.durationDays) || 1,
+        durationDays: normalizedDurationDays,
         peopleCount: Number(form.peopleCount) || 1,
         totalBudgetLabel: getTotalBudgetLabel(form.budgetLevel, form.peopleCount),
         preferredPlaces,
@@ -643,7 +675,7 @@ const AiPlanner = () => {
           planningMode,
           sourceFolderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
           regionName: form.regionName.trim(),
-          durationDays: Number(form.durationDays) || 1,
+          durationDays: normalizedDurationDays,
           travelStartDate: form.travelStartDate || null,
           travelEndDate: form.travelEndDate || null,
           companionType: form.companionType,
@@ -862,6 +894,7 @@ const AiPlanner = () => {
                 type="number"
                 min="1"
                 max={MAX_DURATION_DAYS}
+                step="1"
                 value={form.durationDays}
                 onChange={(e) => handleDurationDaysChange(e.target.value)}
                 disabled={plannerBusy}
@@ -872,11 +905,12 @@ const AiPlanner = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <FieldLabel>Travel Start</FieldLabel>
+              <FieldLabel htmlFor="ai-planner-travel-start-date">Travel Start</FieldLabel>
               <input
+                id="ai-planner-travel-start-date"
                 type="date"
                 min={DATE_MIN}
-                max={DATE_MAX}
+                max={maxTripStartDate}
                 value={form.travelStartDate}
                 onChange={(e) => handleTripStartDateChange(e.target.value)}
                 disabled={plannerBusy}
@@ -884,8 +918,9 @@ const AiPlanner = () => {
               />
             </div>
             <div>
-              <FieldLabel>Travel End</FieldLabel>
+              <FieldLabel htmlFor="ai-planner-travel-end-date">Travel End</FieldLabel>
               <input
+                id="ai-planner-travel-end-date"
                 type="date"
                 min={form.travelStartDate || DATE_MIN}
                 max={DATE_MAX}
@@ -899,7 +934,7 @@ const AiPlanner = () => {
               여행 날짜를 입력하면 저장 폴더의 일정에도 함께 반영됩니다.
               {form.travelStartDate && (
                 <span className="block text-primary font-bold">
-                  {form.travelStartDate} ~ {form.travelEndDate || '미정'} · {Number(form.durationDays) || 1}일 코스
+                  {form.travelStartDate} ~ {form.travelEndDate || '미정'} · {normalizeDurationDays(form.durationDays)}일 코스
                 </span>
               )}
             </p>
