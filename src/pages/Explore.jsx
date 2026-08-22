@@ -126,11 +126,13 @@ const Explore = () => {
 
   const totalPages = Math.ceil(totalCount / NUM_OF_ROWS);
   const exploreEntryHandledRef = useRef(false);
+  const shouldPreserveExploreStateRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (exploreEntryHandledRef.current) return;
     exploreEntryHandledRef.current = true;
     const shouldPreserveExploreState = sessionStorage.getItem(PRESERVE_EXPLORE_STATE_KEY) === 'true';
+    shouldPreserveExploreStateRef.current = shouldPreserveExploreState;
     if (shouldPreserveExploreState) {
       sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
       return;
@@ -163,10 +165,14 @@ const Explore = () => {
   // DOM 반영 후 스크롤 복원 (즉시 + rAF 재시도로 브라우저 scroll anchor 덮어씀)
   useLayoutEffect(() => {
     if (!initialized) return;
-    const target = getExploreScrollY();
-    if (!target) return;
     const el = document.getElementById('main-scroll');
     if (!el) return;
+    if (!shouldPreserveExploreStateRef.current) {
+      el.scrollTop = 0;
+      return;
+    }
+    const target = getExploreScrollY();
+    if (!target) return;
     el.scrollTop = target;
     const raf = requestAnimationFrame(() => { el.scrollTop = target; });
     return () => cancelAnimationFrame(raf);
