@@ -182,6 +182,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: 로컬 상세 페이지와 Firebase Hosting 배포 상세 페이지에서 카카오 지도가 정상 표시되는 것을 확인했습니다. `npm run lint`와 `npm run build`도 통과했습니다.
 - **상세 기록**: [2026-08-16 개발 로그](project-log/2026-08-16.md)의 배포 환경에서 카카오 지도 SDK가 로딩되지 않는 문제 최종 보정 섹션 참고
 
+## 23. 로그아웃 시 보호 라우트 로그인 안내 모달이 순간적으로 표시되는 문제
+
+- **발생일**: 2026-08-22
+- **영향 범위**: 보호 라우트, 로그아웃 UX, Header, SideBar, AI Planner, My Page, Board
+- **요약**: 로그인한 사용자만 접근 가능한 페이지에서 로그아웃하면 홈으로 이동하기 직전 보호 라우트가 비로그인 접근으로 판단해 로그인 안내 모달을 순간적으로 표시할 수 있었습니다.
+- **처리**: 명시적인 로그아웃 흐름에서 `codetrip:logout_redirecting` 플래그를 저장하고, `ProtectedRoute`가 해당 플래그를 감지하면 로그인 안내 모달을 렌더링하지 않고 홈으로 이동하도록 수정했습니다.
+- **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 변경 파일은 `Header.jsx`, `SideBar.jsx`, `ProtectedRoute.jsx` 3개로 제한했습니다.
+- **상세 기록**: [2026-08-22 개발 로그](project-log/2026-08-22.md)의 로그아웃 시 보호 라우트 로그인 안내 모달이 순간적으로 표시되는 문제 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
