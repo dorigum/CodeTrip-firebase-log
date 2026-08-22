@@ -19,6 +19,8 @@ const RATE_LIMIT_MAX_REQUESTS = 20;
 const MAX_CONCURRENT_REQUESTS_PER_UID = 2;
 const MAX_PREFERRED_PLACES = 12;
 const MAX_TEXT_LENGTH = 120;
+const MAX_DURATION_DAYS = 5;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const requestBuckets = new Map();
 const concurrentRequests = new Map();
@@ -51,6 +53,27 @@ const sanitizeNumber = (value, fallback, min, max) => {
   return Math.min(max, Math.max(min, parsed));
 };
 
+const parseLocalDate = (dateString) => {
+  const [year, month, day] = String(dateString).slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const sanitizeTripDate = (value, fieldName) => {
+  const date = sanitizeString(value, '', 20);
+  if (!date) return '';
+  if (!DATE_PATTERN.test(date)) {
+    throw new HttpsError('invalid-argument', `${fieldName} 형식이 올바르지 않습니다.`);
+  }
+  return date;
+};
+
+const getInclusiveDurationDays = (startDate, endDate) => {
+  if (!startDate || !endDate) return null;
+  const diffMs = parseLocalDate(endDate) - parseLocalDate(startDate);
+  if (diffMs < 0) return null;
+  return Math.round(diffMs / 86400000) + 1;
+};
+
 const normalizePlace = (place = {}) => ({
   contentid: sanitizeString(place.contentid || place.contentId, '', 40) || null,
   title: sanitizeString(place.title || place.placeName, '여행지', 80),
@@ -64,11 +87,24 @@ const sanitizeInput = (input = {}) => {
     throw new HttpsError('invalid-argument', '여행 지역을 입력해주세요.');
   }
 
+  const durationDays = sanitizeNumber(input.durationDays, 1, 1, MAX_DURATION_DAYS);
+  const travelStartDate = sanitizeTripDate(input.travelStartDate, '여행 시작일');
+  const travelEndDate = sanitizeTripDate(input.travelEndDate, '여행 종료일');
+  const dateDurationDays = getInclusiveDurationDays(travelStartDate, travelEndDate);
+  if (travelStartDate && travelEndDate && !dateDurationDays) {
+    throw new HttpsError('invalid-argument', '여행 종료일은 시작일보다 빠를 수 없습니다.');
+  }
+  if (dateDurationDays && dateDurationDays > MAX_DURATION_DAYS) {
+    throw new HttpsError('invalid-argument', `AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+  }
+
   return {
     planningMode: sanitizeString(input.planningMode, 'custom', 20),
     sourceFolderName: sanitizeString(input.sourceFolderName, '', 80),
     regionName,
-    durationDays: sanitizeNumber(input.durationDays, 1, 1, 7),
+    durationDays: dateDurationDays || durationDays,
+    travelStartDate,
+    travelEndDate,
     travelStyle: sanitizeStringList(input.travelStyle, 10),
     companionType: sanitizeString(input.companionType, '미정', 30),
     peopleCount: sanitizeNumber(input.peopleCount, 1, 1, 10),
@@ -127,6 +163,8 @@ const buildTripPrompt = (input) => `${SYSTEM_PROMPT}
 - 기준 폴더: ${input.sourceFolderName || '없음'}
 - 지역: ${input.regionName || '미정'}
 - 여행 일수: ${input.durationDays || 1}일
+- 여행 시작일: ${input.travelStartDate || '미정'}
+- 여행 종료일: ${input.travelEndDate || '미정'}
 - 여행 스타일: ${toListText(input.travelStyle)}
 - 동행 유형: ${input.companionType || '미정'}
 - 인원 수: ${input.peopleCount || 1}명

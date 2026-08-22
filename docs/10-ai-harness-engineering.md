@@ -92,12 +92,13 @@ ai/
 
 필수: `regionName`, `durationDays`, `travelStyle`, `companionType`.
 
-선택: `peopleCount`, `budgetLevel`, `pace`, `weatherKeyword`, `startTime`, `endTime`, `preferredPlaces`, `avoidKeywords`.
+선택: `peopleCount`, `budgetLevel`, `pace`, `weatherKeyword`, `startTime`, `endTime`, `travelStartDate`, `travelEndDate`, `preferredPlaces`, `avoidKeywords`.
 
 입력 가드 기본 기준:
 
-- 여행 기간 1~14일
-- 인원 수 1~20명
+- 여행 기간은 MVP 화면 기준 최대 5일로 제한합니다.
+- 여행 시작일과 종료일은 선택값이며, 입력 시 `YYYY-MM-DD` 형식과 시작일·종료일 순서를 검증합니다.
+- 인원 수 1~10명
 - 시작 시간은 종료 시간보다 이릅니다.
 - 배열·문자열 길이에 상한을 둡니다.
 - `preferredPlaces`는 필요한 개수만 제한적으로 전달합니다.

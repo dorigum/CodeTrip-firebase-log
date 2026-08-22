@@ -412,6 +412,8 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
   const folderName = toText(plan?.saveGuide?.folderName || plan?.title, 'AI 여행 코스');
   const generationContext = plan?.generationContext || plan?.generation_context || {};
   const expectedRegion = toText(generationContext.regionName || plan?.regionName);
+  const planStartDate = toText(generationContext.travelStartDate || generationContext.startDate);
+  const planEndDate = toText(generationContext.travelEndDate || generationContext.endDate || planStartDate);
   const targetFolderId = options.folderId ? String(options.folderId) : null;
   const folderRef = targetFolderId
     ? ref(realtimeDb, userPath(user.id, `wishlistFolders/${targetFolderId}`))
@@ -422,8 +424,8 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     id: targetFolderId || folderRef.key,
     user_id: user.id,
     name: existingFolder?.name || folderName,
-    start_date: existingFolder?.start_date || null,
-    end_date: existingFolder?.end_date || null,
+    start_date: existingFolder?.start_date || planStartDate || null,
+    end_date: existingFolder?.end_date || planEndDate || null,
     created_at: toIso(existingFolder?.created_at || created_at),
     updated_at: created_at,
   };

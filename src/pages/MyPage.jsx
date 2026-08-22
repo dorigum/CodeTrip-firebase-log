@@ -1157,6 +1157,30 @@ const MyPage = () => {
                 </div>
               </div>
 
+              <div className="mb-4 rounded-xl border border-primary/10 bg-white/70 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-primary">
+                      <span className="material-symbols-outlined text-sm">event</span>
+                      <span className="font-label text-[9px] font-bold uppercase tracking-widest">Travel_Schedule</span>
+                    </div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                      {selectedFolder.start_date
+                        ? formatScheduleFull(selectedFolder.start_date, selectedFolder.end_date)
+                        : '아직 여행 일정이 설정되지 않았습니다.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(selectedFolder)}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-outline-variant/30 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit_calendar</span>
+                    Edit_Date
+                  </button>
+                </div>
+              </div>
+
               {/* 노트 입력 폼 */}
               <form onSubmit={handleAddNote} className="mb-4">
                 <div className="relative group">
