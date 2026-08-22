@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import useWishlistStore from '../../store/useWishlistStore';
 import ConfirmModal from '../ConfirmModal';
-import { clearLogoutRedirectingSoon, markLogoutRedirecting } from '../../utils/logoutRedirect';
+import { markLogoutRedirecting } from '../../utils/logoutRedirect';
 
 const NAV_ITEMS = [
   {
@@ -112,7 +112,6 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
     logout();
     clearWishlist();
     navigate('/', { replace: true });
-    clearLogoutRedirectingSoon();
   };
 
   return (

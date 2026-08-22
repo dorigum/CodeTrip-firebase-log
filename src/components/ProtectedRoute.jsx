@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import ConfirmModal from './ConfirmModal';
-import { clearLogoutRedirecting, isLogoutRedirecting } from '../utils/logoutRedirect';
+import { isLogoutRedirecting } from '../utils/logoutRedirect';
 
 const ProtectedRoute = ({ children, title = '회원 전용 페이지', description }) => {
   const { isLoggedIn, isLoading } = useAuthStore();
@@ -18,7 +18,6 @@ const ProtectedRoute = ({ children, title = '회원 전용 페이지', descripti
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn && logoutRedirecting) {
-      clearLogoutRedirecting();
       navigate('/', { replace: true });
     }
   }, [isLoading, isLoggedIn, logoutRedirecting, navigate]);

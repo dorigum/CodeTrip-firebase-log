@@ -7,6 +7,7 @@ import ApiCacheStatus from './components/ApiCacheStatus';
 import useRegionStore from './store/useRegionStore';
 import useAuthStore from './store/useAuthStore';
 import { ToastProvider } from './context/ToastProvider';
+import { clearLogoutRedirecting, isLogoutRedirecting } from './utils/logoutRedirect';
 import './App.css';
 
 const App = () => {
@@ -40,6 +41,12 @@ const App = () => {
     scrollNode?.scrollTo({ top: 0, behavior: 'auto' });
     scrollNode?.dispatchEvent(new Event('scroll'));
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname === '/' && isLogoutRedirecting()) {
+      clearLogoutRedirecting();
+    }
+  }, [location.key, location.pathname]);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);

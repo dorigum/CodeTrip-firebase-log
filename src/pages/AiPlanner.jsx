@@ -421,13 +421,20 @@ const AiPlanner = () => {
   const handleDurationDaysChange = (value) => {
     if (plannerBusy) return;
     const nextDays = Math.min(MAX_DURATION_DAYS, Math.max(1, Number(value) || 1));
+    const nextEndDate = form.travelStartDate
+      ? addDaysToDate(form.travelStartDate, nextDays - 1)
+      : form.travelEndDate;
+
+    if (form.travelStartDate && !isValidTripDate(nextEndDate)) {
+      showToast('여행 종료일이 허용 범위를 넘습니다. 여행 기간 또는 시작일을 조정해주세요.');
+      return;
+    }
+
     invalidateCurrentPlan();
     setForm((prev) => ({
       ...prev,
       durationDays: nextDays,
-      travelEndDate: prev.travelStartDate
-        ? addDaysToDate(prev.travelStartDate, nextDays - 1)
-        : prev.travelEndDate,
+      travelEndDate: nextEndDate,
     }));
   };
 
@@ -438,16 +445,20 @@ const AiPlanner = () => {
       return;
     }
 
+    const nextDays = Math.min(MAX_DURATION_DAYS, Math.max(1, Number(form.durationDays) || 1));
+    const nextEndDate = value ? addDaysToDate(value, nextDays - 1) : '';
+    if (value && !isValidTripDate(nextEndDate)) {
+      showToast('여행 종료일이 허용 범위를 넘습니다. 여행 기간 또는 시작일을 조정해주세요.');
+      return;
+    }
+
     invalidateCurrentPlan();
-    setForm((prev) => {
-      const nextDays = Math.min(MAX_DURATION_DAYS, Math.max(1, Number(prev.durationDays) || 1));
-      return {
-        ...prev,
-        durationDays: nextDays,
-        travelStartDate: value,
-        travelEndDate: value ? addDaysToDate(value, nextDays - 1) : '',
-      };
-    });
+    setForm((prev) => ({
+      ...prev,
+      durationDays: nextDays,
+      travelStartDate: value,
+      travelEndDate: nextEndDate,
+    }));
   };
 
   const handleTripEndDateChange = (value) => {

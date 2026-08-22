@@ -14,8 +14,3 @@ export const clearLogoutRedirecting = () => {
   if (typeof window === 'undefined') return;
   window.sessionStorage.removeItem(LOGOUT_REDIRECT_KEY);
 };
-
-export const clearLogoutRedirectingSoon = () => {
-  if (typeof window === 'undefined') return;
-  window.setTimeout(clearLogoutRedirecting, 0);
-};
