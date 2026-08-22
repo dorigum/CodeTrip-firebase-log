@@ -582,6 +582,7 @@ const AiPlanner = () => {
     if (plannerBusy) return;
     const requestId = ++folderSelectionRequestRef.current;
     invalidateCurrentPlan();
+    const folderSelectionRevision = plannerRevisionRef.current;
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
@@ -599,7 +600,12 @@ const AiPlanner = () => {
     }
 
     const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
-    if (requestId !== folderSelectionRequestRef.current) return;
+    if (
+      requestId !== folderSelectionRequestRef.current
+      || folderSelectionRevision !== plannerRevisionRef.current
+    ) {
+      return;
+    }
 
     const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
     if (folderRegion) {
