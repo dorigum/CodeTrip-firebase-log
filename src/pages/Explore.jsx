@@ -31,7 +31,7 @@ const Explore = () => {
     selectedRegions, toggleRegion,
     selectedThemes, toggleTheme,
     posts, loading, totalCount, currentPage,
-    keyword, setKeyword, clearKeyword,
+    keyword, setKeyword,
     sort, setSort,
     initialized, fetchError,
     applyFilter, changePage, applyFavoriteRegions, resetFilter, resetPage, resetPageAndClearKeyword,
@@ -232,7 +232,7 @@ const Explore = () => {
             <span className="text-primary font-bold">"{keyword}"</span>
             <button
               onClick={() => {
-                clearKeyword();
+                resetPageAndClearKeyword();
                 navigate('/explore');
               }}
               className="ml-1 text-outline hover:text-on-surface transition-colors flex items-center"
