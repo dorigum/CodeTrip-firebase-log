@@ -13,6 +13,7 @@ const formatDate = (str) => {
 };
 
 const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
+const LOGOUT_REDIRECT_KEY = 'codetrip:logout_redirecting';
 
 const Header = () => {
   const { user, logout, isLoggedIn, isLoading } = useAuthStore();
@@ -133,10 +134,11 @@ const Header = () => {
   };
 
   const handleLogout = () => {
+    sessionStorage.setItem(LOGOUT_REDIRECT_KEY, 'true');
     setLogoutConfirmOpen(false);
     logout();
     clearWishlist();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (

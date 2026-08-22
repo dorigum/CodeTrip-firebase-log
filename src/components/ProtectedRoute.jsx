@@ -1,18 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import ConfirmModal from './ConfirmModal';
+
+const LOGOUT_REDIRECT_KEY = 'codetrip:logout_redirecting';
+
+const isLogoutRedirecting = () =>
+  typeof window !== 'undefined' && sessionStorage.getItem(LOGOUT_REDIRECT_KEY) === 'true';
 
 const ProtectedRoute = ({ children, title = '회원 전용 페이지', description }) => {
   const { isLoggedIn, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const loginReturnPath = `${location.pathname}${location.search}`;
+  const logoutRedirecting = isLogoutRedirecting();
 
   const goToLogin = () => {
     sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
     navigate('/login', { state: { from: loginReturnPath } });
   };
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn && logoutRedirecting) {
+      sessionStorage.removeItem(LOGOUT_REDIRECT_KEY);
+      navigate('/', { replace: true });
+    }
+  }, [isLoading, isLoggedIn, logoutRedirecting, navigate]);
 
   if (isLoading) {
     return (
@@ -24,6 +37,8 @@ const ProtectedRoute = ({ children, title = '회원 전용 페이지', descripti
   }
 
   if (isLoggedIn) return children;
+
+  if (logoutRedirecting) return null;
 
   return (
     <>

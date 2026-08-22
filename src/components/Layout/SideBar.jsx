@@ -4,6 +4,8 @@ import useAuthStore from '../../store/useAuthStore';
 import useWishlistStore from '../../store/useWishlistStore';
 import ConfirmModal from '../ConfirmModal';
 
+const LOGOUT_REDIRECT_KEY = 'codetrip:logout_redirecting';
+
 const NAV_ITEMS = [
   {
     icon: 'home',
@@ -106,10 +108,11 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
   };
 
   const handleLogout = () => {
+    sessionStorage.setItem(LOGOUT_REDIRECT_KEY, 'true');
     setLogoutConfirmOpen(false);
     logout();
     clearWishlist();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (
