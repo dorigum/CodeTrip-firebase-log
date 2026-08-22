@@ -172,7 +172,7 @@ const Explore = () => {
       return;
     }
     const target = getExploreScrollY();
-    if (!target) return;
+    if (target == null) return;
     el.scrollTop = target;
     const raf = requestAnimationFrame(() => { el.scrollTop = target; });
     return () => cancelAnimationFrame(raf);
