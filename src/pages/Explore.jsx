@@ -34,7 +34,7 @@ const Explore = () => {
     keyword, setKeyword, clearKeyword,
     sort, setSort,
     initialized, fetchError,
-    applyFilter, changePage, applyFavoriteRegions, resetFilter, resetPage,
+    applyFilter, changePage, applyFavoriteRegions, resetFilter, resetPage, resetPageAndClearKeyword,
   } = useExploreStore();
 
   const showToast = useToast();
@@ -137,10 +137,11 @@ const Explore = () => {
       sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
       return;
     }
+    if (!queryKeyword && keyword) return;
     if (!queryKeyword && (initialized || currentPage !== 1)) {
       resetPage();
     }
-  }, [currentPage, initialized, queryKeyword, resetPage]);
+  }, [currentPage, initialized, keyword, queryKeyword, resetPage]);
 
   useEffect(() => {
     const init = async () => {
@@ -189,9 +190,9 @@ const Explore = () => {
       setKeyword(queryKeyword);
     }
     if (!queryKeyword && keyword) {
-      clearKeyword();
+      resetPageAndClearKeyword();
     }
-  }, [queryKeyword, keyword, setKeyword, clearKeyword]);
+  }, [queryKeyword, keyword, setKeyword, resetPageAndClearKeyword]);
 
   const isFirstRender = useRef(true);
   useEffect(() => {

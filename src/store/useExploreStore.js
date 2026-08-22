@@ -103,6 +103,12 @@ const useExploreStore = create((set, get) => ({
     get().fetchPosts();
   },
 
+  resetPageAndClearKeyword: () => {
+    set({ keyword: '', currentPage: 1 });
+    setExploreScrollY(0);
+    get().fetchPosts();
+  },
+
   setSort: (sort) => {
     set({ sort, currentPage: 1 });
     get().fetchPosts();
