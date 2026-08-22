@@ -364,6 +364,8 @@ const AiPlanner = () => {
     return {
       ...initialForm,
       durationDays: normalizeDurationDays(initialForm.durationDays),
+      travelStartDate: initialForm.travelStartDate || '',
+      travelEndDate: initialForm.travelEndDate || '',
     };
   });
   const [planningMode, setPlanningMode] = useState(
