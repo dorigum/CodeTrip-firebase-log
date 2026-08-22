@@ -6,7 +6,7 @@
 
 현재 상태는 `제출 초안 준비 완료, 최종 제출은 보류`로 분류합니다.
 
-문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있습니다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었습니다. Gemini 호출 코드는 Firebase Callable Function 프록시 구조로 전환되었고, `GEMINI_API_KEY` Secret 등록, `generateTripPlan` 배포, Hosting 배포, 배포 산출물 키 미포함, 미인증 요청 차단, 로그인 상태 인증 성공 smoke test까지 확인했습니다. 신규 Gemini 키도 Secret version 2로 반영해 재검증했으며, 기존 `Gemini API Key_temp`는 AI Studio에서 삭제 완료했습니다. 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 계속 남아 있습니다.
+문서 체계, 기능설명서 5페이지 초안, 제출용 문구, 최종 입력값 체크표, 사용자 제공 입력값 준비 패킷, PPTX 최종 편집 지시서, 최종 검증 실행표는 준비되어 있습니다. 접수 팀명은 `CodeTrip`, 지역 특화 서비스는 `아니오`로 결정 기록이 작성되었습니다. Gemini 호출 코드는 Firebase Callable Function 프록시 구조로 전환되었고, `GEMINI_API_KEY` Secret 등록, `generateTripPlan` 배포, Hosting 배포, 배포 산출물 키 미포함, 미인증 요청 차단, 로그인 상태 인증 성공 smoke test까지 확인했습니다. 신규 Gemini 키도 Secret version 2로 반영해 재검증했으며, 기존 `Gemini API Key_temp`는 AI Studio에서 삭제 완료했습니다. AI 여행 계획 날짜 입력과 폴더 일정 연계 기능은 구현되어 있고, 2026-08-23에는 폴더 일정 정규화와 비동기 폴더 선택 최신성 검증을 보완했습니다. 테스트 전용 계정, OpenAPI 인증키, 로그인 후 내부 화면 캡처, 최종 PDF 생성·검증은 계속 남아 있습니다.
 
 따라서 현재 문서만으로는 제출 준비 방향을 설명할 수 있지만, 실제 제출 버튼을 누르기 전에는 `docs/27-final-validation-execution-sheet.md`의 차단 조건을 모두 통과해야 합니다. 남은 차단 항목의 우선순위와 책임 범위는 `docs/36-final-blockers-summary.md`에서 별도로 요약합니다.
 
@@ -29,6 +29,12 @@
 | 제출 직전 실행표 | VE, URL, TA, PDF 검증표 작성 | 준비됨 | `docs/27-final-validation-execution-sheet.md` | 실제 제출 직전 결과 입력 |
 | 제출 리스크 관리 | 중복 출품, 부문 오첨부, 마감 전 수정 가능 시간 확인 항목 보강 | 부분 준비 | `docs/25-final-input-checklist.md`, `docs/27-final-validation-execution-sheet.md` | 제출 직전 실제 확인 |
 | 차단 항목 요약 | 남은 차단 항목을 책임 범위와 우선순위별로 정리 | 준비됨 | `docs/36-final-blockers-summary.md` | 실제 실행 결과 반영 |
+
+## 2026-08-23 제출 자료 누락 재점검
+
+PR #28의 AI 여행 날짜 설정과 폴더 일정 안정화 작업을 기준으로 제출 자료 구조를 재점검했습니다. 현재 문서 체계에는 제출 체크리스트, 기능설명서 갭 분석, 최종 입력값 체크표, 화면 캡처 계획, OpenAPI 제출표, 최종 검증 실행표, 산출물 manifest가 포함되어 있어 1차 제출 항목 자체가 누락된 부분은 발견하지 못했습니다.
+
+다만 오늘의 코드 변경은 기능설명서 필수 항목을 새로 늘리는 변경이 아니라 AI 일정 생성 기능의 완성도와 안정성을 높이는 변경입니다. 따라서 최종 PPTX에는 “AI 일정 생성 시 여행 날짜를 설정하고, 저장된 폴더 일정과 연계해 관리할 수 있습니다” 정도로 반영하면 충분합니다. 제출 가능 판정은 여전히 최종 PPTX/PDF 생성, 화면 캡처 반영, OpenAPI 인증키 제출 페이지 입력, 테스트 계정 검증, 최종 manifest 작성이 끝난 뒤에만 내립니다.
 
 ## 참고 준비도
 

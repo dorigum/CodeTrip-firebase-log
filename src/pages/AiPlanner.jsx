@@ -11,10 +11,16 @@ import { getPlanSourceBadge } from '../utils/aiPlanSource';
 
 const STYLE_OPTIONS = ['실내', '문화', '맛집', '자연', '힐링', '카페', '사진', '역사'];
 const AVOID_OPTIONS = ['장거리 이동', '등산', '혼잡한 장소', '야외 위주', '비싼 코스'];
+const DATE_MIN = '1000-01-01';
+const DATE_MAX = '9999-12-31';
+const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_DURATION_DAYS = 5;
 
 const DEFAULT_FORM = {
   regionName: '서울',
   durationDays: 1,
+  travelStartDate: '',
+  travelEndDate: '',
   companionType: '친구',
   peopleCount: 2,
   budgetLevel: '보통',
@@ -141,6 +147,75 @@ const REGION_ALIASES = {
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
+const parseTripDateParts = (dateString) => {
+  if (!FOUR_DIGIT_DATE_PATTERN.test(dateString)) return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  return { year, month, day };
+};
+
+const parseLocalDate = (dateString) => {
+  const parts = parseTripDateParts(dateString);
+  if (!parts) return null;
+  const date = new Date(0);
+  date.setFullYear(parts.year, parts.month - 1, parts.day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const isValidTripDate = (value) => {
+  if (!value) return true;
+  if (value < DATE_MIN || value > DATE_MAX) return false;
+
+  const parts = parseTripDateParts(value);
+  if (!parts) return false;
+
+  const date = parseLocalDate(value);
+  return (
+    date
+    && date.getFullYear() === parts.year
+    && date.getMonth() === parts.month - 1
+    && date.getDate() === parts.day
+  );
+};
+
+const formatDateInput = (date) => (
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+);
+
+const addDaysToDate = (dateString, daysToAdd) => {
+  if (!isValidTripDate(dateString) || !dateString) return '';
+  const date = parseLocalDate(dateString);
+  date.setDate(date.getDate() + daysToAdd);
+  return formatDateInput(date);
+};
+
+const subtractDaysFromDate = (dateString, daysToSubtract) => {
+  if (!isValidTripDate(dateString) || !dateString) return '';
+  const date = parseLocalDate(dateString);
+  date.setDate(date.getDate() - daysToSubtract);
+  return formatDateInput(date);
+};
+
+const normalizeDurationDays = (value, fallback = 1) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(MAX_DURATION_DAYS, Math.max(1, Math.trunc(parsed)));
+};
+
+const getMaxTripStartDate = (durationDays) => (
+  subtractDaysFromDate(DATE_MAX, normalizeDurationDays(durationDays) - 1) || DATE_MAX
+);
+
+const getInclusiveDurationDays = (startDate, endDate) => {
+  if (!startDate || !endDate || !isValidTripDate(startDate) || !isValidTripDate(endDate)) return null;
+  const start = parseLocalDate(startDate);
+  const end = parseLocalDate(endDate);
+  if (!start || !end) return null;
+  const diffMs = end - start;
+  if (diffMs < 0) return null;
+  return Math.round(diffMs / 86400000) + 1;
+};
+
 const getRegionFromText = (value) => {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -233,15 +308,64 @@ const getFolderRegion = (folder, places) => {
   return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
 };
 
-const getFolderDurationDays = (folder) => {
-  if (!folder?.start_date) return null;
-  if (!folder.end_date) return 1;
+const getNormalizedFolderSchedule = (folder) => {
+  const startDate = String(folder?.start_date || '').slice(0, 10);
+  const endDate = String(folder?.end_date || '').slice(0, 10);
+  const hasStartDate = Boolean(startDate);
+  const hasEndDate = Boolean(endDate);
 
-  const start = Date.parse(`${folder.start_date}T00:00:00Z`);
-  const end = Date.parse(`${folder.end_date}T00:00:00Z`);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  if (!hasStartDate && !hasEndDate) {
+    return {
+      durationDays: DEFAULT_FORM.durationDays,
+      travelStartDate: '',
+      travelEndDate: '',
+      adjusted: false,
+    };
+  }
 
-  return Math.min(5, Math.floor((end - start) / 86400000) + 1);
+  if (!hasStartDate || !isValidTripDate(startDate)) {
+    return {
+      durationDays: DEFAULT_FORM.durationDays,
+      travelStartDate: '',
+      travelEndDate: '',
+      adjusted: true,
+    };
+  }
+
+  if (!hasEndDate || !isValidTripDate(endDate)) {
+    return {
+      durationDays: 1,
+      travelStartDate: startDate,
+      travelEndDate: startDate,
+      adjusted: true,
+    };
+  }
+
+  const folderDurationDays = getInclusiveDurationDays(startDate, endDate);
+  if (!folderDurationDays) {
+    return {
+      durationDays: 1,
+      travelStartDate: startDate,
+      travelEndDate: startDate,
+      adjusted: true,
+    };
+  }
+
+  if (folderDurationDays > MAX_DURATION_DAYS) {
+    return {
+      durationDays: MAX_DURATION_DAYS,
+      travelStartDate: startDate,
+      travelEndDate: addDaysToDate(startDate, MAX_DURATION_DAYS - 1),
+      adjusted: true,
+    };
+  }
+
+  return {
+    durationDays: folderDurationDays,
+    travelStartDate: startDate,
+    travelEndDate: endDate,
+    adjusted: false,
+  };
 };
 
 const normalizeTourCandidate = (item) => ({
@@ -263,8 +387,11 @@ const getTotalBudgetLabel = (budgetLevel, peopleCount) => {
   return `1일 총 ${formatWon(min * count)}~${formatWon(max * count)}`;
 };
 
-const FieldLabel = ({ children }) => (
-  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+const FieldLabel = ({ children, htmlFor }) => (
+  <label
+    htmlFor={htmlFor}
+    className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2"
+  >
     {children}
   </label>
 );
@@ -278,10 +405,18 @@ const AiPlanner = () => {
   const regeneratePlan = location.state?.regeneratePlan || null;
   const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
   const regenerateFolderId = location.state?.folderId || regenerationContext.sourceFolderId || '';
-  const [form, setForm] = useState(() => ({
-    ...DEFAULT_FORM,
-    ...regenerationContext,
-  }));
+  const [form, setForm] = useState(() => {
+    const initialForm = {
+      ...DEFAULT_FORM,
+      ...regenerationContext,
+    };
+    return {
+      ...initialForm,
+      durationDays: normalizeDurationDays(initialForm.durationDays),
+      travelStartDate: initialForm.travelStartDate || '',
+      travelEndDate: initialForm.travelEndDate || '',
+    };
+  });
   const [planningMode, setPlanningMode] = useState(
     regenerateFolderId ? PLAN_MODE.FOLDER : (regenerationContext.planningMode || PLAN_MODE.CUSTOM)
   );
@@ -319,6 +454,10 @@ const AiPlanner = () => {
   );
 
   const plannerBusy = generating || saving;
+  const maxTripStartDate = useMemo(
+    () => getMaxTripStartDate(form.durationDays),
+    [form.durationDays]
+  );
 
   const invalidateCurrentPlan = useCallback(() => {
     plannerRevisionRef.current += 1;
@@ -360,6 +499,74 @@ const AiPlanner = () => {
     updateForm('peopleCount', Math.min(nextCount, 10));
   };
 
+  const handleDurationDaysChange = (value) => {
+    if (plannerBusy) return;
+    const nextDays = normalizeDurationDays(value, normalizeDurationDays(form.durationDays));
+    const nextEndDate = form.travelStartDate
+      ? addDaysToDate(form.travelStartDate, nextDays - 1)
+      : form.travelEndDate;
+
+    if (form.travelStartDate && !isValidTripDate(nextEndDate)) {
+      showToast('여행 종료일이 허용 범위를 넘습니다. 여행 기간 또는 시작일을 조정해주세요.');
+      return;
+    }
+
+    invalidateCurrentPlan();
+    setForm((prev) => ({
+      ...prev,
+      durationDays: nextDays,
+      travelEndDate: nextEndDate,
+    }));
+  };
+
+  const handleTripStartDateChange = (value) => {
+    if (plannerBusy) return;
+    if (!isValidTripDate(value)) {
+      showToast('여행 시작일의 연도는 4자리로 입력해주세요.');
+      return;
+    }
+
+    const nextDays = normalizeDurationDays(form.durationDays);
+    const nextEndDate = value ? addDaysToDate(value, nextDays - 1) : '';
+    if (value && !isValidTripDate(nextEndDate)) {
+      showToast('여행 종료일이 허용 범위를 넘습니다. 여행 기간 또는 시작일을 조정해주세요.');
+      return;
+    }
+
+    invalidateCurrentPlan();
+    setForm((prev) => ({
+      ...prev,
+      durationDays: nextDays,
+      travelStartDate: value,
+      travelEndDate: nextEndDate,
+    }));
+  };
+
+  const handleTripEndDateChange = (value) => {
+    if (plannerBusy) return;
+    if (!isValidTripDate(value)) {
+      showToast('여행 종료일의 연도는 4자리로 입력해주세요.');
+      return;
+    }
+
+    const nextDuration = getInclusiveDurationDays(form.travelStartDate, value);
+    if (form.travelStartDate && value && !nextDuration) {
+      showToast('종료일은 시작일보다 빠를 수 없습니다.');
+      return;
+    }
+    if (nextDuration && nextDuration > MAX_DURATION_DAYS) {
+      showToast(`AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+      return;
+    }
+
+    invalidateCurrentPlan();
+    setForm((prev) => ({
+      ...prev,
+      travelEndDate: value,
+      ...(nextDuration ? { durationDays: nextDuration } : {}),
+    }));
+  };
+
   const handlePlanningModeChange = (mode) => {
     if (plannerBusy) return;
     setPlanningMode(mode);
@@ -375,25 +582,36 @@ const AiPlanner = () => {
     if (plannerBusy) return;
     const requestId = ++folderSelectionRequestRef.current;
     invalidateCurrentPlan();
+    const folderSelectionRevision = plannerRevisionRef.current;
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
-    const folderDurationDays = getFolderDurationDays(selectedFolder);
+    const folderSchedule = getNormalizedFolderSchedule(selectedFolder);
 
     setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
     setForm((prev) => ({
       ...prev,
-      ...(folderDurationDays ? { durationDays: folderDurationDays } : {}),
+      durationDays: folderSchedule.durationDays,
+      travelStartDate: folderSchedule.travelStartDate,
+      travelEndDate: folderSchedule.travelEndDate,
     }));
+    if (folderSchedule.adjusted) {
+      showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 유효한 1~${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
+    }
 
     const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
-    if (requestId !== folderSelectionRequestRef.current) return;
+    if (
+      requestId !== folderSelectionRequestRef.current
+      || folderSelectionRevision !== plannerRevisionRef.current
+    ) {
+      return;
+    }
 
     const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
     if (folderRegion) {
       updateForm('regionName', folderRegion);
     }
-  }, [folders, invalidateCurrentPlan, plannerBusy, updateForm, wishlistItems]);
+  }, [folders, invalidateCurrentPlan, plannerBusy, showToast, updateForm, wishlistItems]);
 
   useEffect(() => {
     if (!regeneratePlan || regenerationHydratedRef.current) return;
@@ -441,6 +659,31 @@ const AiPlanner = () => {
       return;
     }
 
+    if (!isValidTripDate(form.travelStartDate) || !isValidTripDate(form.travelEndDate)) {
+      showToast('여행 날짜는 YYYY-MM-DD 형식으로 입력해주세요.');
+      return;
+    }
+
+    const hasTripStartDate = Boolean(form.travelStartDate);
+    const hasTripEndDate = Boolean(form.travelEndDate);
+    if (hasTripStartDate !== hasTripEndDate) {
+      showToast('여행 시작일과 종료일을 모두 입력하거나 모두 비워주세요.');
+      return;
+    }
+
+    const tripDuration = getInclusiveDurationDays(form.travelStartDate, form.travelEndDate);
+    if (form.travelStartDate && form.travelEndDate && !tripDuration) {
+      showToast('여행 종료일은 시작일보다 빠를 수 없습니다.');
+      return;
+    }
+
+    if (tripDuration && tripDuration > MAX_DURATION_DAYS) {
+      showToast(`AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+      return;
+    }
+
+    const normalizedDurationDays = tripDuration || normalizeDurationDays(form.durationDays);
+
     if (planningMode === PLAN_MODE.FOLDER) {
       if (!selectedFolderId) {
         showToast('코스 기준으로 사용할 위시리스트 폴더를 선택해주세요.');
@@ -480,7 +723,7 @@ const AiPlanner = () => {
         planningMode,
         sourceFolderName: folders.find((folder) => String(folder.id) === String(selectedFolderId))?.name || '',
         regionName: form.regionName.trim(),
-        durationDays: Number(form.durationDays) || 1,
+        durationDays: normalizedDurationDays,
         peopleCount: Number(form.peopleCount) || 1,
         totalBudgetLabel: getTotalBudgetLabel(form.budgetLevel, form.peopleCount),
         preferredPlaces,
@@ -492,7 +735,9 @@ const AiPlanner = () => {
           planningMode,
           sourceFolderId: planningMode === PLAN_MODE.FOLDER ? selectedFolderId : null,
           regionName: form.regionName.trim(),
-          durationDays: Number(form.durationDays) || 1,
+          durationDays: normalizedDurationDays,
+          travelStartDate: form.travelStartDate || null,
+          travelEndDate: form.travelEndDate || null,
           companionType: form.companionType,
           peopleCount: Number(form.peopleCount) || 1,
           budgetLevel: form.budgetLevel,
@@ -708,13 +953,51 @@ const AiPlanner = () => {
               <input
                 type="number"
                 min="1"
-                max="5"
+                max={MAX_DURATION_DAYS}
+                step="1"
                 value={form.durationDays}
-                onChange={(e) => updateForm('durationDays', e.target.value)}
+                onChange={(e) => handleDurationDaysChange(e.target.value)}
                 disabled={plannerBusy}
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel htmlFor="ai-planner-travel-start-date">Travel Start</FieldLabel>
+              <input
+                id="ai-planner-travel-start-date"
+                type="date"
+                min={DATE_MIN}
+                max={maxTripStartDate}
+                value={form.travelStartDate}
+                onChange={(e) => handleTripStartDateChange(e.target.value)}
+                disabled={plannerBusy}
+                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="ai-planner-travel-end-date">Travel End</FieldLabel>
+              <input
+                id="ai-planner-travel-end-date"
+                type="date"
+                min={form.travelStartDate || DATE_MIN}
+                max={DATE_MAX}
+                value={form.travelEndDate}
+                onChange={(e) => handleTripEndDateChange(e.target.value)}
+                disabled={plannerBusy}
+                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+              />
+            </div>
+            <p className="col-span-2 -mt-2 text-[10px] leading-4 text-slate-400">
+              여행 날짜를 입력하면 저장 폴더의 일정에도 함께 반영됩니다.
+              {form.travelStartDate && (
+                <span className="block text-primary font-bold">
+                  {form.travelStartDate} ~ {form.travelEndDate || '미정'} · {normalizeDurationDays(form.durationDays)}일 코스
+                </span>
+              )}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
