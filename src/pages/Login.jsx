@@ -5,6 +5,7 @@ import authApi from '../api/authApi';
 
 const RETURN_AFTER_LOGIN_KEY = 'codetrip:return_after_login';
 const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
+let preserveExploreCleanupTimer = null;
 
 const getSafeReturnPath = (stateFrom) => {
   const storedFrom = sessionStorage.getItem(RETURN_AFTER_LOGIN_KEY);
@@ -28,10 +29,18 @@ const Login = () => {
   const shouldKeepExploreStateRef = useRef(false);
 
   useEffect(() => {
+    if (preserveExploreCleanupTimer) {
+      clearTimeout(preserveExploreCleanupTimer);
+      preserveExploreCleanupTimer = null;
+    }
+
     return () => {
-      if (!shouldKeepExploreStateRef.current) {
-        sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
-      }
+      preserveExploreCleanupTimer = setTimeout(() => {
+        if (!shouldKeepExploreStateRef.current) {
+          sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
+        }
+        preserveExploreCleanupTimer = null;
+      }, 0);
     };
   }, []);
 
@@ -64,7 +73,6 @@ const Login = () => {
       navigate(returnPath, { replace: true });
     } catch (err) {
       shouldKeepExploreStateRef.current = false;
-      sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
       cancelLogin();
       setError(err.message || 'Invalid email or password');
     } finally {
