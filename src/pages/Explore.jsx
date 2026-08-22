@@ -11,6 +11,7 @@ import { DEFAULT_THEMES } from '../constants/themes';
 import authApi from '../api/authApi';
 import useToast from '../hooks/useToast';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop';
+const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
 
 const Explore = () => {
   const location = useLocation();
@@ -33,7 +34,7 @@ const Explore = () => {
     keyword, setKeyword, clearKeyword,
     sort, setSort,
     initialized, fetchError,
-    applyFilter, changePage, applyFavoriteRegions, resetFilter,
+    applyFilter, changePage, applyFavoriteRegions, resetFilter, resetPage,
   } = useExploreStore();
 
   const showToast = useToast();
@@ -50,6 +51,7 @@ const Explore = () => {
 
   const goToLogin = () => {
     sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
+    sessionStorage.setItem(PRESERVE_EXPLORE_STATE_KEY, 'true');
     setShowLoginDialog(false);
     navigate('/login', { state: { from: loginReturnPath } });
   };
@@ -123,6 +125,20 @@ const Explore = () => {
   };
 
   const totalPages = Math.ceil(totalCount / NUM_OF_ROWS);
+  const exploreEntryHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (exploreEntryHandledRef.current) return;
+    exploreEntryHandledRef.current = true;
+    const shouldPreserveExploreState = sessionStorage.getItem(PRESERVE_EXPLORE_STATE_KEY) === 'true';
+    if (shouldPreserveExploreState) {
+      sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
+      return;
+    }
+    if (!queryKeyword && (initialized || currentPage !== 1)) {
+      resetPage();
+    }
+  }, [currentPage, initialized, queryKeyword, resetPage]);
 
   useEffect(() => {
     const init = async () => {

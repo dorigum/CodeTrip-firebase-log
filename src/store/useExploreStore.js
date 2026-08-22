@@ -97,6 +97,12 @@ const useExploreStore = create((set, get) => ({
     get().fetchPosts();
   },
 
+  resetPage: () => {
+    set({ currentPage: 1 });
+    setExploreScrollY(0);
+    get().fetchPosts();
+  },
+
   setSort: (sort) => {
     set({ sort, currentPage: 1 });
     get().fetchPosts();
