@@ -308,15 +308,53 @@ const getFolderRegion = (folder, places) => {
   return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
 };
 
-const getFolderDurationDays = (folder) => {
-  if (!folder?.start_date) return null;
-  if (!folder.end_date) return 1;
+const getNormalizedFolderSchedule = (folder) => {
+  const startDate = String(folder?.start_date || '').slice(0, 10);
+  const endDate = String(folder?.end_date || '').slice(0, 10);
 
-  const start = Date.parse(`${folder.start_date}T00:00:00Z`);
-  const end = Date.parse(`${folder.end_date}T00:00:00Z`);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  if (!startDate || !isValidTripDate(startDate)) {
+    return {
+      durationDays: DEFAULT_FORM.durationDays,
+      travelStartDate: '',
+      travelEndDate: '',
+      adjusted: false,
+    };
+  }
 
-  return Math.min(5, Math.floor((end - start) / 86400000) + 1);
+  if (!endDate || !isValidTripDate(endDate)) {
+    return {
+      durationDays: 1,
+      travelStartDate: startDate,
+      travelEndDate: startDate,
+      adjusted: Boolean(endDate),
+    };
+  }
+
+  const folderDurationDays = getInclusiveDurationDays(startDate, endDate);
+  if (!folderDurationDays) {
+    return {
+      durationDays: 1,
+      travelStartDate: startDate,
+      travelEndDate: startDate,
+      adjusted: true,
+    };
+  }
+
+  if (folderDurationDays > MAX_DURATION_DAYS) {
+    return {
+      durationDays: MAX_DURATION_DAYS,
+      travelStartDate: startDate,
+      travelEndDate: addDaysToDate(startDate, MAX_DURATION_DAYS - 1),
+      adjusted: true,
+    };
+  }
+
+  return {
+    durationDays: folderDurationDays,
+    travelStartDate: startDate,
+    travelEndDate: endDate,
+    adjusted: false,
+  };
 };
 
 const normalizeTourCandidate = (item) => ({
@@ -536,15 +574,18 @@ const AiPlanner = () => {
     setSelectedFolderId(folderId);
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
-    const folderDurationDays = getFolderDurationDays(selectedFolder);
+    const folderSchedule = getNormalizedFolderSchedule(selectedFolder);
 
     setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
     setForm((prev) => ({
       ...prev,
-      ...(folderDurationDays ? { durationDays: folderDurationDays } : {}),
-      travelStartDate: selectedFolder?.start_date || '',
-      travelEndDate: selectedFolder?.end_date || selectedFolder?.start_date || '',
+      durationDays: folderSchedule.durationDays,
+      travelStartDate: folderSchedule.travelStartDate,
+      travelEndDate: folderSchedule.travelEndDate,
     }));
+    if (folderSchedule.adjusted) {
+      showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 최대 ${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
+    }
 
     const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
     if (requestId !== folderSelectionRequestRef.current) return;
@@ -553,7 +594,7 @@ const AiPlanner = () => {
     if (folderRegion) {
       updateForm('regionName', folderRegion);
     }
-  }, [folders, invalidateCurrentPlan, plannerBusy, updateForm, wishlistItems]);
+  }, [folders, invalidateCurrentPlan, plannerBusy, showToast, updateForm, wishlistItems]);
 
   useEffect(() => {
     if (!regeneratePlan || regenerationHydratedRef.current) return;
