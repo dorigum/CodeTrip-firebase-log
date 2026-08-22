@@ -188,7 +188,7 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **영향 범위**: 보호 라우트, 로그아웃 UX, Header, SideBar, AI Planner, My Page, Board
 - **요약**: 로그인한 사용자만 접근 가능한 페이지에서 로그아웃하면 홈으로 이동하기 직전 보호 라우트가 비로그인 접근으로 판단해 로그인 안내 모달을 순간적으로 표시할 수 있었습니다.
 - **처리**: 명시적인 로그아웃 흐름에서 `codetrip:logout_redirecting` 플래그를 저장하고, `ProtectedRoute`가 해당 플래그를 감지하면 로그인 안내 모달을 렌더링하지 않고 홈으로 이동하도록 수정했습니다.
-- **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 변경 파일은 `Header.jsx`, `SideBar.jsx`, `ProtectedRoute.jsx` 3개로 제한했습니다.
+- **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 로그아웃 리다이렉션 제품 코드 변경 파일은 `Header.jsx`, `SideBar.jsx`, `ProtectedRoute.jsx` 3개로 제한했고, 관련 문서 변경은 트러블슈팅과 프로젝트 로그에 기록했습니다.
 - **상세 기록**: [2026-08-22 개발 로그](project-log/2026-08-22.md)의 로그아웃 시 보호 라우트 로그인 안내 모달이 순간적으로 표시되는 문제 섹션 참고
 
 ## 참고 사항

@@ -6,6 +6,7 @@ import { getNotifications, markAllRead, markOneRead, deleteOneNotification, dele
 import useToast from '../../hooks/useToast';
 import useRecentSearch from '../../hooks/useRecentSearch';
 import ConfirmModal from '../ConfirmModal';
+import { clearLogoutRedirectingSoon, markLogoutRedirecting } from '../../utils/logoutRedirect';
 
 const formatDate = (str) => {
   const d = new Date(str);
@@ -13,7 +14,6 @@ const formatDate = (str) => {
 };
 
 const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
-const LOGOUT_REDIRECT_KEY = 'codetrip:logout_redirecting';
 
 const Header = () => {
   const { user, logout, isLoggedIn, isLoading } = useAuthStore();
@@ -134,11 +134,12 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    sessionStorage.setItem(LOGOUT_REDIRECT_KEY, 'true');
+    markLogoutRedirecting();
     setLogoutConfirmOpen(false);
     logout();
     clearWishlist();
     navigate('/', { replace: true });
+    clearLogoutRedirectingSoon();
   };
 
   return (

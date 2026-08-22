@@ -3,8 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import useWishlistStore from '../../store/useWishlistStore';
 import ConfirmModal from '../ConfirmModal';
-
-const LOGOUT_REDIRECT_KEY = 'codetrip:logout_redirecting';
+import { clearLogoutRedirectingSoon, markLogoutRedirecting } from '../../utils/logoutRedirect';
 
 const NAV_ITEMS = [
   {
@@ -108,11 +107,12 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
   };
 
   const handleLogout = () => {
-    sessionStorage.setItem(LOGOUT_REDIRECT_KEY, 'true');
+    markLogoutRedirecting();
     setLogoutConfirmOpen(false);
     logout();
     clearWishlist();
     navigate('/', { replace: true });
+    clearLogoutRedirectingSoon();
   };
 
   return (

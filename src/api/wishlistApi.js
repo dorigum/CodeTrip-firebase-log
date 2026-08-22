@@ -413,7 +413,11 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
   const generationContext = plan?.generationContext || plan?.generation_context || {};
   const expectedRegion = toText(generationContext.regionName || plan?.regionName);
   const planStartDate = toText(generationContext.travelStartDate || generationContext.startDate);
-  const planEndDate = toText(generationContext.travelEndDate || generationContext.endDate || planStartDate);
+  const planEndDate = toText(generationContext.travelEndDate || generationContext.endDate);
+  if (Boolean(planStartDate) !== Boolean(planEndDate)) {
+    throw new Error('AI 여행 코스의 여행 시작일과 종료일이 모두 필요합니다.');
+  }
+
   const targetFolderId = options.folderId ? String(options.folderId) : null;
   const folderRef = targetFolderId
     ? ref(realtimeDb, userPath(user.id, `wishlistFolders/${targetFolderId}`))

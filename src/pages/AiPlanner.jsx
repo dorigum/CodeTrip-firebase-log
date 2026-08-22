@@ -147,15 +147,35 @@ const REGION_ALIASES = {
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
-const isValidTripDate = (value) => !value || (
-  FOUR_DIGIT_DATE_PATTERN.test(value)
-  && value >= DATE_MIN
-  && value <= DATE_MAX
-);
+const parseTripDateParts = (dateString) => {
+  if (!FOUR_DIGIT_DATE_PATTERN.test(dateString)) return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  return { year, month, day };
+};
 
 const parseLocalDate = (dateString) => {
-  const [year, month, day] = String(dateString).slice(0, 10).split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const parts = parseTripDateParts(dateString);
+  if (!parts) return null;
+  const date = new Date(0);
+  date.setFullYear(parts.year, parts.month - 1, parts.day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const isValidTripDate = (value) => {
+  if (!value) return true;
+  if (value < DATE_MIN || value > DATE_MAX) return false;
+
+  const parts = parseTripDateParts(value);
+  if (!parts) return false;
+
+  const date = parseLocalDate(value);
+  return (
+    date
+    && date.getFullYear() === parts.year
+    && date.getMonth() === parts.month - 1
+    && date.getDate() === parts.day
+  );
 };
 
 const formatDateInput = (date) => (
@@ -171,7 +191,10 @@ const addDaysToDate = (dateString, daysToAdd) => {
 
 const getInclusiveDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate || !isValidTripDate(startDate) || !isValidTripDate(endDate)) return null;
-  const diffMs = parseLocalDate(endDate) - parseLocalDate(startDate);
+  const start = parseLocalDate(startDate);
+  const end = parseLocalDate(endDate);
+  if (!start || !end) return null;
+  const diffMs = end - start;
   if (diffMs < 0) return null;
   return Math.round(diffMs / 86400000) + 1;
 };
@@ -537,6 +560,13 @@ const AiPlanner = () => {
 
     if (!isValidTripDate(form.travelStartDate) || !isValidTripDate(form.travelEndDate)) {
       showToast('여행 날짜는 YYYY-MM-DD 형식으로 입력해주세요.');
+      return;
+    }
+
+    const hasTripStartDate = Boolean(form.travelStartDate);
+    const hasTripEndDate = Boolean(form.travelEndDate);
+    if (hasTripStartDate !== hasTripEndDate) {
+      showToast('여행 시작일과 종료일을 모두 입력하거나 모두 비워주세요.');
       return;
     }
 

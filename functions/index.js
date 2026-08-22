@@ -20,6 +20,8 @@ const MAX_CONCURRENT_REQUESTS_PER_UID = 2;
 const MAX_PREFERRED_PLACES = 12;
 const MAX_TEXT_LENGTH = 120;
 const MAX_DURATION_DAYS = 5;
+const DATE_MIN = '1000-01-01';
+const DATE_MAX = '9999-12-31';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const requestBuckets = new Map();
@@ -53,23 +55,50 @@ const sanitizeNumber = (value, fallback, min, max) => {
   return Math.min(max, Math.max(min, parsed));
 };
 
+const parseTripDateParts = (dateString) => {
+  if (!DATE_PATTERN.test(dateString)) return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  return { year, month, day };
+};
+
 const parseLocalDate = (dateString) => {
-  const [year, month, day] = String(dateString).slice(0, 10).split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const parts = parseTripDateParts(dateString);
+  if (!parts) return null;
+
+  const date = new Date(0);
+  date.setFullYear(parts.year, parts.month - 1, parts.day);
+  date.setHours(0, 0, 0, 0);
+  return date;
 };
 
 const sanitizeTripDate = (value, fieldName) => {
   const date = sanitizeString(value, '', 20);
   if (!date) return '';
-  if (!DATE_PATTERN.test(date)) {
+  if (!DATE_PATTERN.test(date) || date < DATE_MIN || date > DATE_MAX) {
     throw new HttpsError('invalid-argument', `${fieldName} 형식이 올바르지 않습니다.`);
   }
+
+  const parts = parseTripDateParts(date);
+  const parsedDate = parseLocalDate(date);
+  const isRealCalendarDate = (
+    parsedDate
+    && parsedDate.getFullYear() === parts.year
+    && parsedDate.getMonth() === parts.month - 1
+    && parsedDate.getDate() === parts.day
+  );
+  if (!isRealCalendarDate) {
+    throw new HttpsError('invalid-argument', `${fieldName} 형식이 올바르지 않습니다.`);
+  }
+
   return date;
 };
 
 const getInclusiveDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate) return null;
-  const diffMs = parseLocalDate(endDate) - parseLocalDate(startDate);
+  const start = parseLocalDate(startDate);
+  const end = parseLocalDate(endDate);
+  if (!start || !end) return null;
+  const diffMs = end - start;
   if (diffMs < 0) return null;
   return Math.round(diffMs / 86400000) + 1;
 };
@@ -90,8 +119,12 @@ const sanitizeInput = (input = {}) => {
   const durationDays = sanitizeNumber(input.durationDays, 1, 1, MAX_DURATION_DAYS);
   const travelStartDate = sanitizeTripDate(input.travelStartDate, '여행 시작일');
   const travelEndDate = sanitizeTripDate(input.travelEndDate, '여행 종료일');
+  if (Boolean(travelStartDate) !== Boolean(travelEndDate)) {
+    throw new HttpsError('invalid-argument', '여행 시작일과 종료일을 모두 입력하거나 모두 비워주세요.');
+  }
+
   const dateDurationDays = getInclusiveDurationDays(travelStartDate, travelEndDate);
-  if (travelStartDate && travelEndDate && !dateDurationDays) {
+  if (travelStartDate && !dateDurationDays) {
     throw new HttpsError('invalid-argument', '여행 종료일은 시작일보다 빠를 수 없습니다.');
   }
   if (dateDurationDays && dateDurationDays > MAX_DURATION_DAYS) {
