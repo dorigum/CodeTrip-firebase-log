@@ -48,6 +48,12 @@ const Explore = () => {
   const targetWishlistFolder = location.state?.targetWishlistFolder || null;
   const loginReturnPath = `${location.pathname}${location.search}`;
 
+  const goToLogin = () => {
+    sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
+    setShowLoginDialog(false);
+    navigate('/login', { state: { from: loginReturnPath } });
+  };
+
   const handleHeartToggle = async (post) => {
     if (!isLoggedIn) {
       setShowLoginDialog(true);
@@ -188,10 +194,7 @@ const Explore = () => {
         tone="primary"
         onCancel={() => setShowLoginDialog(false)}
         onClose={() => setShowLoginDialog(false)}
-        onConfirm={() => {
-          setShowLoginDialog(false);
-          navigate('/login', { state: { from: loginReturnPath } });
-        }}
+        onConfirm={goToLogin}
       />
 
       <header className="mb-10">

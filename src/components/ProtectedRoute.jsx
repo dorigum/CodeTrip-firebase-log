@@ -7,6 +7,12 @@ const ProtectedRoute = ({ children, title = '회원 전용 페이지', descripti
   const { isLoggedIn, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const loginReturnPath = `${location.pathname}${location.search}`;
+
+  const goToLogin = () => {
+    sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
+    navigate('/login', { state: { from: loginReturnPath } });
+  };
 
   if (isLoading) {
     return (
@@ -30,7 +36,7 @@ const ProtectedRoute = ({ children, title = '회원 전용 페이지', descripti
         cancelText="HOME"
         icon="lock"
         tone="primary"
-        onConfirm={() => navigate('/login', { state: { from: location.pathname } })}
+        onConfirm={goToLogin}
         onCancel={() => navigate('/')}
       />
     </>
