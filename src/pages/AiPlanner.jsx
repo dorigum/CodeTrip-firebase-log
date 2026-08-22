@@ -311,8 +311,10 @@ const getFolderRegion = (folder, places) => {
 const getNormalizedFolderSchedule = (folder) => {
   const startDate = String(folder?.start_date || '').slice(0, 10);
   const endDate = String(folder?.end_date || '').slice(0, 10);
+  const hasStartDate = Boolean(startDate);
+  const hasEndDate = Boolean(endDate);
 
-  if (!startDate || !isValidTripDate(startDate)) {
+  if (!hasStartDate && !hasEndDate) {
     return {
       durationDays: DEFAULT_FORM.durationDays,
       travelStartDate: '',
@@ -321,12 +323,21 @@ const getNormalizedFolderSchedule = (folder) => {
     };
   }
 
-  if (!endDate || !isValidTripDate(endDate)) {
+  if (!hasStartDate || !isValidTripDate(startDate)) {
+    return {
+      durationDays: DEFAULT_FORM.durationDays,
+      travelStartDate: '',
+      travelEndDate: '',
+      adjusted: true,
+    };
+  }
+
+  if (!hasEndDate || !isValidTripDate(endDate)) {
     return {
       durationDays: 1,
       travelStartDate: startDate,
       travelEndDate: startDate,
-      adjusted: Boolean(endDate),
+      adjusted: true,
     };
   }
 
@@ -584,7 +595,7 @@ const AiPlanner = () => {
       travelEndDate: folderSchedule.travelEndDate,
     }));
     if (folderSchedule.adjusted) {
-      showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 최대 ${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
+      showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 유효한 1~${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
     }
 
     const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
