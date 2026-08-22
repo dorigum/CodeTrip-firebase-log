@@ -6,6 +6,7 @@ import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
 import PageHeader from '../components/PageHeader';
+import ConfirmModal from '../components/ConfirmModal';
 import { DEFAULT_THEMES } from '../constants/themes';
 import authApi from '../api/authApi';
 import useToast from '../hooks/useToast';
@@ -45,6 +46,7 @@ const Explore = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const targetWishlistFolder = location.state?.targetWishlistFolder || null;
+  const loginReturnPath = `${location.pathname}${location.search}`;
 
   const handleHeartToggle = async (post) => {
     if (!isLoggedIn) {
@@ -176,44 +178,21 @@ const Explore = () => {
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto min-h-screen">
-      {/* 로그인 유도 다이얼로그 */}
-      {showLoginDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(186,26,26,0.6)' }} />
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(90,95,101,0.6)' }} />
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(0,184,212,0.6)' }} />
-              </div>
-              <span className="text-[10px] font-mono text-outline uppercase tracking-widest">auth_required.sh</span>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                <div>
-                  <p className="font-headline font-bold text-on-surface text-sm">로그인이 필요합니다</p>
-                  <p className="text-xs text-outline font-mono mt-0.5">// 위시리스트 저장은 로그인한 회원만 사용할 수 있습니다.</p>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={() => setShowLoginDialog(false)}
-                  className="flex-1 py-2.5 rounded-lg text-xs font-bold font-label border border-outline-variant/30 text-on-secondary-container hover:bg-surface-container-high transition-all"
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={() => { setShowLoginDialog(false); navigate('/login'); }}
-                  className="flex-1 py-2.5 rounded-lg text-xs font-bold font-label bg-primary text-white hover:brightness-110 transition-all"
-                >
-                  GO_TO_LOGIN.SH
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={showLoginDialog}
+        title="로그인이 필요합니다"
+        description="위시리스트 저장은 로그인한 회원만 사용할 수 있습니다. 로그인 후 관심 여행지를 폴더에 저장하고 여행 계획으로 이어서 관리해보세요."
+        confirmText="GO_TO_LOGIN.SH"
+        cancelText="CANCEL"
+        icon="lock"
+        tone="primary"
+        onCancel={() => setShowLoginDialog(false)}
+        onClose={() => setShowLoginDialog(false)}
+        onConfirm={() => {
+          setShowLoginDialog(false);
+          navigate('/login', { state: { from: loginReturnPath } });
+        }}
+      />
 
       <header className="mb-10">
         <PageHeader

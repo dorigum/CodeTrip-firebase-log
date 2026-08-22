@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import authApi from '../api/authApi';
 
@@ -11,6 +11,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login, prepareLogin, cancelLogin } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnPath = typeof location.state?.from === 'string' && location.state.from.startsWith('/')
+    ? location.state.from
+    : '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +36,7 @@ const Login = () => {
       login(data.user);
       localStorage.setItem('trip_token', data.token);
       
-      navigate('/');
+      navigate(returnPath, { replace: true });
     } catch (err) {
       cancelLogin();
       setError(err.message || 'Invalid email or password');
