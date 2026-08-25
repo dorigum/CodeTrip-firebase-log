@@ -1064,8 +1064,8 @@ const AiPlanner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="col-span-2 sm:col-span-1">
               <FieldLabel>Pace</FieldLabel>
               <select
                 value={form.pace}
@@ -1083,7 +1083,7 @@ const AiPlanner = () => {
                 value={form.startTime}
                 onChange={(e) => updateForm('startTime', e.target.value)}
                 disabled={plannerBusy}
-                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
             <div>
@@ -1093,7 +1093,7 @@ const AiPlanner = () => {
                 value={form.endTime}
                 onChange={(e) => updateForm('endTime', e.target.value)}
                 disabled={plannerBusy}
-                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
           </div>
@@ -1163,10 +1163,10 @@ const AiPlanner = () => {
           </button>
         </section>
 
-        <section className="min-h-[620px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden">
+        <section className="min-h-[360px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden md:min-h-[620px]">
           {!plan ? (
-            <div className="h-full min-h-[620px] flex flex-col items-center justify-center text-center px-6">
-              <span className="material-symbols-outlined text-6xl text-primary/30 mb-4">travel_explore</span>
+            <div className="flex h-full min-h-[360px] flex-col items-center justify-center px-6 text-center md:min-h-[620px]">
+              <span className="material-symbols-outlined mb-3 text-5xl text-primary/30 md:mb-4 md:text-6xl">travel_explore</span>
               <p className="font-mono text-xs text-slate-400">// generated_course_preview</p>
             </div>
           ) : (
