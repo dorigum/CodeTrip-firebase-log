@@ -11,6 +11,69 @@ const MOCK_NODE_HEADER = [
 ];
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const getTodayKey = () => {
+  const today = new Date();
+  return `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+};
+
+const parseDateKey = (dateKey) => {
+  const normalized = String(dateKey || '').replace(/\D/g, '').slice(0, 8);
+  if (normalized.length !== 8) return null;
+  const year = Number(normalized.slice(0, 4));
+  const month = Number(normalized.slice(4, 6)) - 1;
+  const day = Number(normalized.slice(6, 8));
+  const date = new Date(year, month, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getDateKey = (item, key) => {
+  const alternateKey = key === 'eventstartdate'
+    ? 'eventStartDate'
+    : key === 'eventenddate'
+      ? 'eventEndDate'
+      : key;
+  return String(item?.[key] || item?.[alternateKey] || '').replace(/\D/g, '').slice(0, 8);
+};
+
+const getDaysFromToday = (dateKey, todayKey) => {
+  const targetDate = parseDateKey(dateKey);
+  const todayDate = parseDateKey(todayKey);
+  if (!targetDate || !todayDate) return Number.POSITIVE_INFINITY;
+  return Math.round((targetDate - todayDate) / MS_PER_DAY);
+};
+
+const getFestivalBadge = (item, todayKey) => {
+  const startDate = getDateKey(item, 'eventstartdate');
+  const endDate = getDateKey(item, 'eventenddate') || startDate;
+  const daysToStart = getDaysFromToday(startDate, todayKey);
+  const daysToEnd = getDaysFromToday(endDate, todayKey);
+
+  if (Number.isFinite(daysToStart) && daysToStart === 0) return 'TODAY';
+  if (Number.isFinite(daysToStart) && daysToStart > 0) return `D-${daysToStart}`;
+  if (Number.isFinite(daysToEnd) && daysToEnd === 0) return '오늘 종료';
+  if (Number.isFinite(daysToEnd) && daysToEnd > 0) return '진행중';
+  return startDate.length >= 8 ? `${startDate.slice(4, 6)}.${startDate.slice(6, 8)}` : 'NOW';
+};
+
+const sortFestivalsByNearestDate = (items, todayKey) => (
+  [...items].sort((a, b) => {
+    const getRank = (item) => {
+      const startDate = getDateKey(item, 'eventstartdate');
+      const endDate = getDateKey(item, 'eventenddate') || startDate;
+      const daysToStart = getDaysFromToday(startDate, todayKey);
+      const daysToEnd = getDaysFromToday(endDate, todayKey);
+
+      if (Number.isFinite(daysToStart) && daysToStart >= 0) return [0, daysToStart];
+      if (Number.isFinite(daysToEnd) && daysToEnd >= 0) return [1, daysToEnd];
+      return [2, Number.POSITIVE_INFINITY];
+    };
+    const [aGroup, aDays] = getRank(a);
+    const [bGroup, bDays] = getRank(b);
+    return aGroup - bGroup || aDays - bDays || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+  })
+);
 
 const GUEST_FEATURES = [
   {
@@ -518,7 +581,7 @@ const Home = () => {
         const [tops, near, festData] = await Promise.all([
           getPhotoList(null, 20),
           getCityBasedPlaces(locProv),
-          getFestivalList(1, 10, 'default', '', '', '', { poolMaxRows: 100 }) // 홈 트렌딩 미리보기는 작은 pool만 조회
+          getFestivalList(1, 10, 'date_asc', '', '', '', { poolMaxRows: 100 }) // 홈 트렌딩 미리보기는 작은 pool만 조회
         ]);
 
         if (!isActiveRequest()) return false;
@@ -533,14 +596,13 @@ const Home = () => {
         }
         setLoading(prev => ({ ...prev, nearby: false }));
 
-        const fests = festData?.items || festData || [];
+        const todayKey = getTodayKey();
+        const fests = sortFestivalsByNearestDate(festData?.items || festData || [], todayKey);
         const festItems = fests.slice(0, 3).map(f => ({
           type: 'festival', 
           icon: 'celebration', 
           title: f.title, 
-          subtitle: f.eventstartdate && typeof f.eventstartdate === 'string' && f.eventstartdate.length >= 8 
-            ? `${f.eventstartdate.slice(4, 6)}.${f.eventstartdate.slice(6, 8)}` 
-            : 'NOW',
+          subtitle: getFestivalBadge(f, todayKey),
           location: f.addr1?.split(' ')[0] || '전국', 
           image: f.firstimage,
           contentid: f.contentid
