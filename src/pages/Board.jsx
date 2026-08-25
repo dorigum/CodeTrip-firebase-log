@@ -73,8 +73,8 @@ const Board = () => {
     new Date(dateStr).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
   return (
-    <div className="bg-background text-on-surface font-body min-h-screen pb-20">
-      <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="min-h-screen bg-background pb-20 font-body text-on-surface">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
 
         {/* Header */}
         <div className="mb-8">

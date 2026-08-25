@@ -232,7 +232,7 @@ const Festivals = () => {
   };
 
   return (
-    <div className="p-6 lg:p-10 space-y-8 flex-1 flex flex-col bg-background">
+    <div className="flex flex-1 flex-col space-y-8 bg-background px-4 py-8 sm:p-6 lg:p-10">
       {/* Header 섹션 */}
       <div className="border-b border-outline-variant/20 pb-6">
         <PageHeader

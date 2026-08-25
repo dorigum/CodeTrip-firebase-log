@@ -1073,7 +1073,7 @@ const MyPage = () => {
         }}
       />
 
-      <main className="p-10 flex flex-col lg:flex-row gap-8 max-w-[1600px] mx-auto">
+      <main className="mx-auto flex max-w-[1600px] flex-col gap-8 px-4 py-8 sm:p-8 lg:flex-row lg:p-10">
         <aside className="w-full lg:w-72 flex flex-col gap-6 flex-shrink-0">
           <PageHeader
             label="wishlist.workspace"

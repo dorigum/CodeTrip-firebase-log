@@ -215,7 +215,7 @@ const Explore = () => {
   );
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto min-h-screen">
+    <div className="mx-auto min-h-screen max-w-[1600px] px-4 py-8 sm:p-8">
       <ConfirmModal
         open={showLoginDialog}
         title="로그인이 필요합니다"
@@ -229,7 +229,7 @@ const Explore = () => {
         onConfirm={goToLogin}
       />
 
-      <header className="mb-10">
+      <header className="mb-8 sm:mb-10">
         <PageHeader
           label="travel_explore.exe"
           title="여행지 탐색"
