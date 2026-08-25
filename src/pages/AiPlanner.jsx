@@ -557,7 +557,7 @@ const AiPlanner = () => {
       return;
     }
     if (nextDuration && nextDuration > MAX_DURATION_DAYS) {
-      showToast(`AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+      showToast(`AI 여행 플래너는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
       return;
     }
 
@@ -696,7 +696,7 @@ const AiPlanner = () => {
     }
 
     if (tripDuration && tripDuration > MAX_DURATION_DAYS) {
-      showToast(`AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+      showToast(`AI 여행 플래너는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
       return;
     }
 
@@ -837,7 +837,7 @@ const AiPlanner = () => {
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 pb-24 md:pb-8">
       <PageHeader
         label="ai_trip.planner"
-        title="AI 여행 코스"
+        title="AI 여행 플래너"
         description="조건을 입력하고 저장 가능한 여행 코스를 생성합니다."
         action={(
           <button
@@ -855,12 +855,12 @@ const AiPlanner = () => {
         <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
           <div>
             <FieldLabel>Plan Mode</FieldLabel>
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1 border border-outline-variant/30">
+            <div className="grid grid-cols-1 gap-2 rounded-xl border border-outline-variant/30 bg-slate-50 p-1 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => handlePlanningModeChange(PLAN_MODE.CUSTOM)}
                 disabled={plannerBusy}
-                className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
+                className={`min-h-11 rounded-lg px-3 py-2 text-[11px] font-black leading-snug break-keep transition-all ${
                   planningMode === PLAN_MODE.CUSTOM
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-500 hover:text-primary hover:bg-white'
@@ -872,7 +872,7 @@ const AiPlanner = () => {
                 type="button"
                 onClick={() => handlePlanningModeChange(PLAN_MODE.FOLDER)}
                 disabled={plannerBusy}
-                className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
+                className={`min-h-11 rounded-lg px-3 py-2 text-[11px] font-black leading-snug break-keep transition-all ${
                   planningMode === PLAN_MODE.FOLDER
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-500 hover:text-primary hover:bg-white'

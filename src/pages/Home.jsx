@@ -246,7 +246,7 @@ const GuestHome = () => (
             <span className="guest-gradient-text">나만의 코스</span>로 연결하세요<span className="text-primary-container">.</span>
           </h1>
           <p className="guest-fade-up mt-5 max-w-2xl break-keep text-base leading-8 text-white/80 sm:text-lg" style={{ animationDelay: '.16s' }}>
-            CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 코스 생성, 여행 게시판을 하나의 흐름으로 연결하는 개발자 감성의 여행 큐레이션 서비스입니다.
+            CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 플래너, 여행 게시판을 하나의 흐름으로 연결하는 개발자 감성의 여행 큐레이션 서비스입니다.
           </p>
           <div className="guest-fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: '.24s' }}>
             <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label">

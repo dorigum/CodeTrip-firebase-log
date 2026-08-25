@@ -400,13 +400,13 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant/30 z-[55] flex md:hidden items-center justify-around h-16 px-1">
+      <nav className="fixed bottom-0 left-0 right-0 z-[55] grid h-16 grid-cols-7 items-center border-t border-outline-variant/30 bg-white md:hidden">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
             to={item.path}
             onClick={(e) => handleNavClick(e, item)}
-            className={`flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all group ${
+            className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 transition-all group ${
               isActive(item.path) ? 'text-primary' : 'text-slate-400'
             }`}
           >
@@ -426,7 +426,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             setMobileInfoOpen(prev => !prev);
             setMobileMyPageOpen(false);
           }}
-          className={`flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all group ${
+          className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 transition-all group ${
             isActive(INFO_ITEM.path) || mobileInfoOpen ? 'text-primary' : 'text-slate-400'
           }`}
         >
@@ -443,7 +443,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             setMobileMyPageOpen(prev => !prev);
             setMobileInfoOpen(false);
           }}
-          className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${
+          className={`group flex h-full min-w-0 flex-col items-center justify-center gap-0.5 transition-all ${
             MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'text-primary' : 'text-slate-400'
           } ${mobileMyPageOpen ? 'is-mobile-open text-primary' : ''}`}
         >

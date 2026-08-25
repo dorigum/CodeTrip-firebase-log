@@ -150,7 +150,7 @@ const SignUp = () => {
       <ConfirmModal
         open={signupSuccessOpen}
         title="회원가입 완료"
-        description="CodeTrip 계정이 생성되었습니다. 로그인 후 위시리스트와 AI 여행 코스를 이용해보세요."
+        description="CodeTrip 계정이 생성되었습니다. 로그인 후 위시리스트와 AI 여행 플래너를 이용해보세요."
         confirmText="로그인하기"
         cancelText="닫기"
         icon="check_circle"
