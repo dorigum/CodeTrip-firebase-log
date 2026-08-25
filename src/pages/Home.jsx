@@ -948,8 +948,8 @@ const Home = () => {
       </section>
 
       {/* 2. 카드 그리드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0">
-        <div className="lg:col-span-2 grid grid-cols-1 xl:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 flex-1 min-h-0 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:col-span-2 xl:contents">
           {/* Card 1: Regional (Near Me) */}
           <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
@@ -1055,7 +1055,7 @@ const Home = () => {
         </div>
 
         {/* Card 3: Trending */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group">
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group">
           <div className="flex justify-between items-start mb-4 shrink-0">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold">
