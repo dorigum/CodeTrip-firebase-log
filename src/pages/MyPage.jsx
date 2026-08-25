@@ -29,6 +29,7 @@ const MyPage = () => {
 
   const [sortBy, setSortBy] = useState('CREATED');
   const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderStart, setNewFolderStart] = useState('');
   const [newFolderEnd, setNewFolderEnd] = useState('');
@@ -375,6 +376,11 @@ const MyPage = () => {
 
   const selectedFolder = selectedFolderId ? folders.find(f => String(f.id) === String(selectedFolderId)) : null;
   const currentFolderName = selectedFolderId === 'UNCATEGORIZED' ? 'UNCATEGORIZED' : (selectedFolder?.name || 'UNKNOWN');
+  const selectedFolderLabel = !selectedFolderId
+    ? 'ALL_PLACES'
+    : selectedFolderId === 'UNCATEGORIZED'
+      ? 'UNCATEGORIZED'
+      : selectedFolder?.name || 'UNKNOWN';
   const openExploreForCurrentFolder = () => {
     navigate('/explore', {
       state: {
@@ -516,6 +522,7 @@ const MyPage = () => {
     setSelectedAiPlan(null);
     setEditingAiPlan(false);
     setSelectedFolderId(folderId);
+    setMobileFolderOpen(false);
   };
 
   if (!isLoggedIn) return null;
@@ -1110,10 +1117,34 @@ const MyPage = () => {
                 <span className="font-label text-xs font-bold uppercase tracking-wider">FOLDERS</span>
                 <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{folders.length}</span>
               </div>
-              <button onClick={() => setShowFolderModal(true)} className="material-symbols-outlined text-primary text-sm bg-primary/10 w-6 h-6 rounded flex items-center justify-center">add</button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMobileFolderOpen(prev => !prev)}
+                  className="material-symbols-outlined flex h-6 w-6 items-center justify-center rounded bg-primary/10 text-sm text-primary md:hidden"
+                  aria-label={mobileFolderOpen ? '폴더 목록 접기' : '폴더 목록 펼치기'}
+                  aria-expanded={mobileFolderOpen}
+                >
+                  {mobileFolderOpen ? 'expand_less' : 'expand_more'}
+                </button>
+                <button onClick={() => setShowFolderModal(true)} className="material-symbols-outlined text-primary text-sm bg-primary/10 w-6 h-6 rounded flex items-center justify-center">add</button>
+              </div>
             </div>
-            
-            <nav className="flex flex-col gap-1">
+
+            <button
+              type="button"
+              onClick={() => setMobileFolderOpen(prev => !prev)}
+              className="mb-3 flex w-full items-center justify-between rounded-lg border border-outline-variant/15 bg-white px-3 py-3 text-left shadow-sm md:hidden"
+              aria-expanded={mobileFolderOpen}
+            >
+              <div className="min-w-0">
+                <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">selected_folder</span>
+                <span className="mt-1 block truncate text-[13px] font-bold text-slate-800">{selectedFolderLabel}</span>
+              </div>
+              <span className="material-symbols-outlined text-base text-primary">{mobileFolderOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}</span>
+            </button>
+
+            <nav className={`${mobileFolderOpen ? 'flex' : 'hidden'} max-h-[320px] flex-col gap-1 overflow-y-auto pr-1 custom-scrollbar md:flex md:max-h-none md:overflow-visible md:pr-0`}>
               <button onClick={() => handleSelectFolder(null)} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${!selectedFolderId ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
                 <span className="font-mono uppercase">ALL_PLACES</span>
                 <span className="opacity-60 font-mono text-[11px]">{wishlistItems.length}</span>
