@@ -309,7 +309,7 @@ const GuestHome = () => (
               <p className="text-[11px] font-bold uppercase tracking-widest font-label">member.workspace</p>
             </div>
             <h2 className="mt-5 break-keep text-3xl font-black leading-tight font-headline">
-              <span className="text-primary">로그인하면</span> 여행 계획이<br />
+              <span className="text-primary">로그인하면</span> 여행 계획이{' '}
               <span className="relative inline-block text-cyan-100 drop-shadow-sm">
                 하나의 작업 공간
                 <span className="absolute inset-x-0 bottom-1 -z-10 h-3 rounded-full bg-primary/55" />
