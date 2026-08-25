@@ -6,6 +6,7 @@ import { getNotifications, markAllRead, markOneRead, deleteOneNotification, dele
 import useToast from '../../hooks/useToast';
 import useRecentSearch from '../../hooks/useRecentSearch';
 import ConfirmModal from '../ConfirmModal';
+import { markLogoutRedirecting } from '../../utils/logoutRedirect';
 
 const formatDate = (str) => {
   const d = new Date(str);
@@ -133,10 +134,11 @@ const Header = () => {
   };
 
   const handleLogout = () => {
+    markLogoutRedirecting();
     setLogoutConfirmOpen(false);
     logout();
     clearWishlist();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (

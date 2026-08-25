@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const SOURCE_LABEL = {
   memory: 'MEMORY',
@@ -27,6 +28,7 @@ const formatTime = (timestamp) => {
 
 const ApiCacheStatus = () => {
   const [latest, setLatest] = useState(null);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const handleStatus = (event) => {
@@ -37,12 +39,12 @@ const ApiCacheStatus = () => {
     return () => window.removeEventListener('codetrip:api-cache-status', handleStatus);
   }, []);
 
-  if (!import.meta.env.DEV || !latest) return null;
+  if (!import.meta.env.DEV || !latest || pathname !== '/info') return null;
 
   const style = SOURCE_STYLE[latest.source] || SOURCE_STYLE.network;
 
   return (
-    <div className="pointer-events-none fixed bottom-36 left-4 z-[80] hidden max-w-[280px] rounded-2xl border border-outline-variant/20 bg-white/90 px-4 py-3 shadow-xl shadow-slate-900/10 backdrop-blur md:block">
+    <div className="pointer-events-none fixed bottom-24 right-4 z-[80] hidden max-w-[280px] rounded-2xl border border-outline-variant/20 bg-white/90 px-4 py-3 shadow-xl shadow-slate-900/10 backdrop-blur md:block">
       <div className="flex items-center justify-between gap-3">
         <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">api_cache.log</p>
         <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-bold ${style}`}>
