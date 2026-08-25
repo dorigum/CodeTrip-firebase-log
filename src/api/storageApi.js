@@ -31,7 +31,7 @@ export const assertImageFile = (file) => {
 };
 
 export const compressImageFile = (file) =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
 
@@ -62,7 +62,7 @@ export const compressImageFile = (file) =>
       canvas.height = height;
       const context = canvas.getContext('2d');
       if (!context) {
-        resolve(file);
+        reject(new Error('이미지 압축을 처리할 수 없습니다.'));
         return;
       }
       context.drawImage(img, 0, 0, width, height);
@@ -71,15 +71,20 @@ export const compressImageFile = (file) =>
       const tryBlob = () => {
         canvas.toBlob((blob) => {
           if (!blob) {
-            resolve(file);
+            reject(new Error('이미지 압축에 실패했습니다.'));
             return;
           }
 
-          if (blob.size <= MAX_UPLOAD_BYTES || quality < 0.1) {
+          if (blob.size <= MAX_UPLOAD_BYTES) {
             resolve(new File([blob], `${sanitizeFileName(file.name)}.jpg`, {
               type: 'image/jpeg',
               lastModified: Date.now(),
             }));
+            return;
+          }
+
+          if (quality < 0.1) {
+            reject(new Error('이미지 용량은 1MB 이하로 업로드해주세요.'));
             return;
           }
 
@@ -93,7 +98,7 @@ export const compressImageFile = (file) =>
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      resolve(file);
+      reject(new Error('이미지 파일을 읽을 수 없습니다.'));
     };
 
     img.src = objectUrl;

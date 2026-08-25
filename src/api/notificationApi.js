@@ -119,7 +119,7 @@ export const deleteReadNotifications = async () => {
   const user = await getCurrentUser();
   const [notifications, tourApiNotifications] = await Promise.all([
     getMyNotifications(),
-    getTourApiUpdateNotifications(user.id),
+    getTourApiUpdateNotifications(user.id, { limit: null }),
   ]);
   const updates = {};
   notifications
