@@ -34,9 +34,17 @@ const moveCursor = (el, start, end) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-const MarkdownEditor = ({ value, onChange, placeholder = '// 마크다운으로 작성하세요...', minRows = 16 }) => {
+const MarkdownEditor = ({
+  value,
+  onChange,
+  placeholder = '// 마크다운으로 작성하세요...',
+  minRows = 16,
+  onImageUpload,
+}) => {
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [mode, setMode] = React.useState('split'); // 'edit' | 'preview' | 'split'
+  const [uploadingImage, setUploadingImage] = React.useState(false);
 
   // Apply formatting to the selected text
   const applyFormat = useCallback((item) => {
@@ -93,6 +101,34 @@ const MarkdownEditor = ({ value, onChange, placeholder = '// 마크다운으로 
     }
   }, [value, onChange]);
 
+  const insertTextAtCursor = useCallback((text) => {
+    const ta = textareaRef.current;
+    if (!ta) {
+      onChange(`${value}${text}`);
+      return;
+    }
+
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const newValue = value.substring(0, start) + text + value.substring(end);
+    onChange(newValue);
+    moveCursor(ta, start + text.length, start + text.length);
+  }, [value, onChange]);
+
+  const handleImageFileChange = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !onImageUpload || uploadingImage) return;
+
+    setUploadingImage(true);
+    try {
+      const imageUrl = await onImageUpload(file);
+      insertTextAtCursor(`\n![${file.name.replace(/\.[^.]+$/, '')}](${imageUrl})\n`);
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
+  }, [insertTextAtCursor, onImageUpload, uploadingImage]);
+
   // Keep textarea height auto-growing
   useEffect(() => {
     const ta = textareaRef.current;
@@ -129,6 +165,30 @@ const MarkdownEditor = ({ value, onChange, placeholder = '// 마크다운으로 
               </button>
             );
           })}
+          {onImageUpload && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageFileChange}
+              />
+              <button
+                type="button"
+                title="Upload Image"
+                disabled={uploadingImage}
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center w-7 h-7 rounded text-outline hover:text-primary hover:bg-primary/8 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {uploadingImage ? (
+                  <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-[18px] leading-none">upload_file</span>
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {/* View mode toggle */}

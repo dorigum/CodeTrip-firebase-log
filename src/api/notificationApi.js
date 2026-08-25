@@ -21,7 +21,6 @@ const getTourApiUpdateNotifications = async (userId) => {
 
   return snapshotToArray(updatesSnapshot)
     .sort((a, b) => new Date(toIso(b.detectedAt)) - new Date(toIso(a.detectedAt)))
-    .slice(0, TOUR_UPDATE_LIMIT)
     .map((item) => {
       const marker = readMarkers[item.id] || {};
       const regionLabel = item.addr1 ? ` · ${item.addr1}` : '';
@@ -36,7 +35,8 @@ const getTourApiUpdateNotifications = async (userId) => {
         hidden: !!marker.hidden,
       };
     })
-    .filter((notification) => !notification.hidden);
+    .filter((notification) => !notification.hidden)
+    .slice(0, TOUR_UPDATE_LIMIT);
 };
 
 const isTourApiUpdateNotification = (id) =>

@@ -12,14 +12,7 @@ import {
 import { get, ref, set, update } from 'firebase/database';
 import { firebaseAuth, realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso } from './firebaseHelpers';
-
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+import { uploadProfileImage } from './storageApi';
 
 const userPayload = (authUser, profile = {}) => ({
   id: authUser.uid,
@@ -114,7 +107,7 @@ const authApi = {
   uploadImage: async (formData) => {
     const file = formData.get('profileImage');
     if (!file) throw { message: 'No file uploaded' };
-    return { url: await readFileAsDataUrl(file) };
+    return { url: await uploadProfileImage(file) };
   },
 
   updatePassword: async ({ currentPassword, newPassword }) => {

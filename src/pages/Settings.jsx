@@ -8,54 +8,6 @@ import PageHeader from '../components/PageHeader';
 
 const SELECTABLE_REGIONS = DEFAULT_REGIONS.filter(r => r.code !== '');
 
-const MAX_UPLOAD_BYTES = 1024 * 1024; // 1MB
-const MAX_DIMENSION = 1920;
-
-const compressImage = (file) =>
-  new Promise((resolve) => {
-    // 이미 1MB 이하면 압축 없이 그대로 반환
-    if (file.size <= MAX_UPLOAD_BYTES) { resolve(file); return; }
-
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
-        if (w >= h) { h = Math.round(h * MAX_DIMENSION / w); w = MAX_DIMENSION; }
-        else { w = Math.round(w * MAX_DIMENSION / h); h = MAX_DIMENSION; }
-      }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-
-      let quality = 0.85;
-      const tryBlob = () => {
-        canvas.toBlob((blob) => {
-          if (!blob) { resolve(file); return; }
-          if (blob.size <= MAX_UPLOAD_BYTES || quality < 0.1) {
-            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            }));
-          } else {
-            quality = Math.max(0.05, quality - 0.1);
-            tryBlob();
-          }
-        }, 'image/jpeg', quality);
-      };
-      tryBlob();
-    };
-
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
-
 const Settings = () => {
   const { user, updateUser, isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
@@ -150,12 +102,11 @@ const Settings = () => {
     setProfileMessage({ type: '', text: '' });
 
     try {
-      const compressed = await compressImage(file);
       const formData = new FormData();
-      formData.append('profileImage', compressed);
+      formData.append('profileImage', file);
       const response = await authApi.uploadImage(formData);
       setProfileImg(response.url);
-      setProfileMessage({ type: 'success', text: '이미지가 업로드되었습니다. 저장 버튼을 눌러 확정하세요.' });
+      setProfileMessage({ type: 'success', text: '이미지가 Storage에 업로드되었습니다. 저장 버튼을 눌러 확정하세요.' });
     } catch {
       setProfileMessage({ type: 'error', text: '이미지 업로드에 실패했습니다.' });
     } finally {
@@ -255,12 +206,12 @@ const Settings = () => {
               {/* Inputs Column */}
               <div className="flex-1 space-y-6">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-label text-secondary uppercase font-bold tracking-wider ml-1">Profile_Image_URL (Short URLs only)</label>
+                  <label className="text-[11px] font-label text-secondary uppercase font-bold tracking-wider ml-1">Profile_Image_URL</label>
                   <input 
                     type="text" 
                     value={profileImg}
                     onChange={(e) => setProfileImg(e.target.value)}
-                    placeholder="https://example.com/avatar.png (255자 이내)"
+                    placeholder="이미지를 업로드하거나 https://example.com/avatar.png 형식의 URL을 입력하세요"
                     className="w-full bg-background border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-all font-mono text-on-surface"
                   />
                 </div>

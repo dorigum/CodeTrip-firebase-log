@@ -104,10 +104,11 @@ Firebase 콘솔에서 다음 기능을 사용합니다.
 Build
   Authentication
   Realtime Database
+  Storage
   Hosting
 ```
 
-Storage는 사용하지 않습니다. 프로필 이미지는 Firebase Storage 대신 data URL로 저장하도록 변경했습니다.
+Storage는 프로필 이미지와 게시글 첨부 이미지 업로드에 사용합니다. 브라우저에서 선택한 이미지는 Storage에 저장하고, 프로필 또는 게시글 본문에는 다운로드 URL만 저장합니다.
 
 ---
 
@@ -738,25 +739,27 @@ travelCommentsByContent/{contentId}/{commentId}
 
 공모전 제출용 데모 규모에서는 허용 가능한 수준으로 판단했습니다.
 
-### 15.3 프로필 이미지 저장 방식
+### 15.3 프로필·게시글 이미지 저장 방식
 
-Firebase Storage를 사용하지 않고 data URL을 Realtime Database에 저장합니다.
+Firebase Storage에 이미지를 업로드하고 다운로드 URL을 저장합니다.
 
 장점:
 
 ```text
-Storage 설정 불필요
-무료 배포 흐름 단순화
+Firebase Auth photoURL 길이 제한 회피
+Realtime Database에 base64 이미지 본문 저장 방지
+프로필 이미지와 게시글 첨부 이미지 저장 경로 분리
 ```
 
-단점:
+주의:
 
 ```text
-이미지 크기가 커지면 DB 용량 증가
-많은 사용자에게 적합하지 않음
+Storage Rules 배포 필요
+공개 렌더링을 위해 다운로드 URL은 읽기 가능한 자원으로 취급
+이미지 파일 타입과 크기 제한 검증 필요
 ```
 
-현재 `Settings.jsx`에서 이미지 압축 후 업로드하므로 시연용으로는 충분합니다.
+현재 `src/api/storageApi.js`에서 이미지 타입 검증, 1MB 초과 이미지 압축, Storage 업로드, 다운로드 URL 반환을 공통 처리합니다. Storage Rules는 `users/{uid}/profile`, `users/{uid}/board` 경로에 대해 동일 UID의 이미지 쓰기만 허용합니다.
 
 ### 15.4 보안 규칙과 알림 처리
 

@@ -13,7 +13,7 @@ CodeTrip은 여행지 탐색, 위시리스트, AI 일정 생성 기능을 중심
 구현 구조는 아래와 같습니다.
 
 1. Firebase Scheduler가 하루 1회 `syncTourApiUpdates` 함수를 실행합니다.
-2. 함수가 한국관광공사 `KorService2.areaBasedList2`를 최신순 기준으로 조회합니다.
+2. 함수가 한국관광공사 `KorService2.areaBasedList2`를 이미지가 있는 등록일 최신순 기준으로 조회합니다.
 3. 이미 저장된 `contentId`와 비교해 신규 여행지만 `tourApiUpdates/items/{contentId}`에 저장합니다.
 4. Header 알림 UI는 기존 `users/{uid}/notifications`와 공용 `tourApiUpdates/items`를 함께 조회합니다.
 5. 사용자의 읽음·숨김 상태는 `users/{uid}/tourApiUpdateReads/{contentId}`에 저장합니다.
@@ -60,6 +60,8 @@ users/{uid}/tourApiUpdateReads/{contentId}
 - 저장된 신규 여행지 피드는 최근 100개까지만 유지합니다.
 - TourAPI 인증키는 `TOUR_API_SERVICE_KEY` Firebase Functions Secret으로 관리합니다.
 - 인증키는 저장소, 로그, 문서에 직접 기록하지 않습니다.
+- 신규 여행지 알림 동기화 경로는 클라이언트의 `VITE_TRAVEL_INFO_API_KEY`를 사용하지 않고 Functions Secret만 사용합니다.
+- 기존 여행지 탐색·상세 조회의 클라이언트 TourAPI 호출은 별도 프록시 이전 작업으로 분리해 관리합니다. 신규 알림 기능의 배포 검증과 키 교체 범위는 `syncTourApiUpdates`에서 사용하는 Secret 경로를 기준으로 합니다.
 
 ## 5. 배포 전 준비값
 
@@ -69,13 +71,15 @@ Functions 배포 전에 아래 Secret이 필요합니다.
 firebase functions:secrets:set TOUR_API_SERVICE_KEY
 ```
 
-Secret에는 한국관광공사 TourAPI 서비스 키를 입력합니다. 현재 프론트엔드 `.env`에 있는 키를 문서나 커밋에 남기지 않고, 배포 환경의 Secret으로만 등록합니다.
+Secret에는 한국관광공사 TourAPI 서비스 키를 입력합니다. 신규 여행지 알림 기능에서는 이 Secret만 사용하며, 키 값을 문서나 커밋에 남기지 않습니다. 기존에 브라우저 번들에서 사용되었거나 노출 가능성이 있는 키는 필요한 서비스 영향 범위를 확인한 뒤 교체하거나 폐기합니다.
 
 ## 6. 검증 기준
 
 - `npm run lint`가 통과해야 합니다.
 - `npm run build`가 통과해야 합니다.
 - `npm --prefix functions run lint`가 통과해야 합니다.
+- `syncTourApiUpdates`는 TourAPI `resultCode`가 `0000`이고 `response.body.items.item` 구조가 존재할 때만 성공으로 기록해야 합니다.
+- `syncTourApiUpdates`는 등록일 최신순 조회를 사용해 첫 페이지에 최근 등록 데이터가 포함되도록 해야 합니다.
 - `tourApiUpdates/items`는 로그인 사용자에게 읽히고, 클라이언트 직접 쓰기는 거부되어야 합니다.
 - Header 알림 목록에는 기존 사용자 알림과 TourAPI 신규 여행지 알림이 최신순으로 함께 표시되어야 합니다.
 - TourAPI 신규 여행지 알림을 클릭하면 `/explore/{contentId}` 상세 화면으로 이동해야 합니다.

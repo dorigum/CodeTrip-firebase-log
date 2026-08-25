@@ -14,7 +14,7 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 
 ## 📅 날짜별 개발 기록
 
-- [2026-08-25](project-log/2026-08-25.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 주소 보강 상태를 busy-state에 포함하고, Info 화면 MVP 버전 표기와 모바일 하단 Info 진입점, Info 전용 개발용 API 캐시 패널 표시 범위를 정리했습니다. 이후 TourAPI 신규 여행지 감지 알림을 Firebase Scheduled Function과 공용 업데이트 피드 구조로 추가했습니다.
+- [2026-08-25](project-log/2026-08-25.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 주소 보강 상태와 Info 모바일 UI를 정리하고, TourAPI 신규 여행지 감지 알림을 Firebase Scheduled Function과 공용 업데이트 피드 구조로 추가했습니다. 이후 PR #29 CodeRabbit 피드백에 따라 TourAPI 최신 등록순 조회, 응답 구조 검증, 숨김 알림 필터 순서, 관련 트러블슈팅 색인을 보강했습니다. 프로필 이미지와 게시글 첨부 이미지는 data URL 저장 방식에서 Firebase Storage 업로드 후 다운로드 URL 저장 방식으로 전환했습니다.
 - [2026-08-23](project-log/2026-08-23.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 일정 정규화와 비동기 폴더 선택 최신성 검증을 보완하고, 공모전 1차 제출 자료 누락 여부와 남은 제출 차단 항목을 재점검
 - [2026-08-22](project-log/2026-08-22.md): 비회원 위시리스트 안내 모달과 로그인 후 탐색 복귀 흐름 안정화, 탐색 페이지 상태 보존·초기화 기준 정리, 검색어 삭제와 페이지 초기화 요청 통합, 로그아웃 시 보호 라우트 로그인 안내 모달이 순간적으로 표시되는 문제 보정, AI 여행 계획 생성 날짜 입력과 마이페이지 폴더 일정 수정 진입점 추가
 - [2026-08-16](project-log/2026-08-16.md): Gemini API 호출을 Firebase Callable Function 프록시로 전환, Functions Secret 등록과 배포, Hosting 재배포, 신규 Gemini 키 교체와 기존 temp 키 삭제, 인증 smoke test 및 보안 검증 문서 반영, 카카오 지도 JavaScript 키와 SDK 도메인 설정 보정 후 배포 상세 페이지 지도 표시 확인
@@ -35,3 +35,4 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 1. 구현 및 수정 내역은 작업 날짜에 맞춰 `project-log/` 하위 파일에 기록합니다.
 2. 장애 오류 분석과 트러블슈팅 이력은 해당 일자 로그에 작성 후 `TROUBLESHOOTING.md`에 링크를 연결합니다.
 3. 실행 및 배포 가이드라인이 수정될 시 `guides/` 하위 문서를 최신으로 유지합니다.
+4. 커밋 생성 전에는 날짜별 작업 로그와 필요한 트러블슈팅 색인 갱신을 먼저 완료합니다.

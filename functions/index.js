@@ -453,7 +453,7 @@ const buildTourApiUrl = () => {
     MobileOS: 'ETC',
     MobileApp: 'CodeTrip',
     _type: 'json',
-    arrange: 'O',
+    arrange: 'R',
     pageNo: '1',
     numOfRows: String(TOUR_UPDATE_LOOKBACK_ROWS),
   });
@@ -472,7 +472,22 @@ const fetchRecentTourApiItems = async () => {
   }
 
   const data = await response.json();
-  return normalizeTourApiItems(data?.response?.body?.items?.item)
+  const resultCode = String(data?.response?.header?.resultCode || '');
+  if (resultCode !== '0000') {
+    logger.warn('TourAPI update sync returned failure code', {
+      resultCode,
+      resultMsg: data?.response?.header?.resultMsg,
+    });
+    throw new Error('TourAPI 신규 여행지 응답 코드가 정상 상태가 아닙니다.');
+  }
+
+  const rawItems = data?.response?.body?.items?.item;
+  if (rawItems === undefined || rawItems === null) {
+    logger.warn('TourAPI update sync returned invalid item structure');
+    throw new Error('TourAPI 신규 여행지 응답 구조가 올바르지 않습니다.');
+  }
+
+  return normalizeTourApiItems(rawItems)
     .map((item) => ({
       contentId: sanitizeString(item.contentid, '', 40),
       contentTypeId: sanitizeString(item.contenttypeid, '', 20),

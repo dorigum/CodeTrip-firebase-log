@@ -202,6 +202,33 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다.
 - **상세 기록**: [2026-08-23 개발 로그](project-log/2026-08-23.md)의 AI 플래너 폴더 일정 정규화 보완, 비동기 폴더 선택 최신성 검증 보완 섹션 참고
 
+## 25. TourAPI 신규 여행지 스케줄 함수 배포 후 DB 경로가 바로 생성되지 않는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, Realtime Database `tourApiUpdates/items`, `tourApiUpdates/state`, Header 알림
+- **요약**: `syncTourApiUpdates` Scheduled Function은 배포 직후 즉시 실행되는 함수가 아니므로, Firebase Console에서 함수가 정상 배포되어도 요청 수가 0이면 Realtime Database에 `tourApiUpdates/items`와 `tourApiUpdates/state` 경로가 아직 보이지 않을 수 있습니다.
+- **처리**: Functions 화면에서 `syncTourApiUpdates`가 `asia-northeast3` 리전의 v2 스케줄 함수로 배포된 것을 확인했습니다. 즉시 DB 경로가 없는 상태는 “아직 스케줄 실행 전”으로 분류하고, 다음 스케줄 실행 후 Functions 로그와 Realtime Database 경로를 재확인하기로 했습니다.
+- **확인**: Firebase Console에서 `syncTourApiUpdates` 요청 수가 0이고 호출 그래프에 데이터가 없는 상태를 확인했습니다. 후속 확인은 스케줄 실행 이후 진행합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 TourAPI 신규 여행지 알림 구조 추가 및 CodeRabbit 피드백 반영 섹션 참고
+
+## 26. TourAPI 신규 여행지 동기화가 실패 응답을 성공한 빈 결과로 기록할 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, TourAPI 신규 여행지 알림, Realtime Database `tourApiUpdates/state`
+- **요약**: TourAPI HTTP 응답이 200이어도 `response.header.resultCode`가 실패 코드이거나 `response.body.items.item` 구조가 없으면 실제 동기화 실패입니다. 기존 구조에서는 이런 응답을 빈 결과처럼 처리할 가능성이 있어 신규 여행지 알림 실패를 정상 실행으로 오해할 수 있었습니다.
+- **처리**: `resultCode === "0000"` 검증과 `response.body.items.item` 구조 검증을 추가했습니다. 실패 코드 또는 잘못된 응답 구조는 오류로 던져 동기화 실패로 기록되도록 했습니다. 신규 등록 감지 목적에 맞게 TourAPI 조회 정렬 기준도 이미지 포함 등록일 최신순으로 변경했습니다.
+- **확인**: `npm --prefix functions run lint`, `npm run lint`, `npm run build`가 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 TourAPI 신규 여행지 알림 CodeRabbit 피드백 반영 섹션 참고
+
+## 27. 프로필 이미지 data URL이 Firebase Auth photoURL 제한을 초과하는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: 프로필 수정 화면, Firebase Authentication `photoURL`, 게시글 이미지 첨부 UX
+- **요약**: 데스크톱 파일을 프로필 이미지로 선택하면 기존 구현이 이미지를 base64 data URL로 변환해 `photoURL`에 저장했습니다. 이 값이 길어지면 Firebase Auth가 `auth/invalid-profile-attribute` 오류를 반환해 프로필 저장이 실패했습니다. 게시글 이미지도 외부 URL 직접 입력에 의존해 사용자가 로컬 이미지를 첨부하기 어려웠습니다.
+- **처리**: 프로필 이미지와 게시글 이미지를 Firebase Storage에 업로드하고, 다운로드 URL만 프로필 또는 Markdown 본문에 저장하도록 변경했습니다. Storage Rules는 `users/{uid}/profile`, `users/{uid}/board` 경로에 대해 동일 UID만 이미지 파일을 쓸 수 있도록 제한했습니다.
+- **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다. 실제 확인은 Storage Rules와 Hosting 배포 후 프로필 이미지 업로드·저장, 게시글 이미지 업로드·미리보기·상세 표시 흐름으로 수행합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 프로필·게시글 이미지 Firebase Storage 업로드 전환 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
