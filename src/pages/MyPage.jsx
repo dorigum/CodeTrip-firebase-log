@@ -30,6 +30,7 @@ const MyPage = () => {
   const [sortBy, setSortBy] = useState('CREATED');
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
+  const [mobileWishlistOpen, setMobileWishlistOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderStart, setNewFolderStart] = useState('');
   const [newFolderEnd, setNewFolderEnd] = useState('');
@@ -523,6 +524,7 @@ const MyPage = () => {
     setEditingAiPlan(false);
     setSelectedFolderId(folderId);
     setMobileFolderOpen(false);
+    setMobileWishlistOpen(false);
   };
 
   if (!isLoggedIn) return null;
@@ -1304,7 +1306,14 @@ const MyPage = () => {
                   EXPLORE_ADD
                 </button>
               )}
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setMobileWishlistOpen(false);
+                }}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10"
+              >
                 <option value="CREATED">NEWEST</option>
                 <option value="TITLE">TITLE A-Z</option>
                 <option value="TITLE_DESC">TITLE Z-A</option>
@@ -1454,15 +1463,38 @@ const MyPage = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {sortedWishList.map((item) => {
+            <>
+              <div className="mb-4 flex items-center justify-between rounded-xl border border-outline-variant/15 bg-white px-4 py-3 shadow-sm md:hidden">
+                <div className="min-w-0">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-primary">Wishlist_Preview</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {mobileWishlistOpen
+                      ? `저장 여행지 ${sortedWishList.length}개를 모두 표시합니다.`
+                      : `저장 여행지 ${Math.min(sortedWishList.length, 3)}개만 먼저 표시합니다.`}
+                  </p>
+                </div>
+                {sortedWishList.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setMobileWishlistOpen(prev => !prev)}
+                    className="shrink-0 rounded-lg bg-primary/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-primary"
+                    aria-expanded={mobileWishlistOpen}
+                  >
+                    {mobileWishlistOpen ? '접기' : '전체 보기'}
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {sortedWishList.map((item, index) => {
                 const itemId = item.contentid || item.content_id;
                 const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;
                 const itemTitle = item.title || '여행지';
                 const itemImage = item.firstimage || item.image_url || FALLBACK_IMAGE;
+                const mobileHidden = !mobileWishlistOpen && index >= 3;
 
                 return (
-                  <div key={itemKey} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
+                  <div key={itemKey} className={`group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative ${mobileHidden ? 'hidden md:block' : ''}`}>
                     {movingItemId === itemKey && (
                       <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 flex flex-col">
                         <div className="flex justify-between mb-4 border-b pb-2"><span className="text-[10px] font-bold font-mono text-primary">MOVE_TO_FOLDER</span><button onClick={() => setMovingItemId(null)} className="material-symbols-outlined text-xs">close</button></div>
@@ -1491,14 +1523,15 @@ const MyPage = () => {
                       <h3 className="font-headline text-base font-bold truncate mb-1">{itemTitle}</h3>
                       <p className="text-[10px] text-slate-400 font-mono mb-4 truncate">{item.addr1 || '주소 정보 없음'}</p>
                       <div className="flex justify-between items-center mt-4">
-                        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
+                        <span className="min-w-0 truncate text-[10px] font-mono text-slate-500 uppercase tracking-tighter">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
                         <Link to={`/explore/${itemId}`} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-primary hover:text-white transition-all border border-slate-100">VIEW_DATA</Link>
                       </div>
                     </div>
                   </div>
                 );
               })}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </main>
