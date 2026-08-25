@@ -427,6 +427,7 @@ const AiPlanner = () => {
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [folderHydrating, setFolderHydrating] = useState(false);
   const [isPlanSaved, setIsPlanSaved] = useState(false);
   const generationInFlightRef = useRef(false);
   const saveInFlightRef = useRef(false);
@@ -453,7 +454,8 @@ const AiPlanner = () => {
     [wishlistItems, selectedContentIds]
   );
 
-  const plannerBusy = generating || saving;
+  const plannerBusy = generating || saving || folderHydrating;
+  const plannerActionBusy = generating || saving;
   const maxTripStartDate = useMemo(
     () => getMaxTripStartDate(form.durationDays),
     [form.durationDays]
@@ -579,7 +581,7 @@ const AiPlanner = () => {
   };
 
   const handleFolderChange = useCallback(async (folderId) => {
-    if (plannerBusy) return;
+    if (plannerActionBusy) return;
     const requestId = ++folderSelectionRequestRef.current;
     invalidateCurrentPlan();
     const folderSelectionRevision = plannerRevisionRef.current;
@@ -599,19 +601,35 @@ const AiPlanner = () => {
       showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 유효한 1~${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
     }
 
-    const placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
-    if (
-      requestId !== folderSelectionRequestRef.current
-      || folderSelectionRevision !== plannerRevisionRef.current
-    ) {
-      return;
-    }
+    setFolderHydrating(true);
+    try {
+      let placesWithAddresses = nextFolderPlaces;
+      try {
+        placesWithAddresses = await hydratePlaceAddresses(nextFolderPlaces);
+      } catch (err) {
+        console.warn('Folder place address hydration failed:', err);
+      }
 
-    const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
-    if (folderRegion) {
-      updateForm('regionName', folderRegion);
+      if (
+        requestId !== folderSelectionRequestRef.current
+        || folderSelectionRevision !== plannerRevisionRef.current
+      ) {
+        return;
+      }
+
+      const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
+      if (folderRegion) {
+        setForm((prev) => ({ ...prev, regionName: folderRegion }));
+      }
+    } finally {
+      if (
+        requestId === folderSelectionRequestRef.current
+        && folderSelectionRevision === plannerRevisionRef.current
+      ) {
+        setFolderHydrating(false);
+      }
     }
-  }, [folders, invalidateCurrentPlan, plannerBusy, showToast, updateForm, wishlistItems]);
+  }, [folders, invalidateCurrentPlan, plannerActionBusy, showToast, wishlistItems]);
 
   useEffect(() => {
     if (!regeneratePlan || regenerationHydratedRef.current) return;

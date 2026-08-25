@@ -135,10 +135,10 @@ const Info = () => {
         <div className="relative z-10 max-w-3xl space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-[10px] font-bold tracking-widest font-label uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            system.info — v1.0.0
+            system.info — MVP 0.9.0-rc
           </div>
           <h1 className="text-5xl lg:text-6xl font-headline font-extrabold text-white leading-tight tracking-tighter">
-            Code Trip<span className="text-primary">.</span>
+            CodeTrip<span className="text-primary">.</span>
           </h1>
           <p className="text-white/70 text-lg font-body leading-relaxed">
             대한민국 곳곳의 여행지를 탐색하고, 날씨와 위치 기반으로 지금 이 순간 최적의 여행지를 추천받으세요.
