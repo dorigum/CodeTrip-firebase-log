@@ -137,8 +137,8 @@ const Settings = () => {
   };
 
   return (
-    <div className="flex-1 bg-background overflow-y-auto custom-scrollbar p-10">
-      <div className="max-w-4xl mx-auto space-y-10">
+    <div className="flex-1 bg-background overflow-y-auto custom-scrollbar px-4 py-6 sm:p-8 lg:p-10">
+      <div className="w-full max-w-4xl mx-auto space-y-8 sm:space-y-10">
         
         {/* Page Title */}
         <PageHeader
@@ -150,15 +150,15 @@ const Settings = () => {
 
         {/* SECTION 1: PROFILE UPDATE (Photo + Name) */}
         <section className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-outline-variant/10 bg-surface-container-lowest flex items-center justify-between">
+          <div className="flex flex-col gap-2 border-b border-outline-variant/10 bg-surface-container-lowest p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-primary">person</span>
               <h2 className="font-headline font-bold text-on-surface">프로필 수정</h2>
             </div>
-            <span className="text-[10px] font-mono text-outline uppercase tracking-widest">// update_public_info</span>
+            <span className="break-all font-mono text-[10px] uppercase tracking-widest text-outline sm:text-right">// update_public_info</span>
           </div>
           
-          <form onSubmit={handleUpdateProfile} className="p-8 space-y-8">
+          <form onSubmit={handleUpdateProfile} className="space-y-8 p-5 sm:p-8">
             <div className="flex flex-col md:flex-row gap-10">
               {/* Profile Image Column */}
               <div className="flex flex-col items-center gap-4">
@@ -230,7 +230,7 @@ const Settings = () => {
             </div>
 
             {/* Profile Action Button Area */}
-            <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
+            <div className="flex flex-col gap-4 border-t border-outline-variant/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 {profileMessage.text && (
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold ${profileMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'} animate-in fade-in slide-in-from-left-2`}>
@@ -242,7 +242,7 @@ const Settings = () => {
               <button 
                 type="submit" 
                 disabled={profileLoading}
-                className="bg-primary text-white px-8 py-3 rounded-xl font-label text-xs font-bold tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-label text-xs font-bold tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 sm:w-auto sm:px-8"
               >
                 {profileLoading ? (
                   <span className="animate-spin w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full" />
@@ -257,15 +257,15 @@ const Settings = () => {
 
         {/* SECTION 2: FAVORITE REGIONS */}
         <section className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-outline-variant/10 bg-surface-container-lowest flex items-center justify-between">
+          <div className="flex flex-col gap-2 border-b border-outline-variant/10 bg-surface-container-lowest p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-primary">location_on</span>
               <h2 className="font-headline font-bold text-on-surface">관심지역 설정</h2>
             </div>
-            <span className="text-[10px] font-mono text-outline uppercase tracking-widest">// max_3_regions</span>
+            <span className="break-all font-mono text-[10px] uppercase tracking-widest text-outline sm:text-right">// max_3_regions</span>
           </div>
 
-          <div className="p-8 space-y-6">
+          <div className="space-y-6 p-5 sm:p-8">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-label text-secondary uppercase font-bold tracking-wider ml-1">
@@ -310,7 +310,7 @@ const Settings = () => {
               )}
             </div>
 
-            <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
+            <div className="flex flex-col gap-4 border-t border-outline-variant/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 {regionsMessage.text && (
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold ${regionsMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'} animate-in fade-in slide-in-from-left-2`}>
@@ -323,7 +323,7 @@ const Settings = () => {
                 type="button"
                 onClick={handleSaveRegions}
                 disabled={regionsLoading}
-                className="bg-primary text-white px-8 py-3 rounded-xl font-label text-xs font-bold tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-label text-xs font-bold tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 sm:w-auto sm:px-8"
               >
                 {regionsLoading ? (
                   <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
@@ -338,15 +338,15 @@ const Settings = () => {
 
         {/* SECTION 3: PASSWORD UPDATE */}
         <section className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-outline-variant/10 bg-surface-container-lowest flex items-center justify-between">
+          <div className="flex flex-col gap-2 border-b border-outline-variant/10 bg-surface-container-lowest p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-secondary">lock</span>
-              <h2 className="font-headline font-bold text-on-surface">비밀번호 변경</h2>
+              <h2 className="font-headline font-bold leading-snug text-on-surface">비밀번호 변경</h2>
             </div>
-            <span className="text-[10px] font-mono text-outline uppercase tracking-widest">// security_credentials</span>
+            <span className="break-all font-mono text-[10px] uppercase tracking-widest text-outline sm:text-right">// security_credentials</span>
           </div>
 
-          <form onSubmit={handleUpdatePassword} className="p-8 space-y-6">
+          <form onSubmit={handleUpdatePassword} className="space-y-6 p-5 sm:p-8">
             <div className="space-y-1.5 max-w-md">
               <label className="text-[11px] font-label text-secondary uppercase font-bold tracking-wider ml-1">Current_Password</label>
               <input 
@@ -384,7 +384,7 @@ const Settings = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
+            <div className="flex flex-col gap-4 border-t border-outline-variant/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 {pwdMessage.text && (
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold ${pwdMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'} animate-in fade-in`}>
@@ -396,7 +396,7 @@ const Settings = () => {
               <button 
                 type="submit" 
                 disabled={pwdLoading}
-                className="bg-primary text-white px-8 py-3 rounded-xl font-label text-xs font-bold tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-label text-xs font-bold tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 sm:w-auto sm:px-8"
               >
                 {pwdLoading ? (
                   <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
