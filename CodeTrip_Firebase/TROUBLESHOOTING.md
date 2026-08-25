@@ -229,6 +229,33 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다. 실제 확인은 Storage Rules와 Hosting 배포 후 프로필 이미지 업로드·저장, 게시글 이미지 업로드·미리보기·상세 표시 흐름으로 수행합니다.
 - **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 프로필·게시글 이미지 Firebase Storage 업로드 전환 섹션 참고
 
+## 28. TourAPI 정상 빈 응답이 동기화 실패로 오인될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, TourAPI 신규 여행지 알림, Realtime Database `tourApiUpdates/state`
+- **요약**: 한국관광공사 TourAPI는 조회 결과가 없을 때도 `resultCode: "0000"`, `totalCount: "0"`, `items: ""` 형태의 정상 응답을 반환할 수 있습니다. 이 경우를 응답 구조 오류로 처리하면 신규 데이터가 없는 정상 상태를 장애로 오해할 수 있습니다.
+- **처리**: TourAPI 응답 파싱 로직을 분리하고, `totalCount`가 0이면 빈 배열로 반환하도록 수정했습니다. 반대로 `totalCount`가 0이 아닌데 `items.item`이 없으면 구조 오류로 유지했습니다.
+- **확인**: 정상 빈 응답 fixture, 비정상 누락 구조 fixture, 단일 item 정규화 fixture를 `functions/test/tourApiUpdates.test.js`에 추가했고, `npm --prefix functions test`에서 3건 모두 통과했습니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 반영 섹션 참고
+
+## 29. 작은 용량의 초고해상도 이미지가 압축 없이 업로드될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Storage 이미지 업로드, 프로필 이미지, 게시글 첨부 이미지, 모바일 렌더링 성능
+- **요약**: 기존 압축 로직은 파일 용량이 1MB 이하이면 바로 원본을 반환했습니다. 이 경우 용량은 작지만 해상도가 큰 이미지가 그대로 업로드되어 렌더링 비용이 커질 수 있었습니다.
+- **처리**: 업로드 전 모든 이미지의 실제 해상도를 확인하고, 가로 또는 세로가 1920px을 초과하면 용량과 관계없이 리사이즈하도록 수정했습니다.
+- **확인**: `src/api/storageApi.js`에서 이미지 로드 후 해상도 기준을 먼저 계산하도록 변경했습니다. 실제 업로드 검증은 Storage 배포 환경에서 프로필 이미지와 게시글 이미지 첨부 흐름으로 확인합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 반영 섹션 참고
+
+## 30. 프로필 이미지 변경 시 Storage 파일이 계속 누적될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: 프로필 수정 화면, Firebase Storage `users/{uid}/profile`, Storage 사용량
+- **요약**: 프로필 이미지를 바꿀 때마다 timestamp 기반 새 파일이 생성되어 이전 프로필 이미지가 Storage에 계속 남을 수 있었습니다.
+- **처리**: 프로필 이미지는 `users/{uid}/profile/avatar` 고정 경로에 업로드해 덮어쓰기 방식으로 관리하도록 수정했습니다. 같은 URL 캐시 문제를 줄이기 위해 저장 URL에는 업로드 시각 기반 `v` 쿼리 파라미터를 추가합니다.
+- **확인**: 게시글 이미지는 과거 게시글 본문 참조를 유지해야 하므로 기존 timestamp 누적 저장 방식을 유지합니다. 프로필 이미지는 배포 후 여러 번 변경하면서 Storage `profile/avatar` 객체만 갱신되는지 확인합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 프로필 이미지 저장 경로 보정 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

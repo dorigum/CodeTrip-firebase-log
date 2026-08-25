@@ -12,7 +12,7 @@ const getMyNotifications = async () => {
     .slice(0, 30);
 };
 
-const getTourApiUpdateNotifications = async (userId) => {
+const getTourApiUpdateNotifications = async (userId, { limit = TOUR_UPDATE_LIMIT } = {}) => {
   const [updatesSnapshot, readsSnapshot] = await Promise.all([
     get(ref(realtimeDb, 'tourApiUpdates/items')),
     get(ref(realtimeDb, `users/${userId}/tourApiUpdateReads`)),
@@ -36,7 +36,7 @@ const getTourApiUpdateNotifications = async (userId) => {
       };
     })
     .filter((notification) => !notification.hidden)
-    .slice(0, TOUR_UPDATE_LIMIT);
+    .slice(0, limit || undefined);
 };
 
 const isTourApiUpdateNotification = (id) =>
@@ -49,7 +49,7 @@ export const getNotifications = async () => {
   const user = await getCurrentUser();
   const [notifications, tourApiNotifications] = await Promise.all([
     getMyNotifications(),
-    getTourApiUpdateNotifications(user.id),
+    getTourApiUpdateNotifications(user.id, { limit: null }),
   ]);
   const mergedNotifications = [
     ...notifications.map((notification) => ({
@@ -71,7 +71,7 @@ export const markAllRead = async () => {
   const user = await getCurrentUser();
   const [notifications, tourApiNotifications] = await Promise.all([
     getMyNotifications(),
-    getTourApiUpdateNotifications(user.id),
+    getTourApiUpdateNotifications(user.id, { limit: null }),
   ]);
   const updates = {};
   notifications

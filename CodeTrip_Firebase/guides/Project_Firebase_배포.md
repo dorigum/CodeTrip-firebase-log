@@ -546,12 +546,15 @@ Firebase CLI의 기본 프로젝트를 지정합니다.
 
 ### 10.2 `firebase.json`
 
-Hosting과 Realtime Database Rules 배포 설정입니다.
+Hosting, Realtime Database Rules, Storage Rules 배포 설정입니다.
 
 ```json
 {
   "database": {
     "rules": "database.rules.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   },
   "hosting": {
     "public": "dist",

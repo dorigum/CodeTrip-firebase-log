@@ -20,6 +20,11 @@ const getImageExtension = (contentType = '') => {
   return 'jpg';
 };
 
+const appendCacheVersion = (url, version) => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${version}`;
+};
+
 export const assertImageFile = (file) => {
   if (!file) throw new Error('업로드할 이미지 파일을 선택해주세요.');
   if (!file.type?.startsWith('image/')) throw new Error('이미지 파일만 업로드할 수 있습니다.');
@@ -27,11 +32,6 @@ export const assertImageFile = (file) => {
 
 export const compressImageFile = (file) =>
   new Promise((resolve) => {
-    if (file.size <= MAX_UPLOAD_BYTES) {
-      resolve(file);
-      return;
-    }
-
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
 
@@ -40,8 +40,14 @@ export const compressImageFile = (file) =>
 
       let width = img.naturalWidth;
       let height = img.naturalHeight;
+      const shouldResize = width > MAX_DIMENSION || height > MAX_DIMENSION;
 
-      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+      if (!shouldResize && file.size <= MAX_UPLOAD_BYTES) {
+        resolve(file);
+        return;
+      }
+
+      if (shouldResize) {
         if (width >= height) {
           height = Math.round((height * MAX_DIMENSION) / width);
           width = MAX_DIMENSION;
@@ -54,7 +60,12 @@ export const compressImageFile = (file) =>
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const context = canvas.getContext('2d');
+      if (!context) {
+        resolve(file);
+        return;
+      }
+      context.drawImage(img, 0, 0, width, height);
 
       let quality = 0.85;
       const tryBlob = () => {
@@ -88,12 +99,16 @@ export const compressImageFile = (file) =>
     img.src = objectUrl;
   });
 
-export const uploadUserImage = async (file, folder) => {
+export const uploadUserImage = async (file, folder, options = {}) => {
   assertImageFile(file);
   const user = await getCurrentUser();
   const compressed = await compressImageFile(file);
   const extension = getImageExtension(compressed.type);
-  const path = `users/${user.id}/${folder}/${Date.now()}-${sanitizeFileName(compressed.name)}.${extension}`;
+  const uploadedAt = Date.now();
+  const fileName = options.fixedFileName
+    ? options.fixedFileName
+    : `${uploadedAt}-${sanitizeFileName(compressed.name)}.${extension}`;
+  const path = `users/${user.id}/${folder}/${fileName}`;
   const imageRef = storageRef(firebaseStorage, path);
 
   const snapshot = await uploadBytes(imageRef, compressed, {
@@ -101,12 +116,18 @@ export const uploadUserImage = async (file, folder) => {
     customMetadata: {
       owner: user.id,
       source: 'codetrip',
+      uploadedAt: String(uploadedAt),
     },
   });
 
-  return getDownloadURL(snapshot.ref);
+  const downloadUrl = await getDownloadURL(snapshot.ref);
+  return options.cacheBust ? appendCacheVersion(downloadUrl, uploadedAt) : downloadUrl;
 };
 
-export const uploadProfileImage = (file) => uploadUserImage(file, 'profile');
+export const uploadProfileImage = (file) =>
+  uploadUserImage(file, 'profile', {
+    fixedFileName: 'avatar',
+    cacheBust: true,
+  });
 
 export const uploadBoardImage = (file) => uploadUserImage(file, 'board');
