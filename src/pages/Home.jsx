@@ -308,27 +308,30 @@ const GuestHome = () => (
               <span className="h-2 w-2 rounded-full bg-primary" />
               <p className="text-[11px] font-bold uppercase tracking-widest font-label">member.workspace</p>
             </div>
-            <h2 className="mt-5 break-keep text-3xl font-black leading-tight font-headline">
+            <h2 className="mt-5 break-keep text-2xl font-black leading-tight font-headline sm:text-3xl">
               <span className="text-primary">로그인하면</span> 여행 계획이{' '}
               <span className="relative inline-block text-cyan-100 drop-shadow-sm">
                 하나의 작업 공간
                 <span className="absolute inset-x-0 bottom-1 -z-10 h-3 rounded-full bg-primary/55" />
-              </span>으로 이어집니다.
+              </span>
+              <span className="block sm:inline">으로 이어집니다.</span>
             </h2>
             <p className="mt-4 max-w-2xl break-keep text-sm leading-7 text-white/80">
               저장한 장소를 폴더로 묶고, CodeTrip이 코스를 제안하면 체크리스트와 메모까지
               <br className="hidden sm:block" />
               같은 흐름에서 관리할 수 있습니다.
             </p>
-            <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
               {MEMBER_PREVIEW.map((item) => (
-                <div key={item.title} className="flex min-h-[230px] flex-col rounded-2xl border border-white/12 bg-slate-900/25 p-5 transition-all hover:-translate-y-1 hover:bg-slate-900/35">
-                  <div className="flex h-9 items-center gap-2">
-                    <span className="material-symbols-outlined flex h-7 w-7 items-center justify-center text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{item.icon}</span>
-                    <p className="inline-flex min-h-7 items-center rounded-full border border-primary/25 bg-primary/15 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-cyan-100 font-label">{item.value}</p>
+                <div key={item.title} className="flex min-h-[210px] min-w-0 flex-col rounded-2xl border border-white/12 bg-slate-900/25 p-5 transition-all hover:-translate-y-1 hover:bg-slate-900/35">
+                  <div className="flex min-h-9 flex-wrap items-center gap-2">
+                    <span className="material-symbols-outlined flex h-7 w-7 shrink-0 items-center justify-center text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{item.icon}</span>
+                    <p className="inline-flex min-h-7 min-w-0 max-w-full items-center rounded-full border border-primary/25 bg-primary/15 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-100 font-label">
+                      <span className="truncate">{item.value}</span>
+                    </p>
                   </div>
-                  <h3 className="mt-4 text-sm font-bold">{item.title}</h3>
-                  <p className="mt-3 break-keep text-xs leading-5 text-white/70">{item.desc}</p>
+                  <h3 className="mt-4 break-keep text-sm font-bold leading-6">{item.title}</h3>
+                  <p className="mt-3 break-keep text-xs leading-5 text-white/70 sm:break-normal">{item.desc}</p>
                   <div className="mt-auto border-t border-white/10 pt-4">
                     <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white/65 font-label">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
