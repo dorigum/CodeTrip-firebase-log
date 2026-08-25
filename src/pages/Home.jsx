@@ -302,8 +302,8 @@ const GuestHome = () => (
 
     <GuestReveal delay={80}>
       <section className="mt-8 overflow-hidden rounded-2xl border border-slate-600/25 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-white shadow-xl">
-        <div className="grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_520px]">
-          <div className="p-8 lg:p-10">
+        <div className="grid grid-cols-1 gap-0 xl:grid-cols-[minmax(0,1fr)_520px]">
+          <div className="p-8 xl:p-10">
             <div className="flex items-center gap-2 text-primary">
               <span className="h-2 w-2 rounded-full bg-primary" />
               <p className="text-[11px] font-bold uppercase tracking-widest font-label">member.workspace</p>
@@ -321,9 +321,9 @@ const GuestHome = () => (
               <br className="hidden sm:block" />
               같은 흐름에서 관리할 수 있습니다.
             </p>
-            <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+            <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
               {MEMBER_PREVIEW.map((item) => (
-                <div key={item.title} className="flex min-h-[210px] min-w-0 flex-col rounded-2xl border border-white/12 bg-slate-900/25 p-5 transition-all hover:-translate-y-1 hover:bg-slate-900/35">
+                <div key={item.title} className="flex min-h-[180px] min-w-0 flex-col rounded-2xl border border-white/12 bg-slate-900/25 p-4 transition-all hover:-translate-y-1 hover:bg-slate-900/35 sm:p-5">
                   <div className="flex min-h-9 flex-wrap items-center gap-2">
                     <span className="material-symbols-outlined flex h-7 w-7 shrink-0 items-center justify-center text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{item.icon}</span>
                     <p className="inline-flex min-h-7 min-w-0 max-w-full items-center rounded-full border border-primary/25 bg-primary/15 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-100 font-label">
@@ -343,7 +343,7 @@ const GuestHome = () => (
             </div>
           </div>
 
-          <div className="border-t border-white/10 bg-slate-900/15 p-6 lg:border-l lg:border-t-0">
+          <div className="border-t border-white/10 bg-slate-900/15 p-6 xl:border-l xl:border-t-0">
             <div className="rounded-2xl border border-white/15 bg-slate-800/75 p-5 backdrop-blur-md">
               <div className="mb-4 flex items-center justify-between">
                 <div>
