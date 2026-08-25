@@ -37,6 +37,7 @@ const NAV_ITEMS = [
   {
     icon: 'auto_awesome',
     label: 'AI Planner',
+    mobileLabel: 'AI',
     path: '/ai-planner',
     animation: 'ai-sparkle',
     extra: <div className="ai-halo" />,
@@ -399,23 +400,23 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant/30 z-[55] flex md:hidden items-center justify-around h-16 px-2">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant/30 z-[55] flex md:hidden items-center justify-around h-16 px-1">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
             to={item.path}
             onClick={(e) => handleNavClick(e, item)}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all group ${
+            className={`flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all group ${
               isActive(item.path) ? 'text-primary' : 'text-slate-400'
             }`}
           >
             <span className="relative flex items-center justify-center">
-              <span className={`material-symbols-outlined text-2xl ${isActive(item.path) ? 'fill-1' : ''} transition-all duration-300 ${item.animation}`}>
+              <span className={`material-symbols-outlined text-[22px] ${isActive(item.path) ? 'fill-1' : ''} transition-all duration-300 ${item.animation}`}>
                 {item.icon}
               </span>
               {item.extra}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+            <span className="max-w-full truncate text-[9px] font-bold uppercase tracking-tighter">{item.mobileLabel || item.label}</span>
           </Link>
         ))}
         <button
@@ -425,34 +426,34 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             setMobileInfoOpen(prev => !prev);
             setMobileMyPageOpen(false);
           }}
-          className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all group ${
+          className={`flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all group ${
             isActive(INFO_ITEM.path) || mobileInfoOpen ? 'text-primary' : 'text-slate-400'
           }`}
         >
           <span className="relative flex items-center justify-center">
-            <span className={`material-symbols-outlined text-2xl ${isActive(INFO_ITEM.path) ? 'fill-1' : ''} transition-all duration-300 ${INFO_ITEM.animation}`}>
+            <span className={`material-symbols-outlined text-[22px] ${isActive(INFO_ITEM.path) ? 'fill-1' : ''} transition-all duration-300 ${INFO_ITEM.animation}`}>
               {mobileInfoOpen ? 'close' : INFO_ITEM.icon}
             </span>
             {INFO_ITEM.extra}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-tighter">{INFO_ITEM.label}</span>
+          <span className="max-w-full truncate text-[9px] font-bold uppercase tracking-tighter">{INFO_ITEM.label}</span>
         </button>
         <button
           onClick={() => {
             setMobileMyPageOpen(prev => !prev);
             setMobileInfoOpen(false);
           }}
-          className={`group flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
+          className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${
             MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'text-primary' : 'text-slate-400'
           } ${mobileMyPageOpen ? 'is-mobile-open text-primary' : ''}`}
         >
           <span className="relative flex items-center justify-center">
-            <span className={`material-symbols-outlined text-2xl ${MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'fill-1' : ''} transition-all duration-300 ${MY_PAGE_ITEM.animation}`}>
+            <span className={`material-symbols-outlined text-[22px] ${MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'fill-1' : ''} transition-all duration-300 ${MY_PAGE_ITEM.animation}`}>
               {mobileMyPageOpen ? 'close' : MY_PAGE_ITEM.icon}
             </span>
             {MY_PAGE_ITEM.extra}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-tighter">My Page</span>
+          <span className="max-w-full truncate text-[9px] font-bold uppercase tracking-tighter">My Page</span>
         </button>
       </nav>
 
