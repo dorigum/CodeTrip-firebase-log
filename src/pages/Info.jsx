@@ -130,29 +130,29 @@ const Info = () => {
     <div className="bg-background text-on-surface font-body min-h-screen">
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-slate-900 px-10 py-24 flex flex-col items-center text-center">
+      <section className="relative flex flex-col items-center overflow-hidden bg-slate-900 px-4 py-14 text-center sm:px-10 sm:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(0,184,212,0.15)_0%,_transparent_70%)]" />
-        <div className="relative z-10 max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-[10px] font-bold tracking-widest font-label uppercase">
+        <div className="relative z-10 max-w-3xl space-y-4 sm:space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur-md sm:px-4 sm:text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             system.info — MVP 0.9.0-rc
           </div>
-          <h1 className="text-5xl lg:text-6xl font-headline font-extrabold text-white leading-tight tracking-tighter">
+          <h1 className="font-headline text-4xl font-extrabold leading-tight tracking-tighter text-white sm:text-5xl lg:text-6xl">
             CodeTrip<span className="text-primary">.</span>
           </h1>
-          <p className="text-white/70 text-lg font-body leading-relaxed">
+          <p className="text-sm leading-relaxed text-white/70 sm:text-lg">
             대한민국 곳곳의 여행지를 탐색하고, 날씨와 위치 기반으로 지금 이 순간 최적의 여행지를 추천받으세요.
           </p>
-          <div className="flex items-center justify-center gap-4 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2 sm:gap-4">
             <Link
               to="/explore"
-              className="px-7 py-3 bg-primary text-white rounded-full font-bold text-sm hover:brightness-110 transition-all shadow-lg font-label"
+              className="rounded-full bg-primary px-5 py-2.5 font-label text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 sm:px-7 sm:py-3 sm:text-sm"
             >
               탐색 시작하기
             </Link>
             <Link
               to="/"
-              className="px-7 py-3 bg-white/10 text-white border border-white/20 rounded-full font-bold text-sm hover:bg-white/20 transition-all font-label backdrop-blur-md"
+              className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 font-label text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 sm:px-7 sm:py-3 sm:text-sm"
             >
               메인으로
             </Link>
@@ -162,17 +162,17 @@ const Info = () => {
 
       {/* Stats Bar */}
       <InfoReveal>
-        <div className="bg-white border-b border-outline-variant/10 px-10 py-5">
-          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div className="border-b border-outline-variant/10 bg-white px-4 py-4 sm:px-10 sm:py-5">
+          <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 text-center md:grid-cols-4 md:gap-6">
             {[
               { value: '60,000+', label: '등록 여행지' },
               { value: '16', label: '전국 시도 커버' },
               { value: '8', label: '여행 테마' },
               { value: '실시간', label: '날씨·위치 연동' },
             ].map((stat) => (
-              <div key={stat.label} className="space-y-1">
-                <p className="text-2xl font-headline font-extrabold text-primary">{stat.value}</p>
-                <p className="text-[11px] font-label uppercase tracking-widest text-slate-400">{stat.label}</p>
+              <div key={stat.label} className="space-y-0.5 rounded-xl bg-slate-50/70 px-2 py-3 sm:bg-transparent sm:p-0 sm:space-y-1">
+                <p className="font-headline text-lg font-extrabold text-primary sm:text-2xl">{stat.value}</p>
+                <p className="font-label text-[10px] uppercase tracking-widest text-slate-400 sm:text-[11px]">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -180,11 +180,11 @@ const Info = () => {
       </InfoReveal>
 
       {/* Feature Navigator + Detail */}
-      <div className="max-w-6xl mx-auto px-6 lg:px-10 py-20 space-y-16">
+      <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-6 sm:py-20 sm:space-y-16 lg:px-10">
 
         <InfoReveal className="text-center space-y-3">
           <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">Features</p>
-          <h2 className="text-3xl font-headline font-bold text-on-surface">주요 기능 소개</h2>
+          <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">주요 기능 소개</h2>
           <p className="text-slate-400 text-sm font-body">탭을 클릭해 각 기능의 상세 내용을 확인하세요.</p>
         </InfoReveal>
 
@@ -194,7 +194,7 @@ const Info = () => {
             <button
               key={f.id}
               onClick={() => setActiveId(f.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold font-label uppercase tracking-tight transition-all border ${
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-2 font-label text-[11px] font-bold uppercase tracking-tight transition-all sm:gap-2 sm:px-5 sm:py-2.5 sm:text-xs ${
                 activeId === f.id
                   ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                   : 'bg-white text-slate-500 border-outline-variant/20 hover:border-primary/30 hover:text-primary'
@@ -212,15 +212,15 @@ const Info = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2">
 
               {/* Left: Description */}
-              <div className="p-10 lg:p-12 flex flex-col justify-between space-y-8 border-b lg:border-b-0 lg:border-r border-outline-variant/10">
-                <div className="space-y-5">
+              <div className="flex flex-col justify-between space-y-6 border-b border-outline-variant/10 p-5 sm:p-8 lg:border-b-0 lg:border-r lg:p-12">
+                <div className="space-y-4 sm:space-y-5">
                   <p className="text-[10px] font-mono text-primary font-bold tracking-widest">{active.tag}</p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-3xl">{active.icon}</span>
+                  <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:h-14 sm:w-14">
+                      <span className="material-symbols-outlined text-2xl text-primary sm:text-3xl">{active.icon}</span>
                     </div>
                     <div>
-                      <h3 className="text-2xl font-headline font-bold text-on-surface">{active.title}</h3>
+                      <h3 className="font-headline text-xl font-bold text-on-surface sm:text-2xl">{active.title}</h3>
                       <p className="text-sm text-slate-400 font-body mt-0.5">{active.subtitle}</p>
                     </div>
                   </div>
@@ -243,10 +243,10 @@ const Info = () => {
               </div>
 
               {/* Right: Detail List */}
-              <div className="p-10 lg:p-12 grid grid-cols-1 sm:grid-cols-2 gap-6 content-start">
+              <div className="grid grid-cols-1 content-start gap-4 p-5 sm:grid-cols-2 sm:gap-6 sm:p-8 lg:p-12">
                 {active.details.map((d) => (
-                  <div key={d.label} className="flex gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-outline-variant/10">
+                  <div key={d.label} className="flex gap-3 sm:gap-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-outline-variant/10 bg-slate-50 sm:h-9 sm:w-9">
                       <span className="material-symbols-outlined text-slate-400 text-lg">{d.icon}</span>
                     </div>
                     <div className="space-y-1">
@@ -262,11 +262,11 @@ const Info = () => {
       </div>
 
       {/* How to Use */}
-      <section className="bg-surface-container-low border-t border-outline-variant/10 px-6 py-20">
-        <div className="max-w-4xl mx-auto space-y-12">
+      <section className="border-t border-outline-variant/10 bg-surface-container-low px-4 py-12 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-4xl space-y-8 sm:space-y-12">
           <InfoReveal className="text-center space-y-3">
             <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">How to use</p>
-            <h2 className="text-3xl font-headline font-bold text-on-surface">이렇게 이용하세요</h2>
+            <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">이렇게 이용하세요</h2>
           </InfoReveal>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -275,10 +275,10 @@ const Info = () => {
               { step: '03', icon: 'celebration', title: '축제 일정 확인', desc: 'Festivals 메뉴에서 전국 축제 일정을 날짜순으로 확인합니다.' },
             ].map((s, index) => (
               <InfoReveal key={s.step} delay={index * 90}>
-                <div className="bg-white p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-5 relative overflow-hidden">
-                <p className="absolute top-5 right-6 text-6xl font-headline font-extrabold text-slate-50 leading-none select-none">{s.step}</p>
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-2xl">{s.icon}</span>
+                <div className="relative space-y-4 overflow-hidden rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm sm:space-y-5 sm:p-8">
+                <p className="absolute right-5 top-4 select-none font-headline text-5xl font-extrabold leading-none text-slate-50 sm:right-6 sm:top-5 sm:text-6xl">{s.step}</p>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
+                  <span className="material-symbols-outlined text-xl text-primary sm:text-2xl">{s.icon}</span>
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-headline font-bold text-on-surface">{s.title}</h4>
@@ -292,10 +292,10 @@ const Info = () => {
       </section>
 
       {/* Data Source */}
-      <section className="px-6 py-16 max-w-4xl mx-auto space-y-8">
+      <section className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6 sm:py-16">
         <InfoReveal className="text-center space-y-3">
           <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">Data Source</p>
-          <h2 className="text-3xl font-headline font-bold text-on-surface">활용 데이터</h2>
+          <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">활용 데이터</h2>
         </InfoReveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -304,7 +304,7 @@ const Info = () => {
             { icon: 'wb_cloudy', title: '날씨 API', desc: '현재 위치의 실시간 날씨를 분석해 상황에 맞는 여행지를 추천합니다.', tag: 'Weather API' },
           ].map((d, index) => (
             <InfoReveal key={d.title} delay={index * 90}>
-              <div className="bg-white p-7 rounded-2xl border border-outline-variant/10 shadow-sm space-y-4">
+              <div className="space-y-4 rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm sm:p-7">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-primary">{d.icon}</span>
@@ -322,15 +322,15 @@ const Info = () => {
       </section>
 
       {/* Transportation Links */}
-      <section className="bg-white border-y border-outline-variant/10 px-6 py-20">
-        <div className="max-w-5xl mx-auto space-y-12">
+      <section className="border-y border-outline-variant/10 bg-white px-4 py-12 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-5xl space-y-8 sm:space-y-12">
           <InfoReveal className="text-center space-y-3">
             <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">External Modules</p>
-            <h2 className="text-3xl font-headline font-bold text-on-surface">교통수단 예매 허브</h2>
+            <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">교통수단 예매 허브</h2>
             <p className="text-slate-400 text-sm font-body">원활한 여행을 위해 외부 예매 시스템으로 즉시 연결합니다.</p>
           </InfoReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-8">
             {[
               { 
                 id: 'ktx', 
@@ -358,8 +358,8 @@ const Info = () => {
               },
             ].map((sys, index) => (
               <InfoReveal key={sys.id} delay={index * 90}>
-                <div className="group bg-slate-50/50 p-8 rounded-3xl border border-outline-variant/10 hover:border-primary/20 hover:bg-white hover:shadow-xl transition-all duration-500 flex flex-col justify-between space-y-6">
-                <div className="space-y-4">
+                <div className="group flex flex-col justify-between space-y-5 rounded-3xl border border-outline-variant/10 bg-slate-50/50 p-5 transition-all duration-500 hover:border-primary/20 hover:bg-white hover:shadow-xl sm:p-8 sm:space-y-6">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-mono font-bold text-primary tracking-tighter bg-primary/5 px-2 py-1 rounded border border-primary/10 uppercase">
                       {sys.tag}
@@ -390,24 +390,24 @@ const Info = () => {
       </section>
 
       {/* CTA */}
-      <section className="bg-slate-900 px-6 py-20 text-center">
-        <InfoReveal className="space-y-6">
-          <h2 className="text-3xl font-headline font-bold text-white">
+      <section className="bg-slate-900 px-4 py-12 text-center sm:px-6 sm:py-20">
+        <InfoReveal className="space-y-5 sm:space-y-6">
+          <h2 className="font-headline text-2xl font-bold text-white sm:text-3xl">
             지금 바로 여행을 시작하세요<span className="text-primary">.</span>
           </h2>
           <p className="text-white/60 font-body text-sm max-w-md mx-auto leading-relaxed">
             회원가입 없이도 여행지 탐색과 축제 정보를 바로 이용할 수 있습니다.
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <Link
               to="/explore"
-              className="px-8 py-3 bg-primary text-white rounded-full font-bold text-sm hover:brightness-110 transition-all shadow-lg font-label"
+              className="rounded-full bg-primary px-6 py-2.5 font-label text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 sm:px-8 sm:py-3 sm:text-sm"
             >
               탐색 시작하기
             </Link>
             <Link
               to="/signup"
-              className="px-8 py-3 bg-white/10 text-white border border-white/20 rounded-full font-bold text-sm hover:bg-white/20 transition-all font-label backdrop-blur-md"
+              className="rounded-full border border-white/20 bg-white/10 px-6 py-2.5 font-label text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 sm:px-8 sm:py-3 sm:text-sm"
             >
               회원가입
             </Link>
