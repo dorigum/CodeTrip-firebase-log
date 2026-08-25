@@ -14,6 +14,7 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 
 ## 📅 날짜별 개발 기록
 
+- [2026-08-25](project-log/2026-08-25.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 주소 보강 상태를 busy-state에 포함하고, Info 화면 MVP 버전 표기와 모바일 하단 Info 진입점, Info 전용 개발용 API 캐시 패널 표시 범위를 정리
 - [2026-08-23](project-log/2026-08-23.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 일정 정규화와 비동기 폴더 선택 최신성 검증을 보완하고, 공모전 1차 제출 자료 누락 여부와 남은 제출 차단 항목을 재점검
 - [2026-08-22](project-log/2026-08-22.md): 비회원 위시리스트 안내 모달과 로그인 후 탐색 복귀 흐름 안정화, 탐색 페이지 상태 보존·초기화 기준 정리, 검색어 삭제와 페이지 초기화 요청 통합, 로그아웃 시 보호 라우트 로그인 안내 모달이 순간적으로 표시되는 문제 보정, AI 여행 계획 생성 날짜 입력과 마이페이지 폴더 일정 수정 진입점 추가
 - [2026-08-16](project-log/2026-08-16.md): Gemini API 호출을 Firebase Callable Function 프록시로 전환, Functions Secret 등록과 배포, Hosting 재배포, 신규 Gemini 키 교체와 기존 temp 키 삭제, 인증 smoke test 및 보안 검증 문서 반영, 카카오 지도 JavaScript 키와 SDK 도메인 설정 보정 후 배포 상세 페이지 지도 표시 확인

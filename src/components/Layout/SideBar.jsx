@@ -85,6 +85,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
   const [myPageSubOpen, setMyPageSubOpen] = useState(false);
   const [infoSubOpen, setInfoSubOpen] = useState(false);
   const [mobileMyPageOpen, setMobileMyPageOpen] = useState(false);
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [accessConfirmOpen, setAccessConfirmOpen] = useState(false);
   const { pathname } = useLocation();
@@ -100,10 +101,12 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
       e.preventDefault();
       setAccessConfirmOpen(true);
       setMobileMyPageOpen(false);
+      setMobileInfoOpen(false);
       return;
     }
 
     setMobileMyPageOpen(false);
+    setMobileInfoOpen(false);
   };
 
   const handleLogout = () => {
@@ -353,6 +356,48 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
         </>
       )}
 
+      {/* Mobile Info 서브메뉴 팝업 */}
+      {mobileInfoOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-[54] md:hidden"
+            onClick={() => setMobileInfoOpen(false)}
+          />
+          <div className="fixed bottom-16 right-12 z-[56] md:hidden max-h-[70vh] w-56 overflow-y-auto rounded-t-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200">
+            {INFO_SUB_ITEMS.map((sub) =>
+              sub.external ? (
+                <a
+                  key={sub.label}
+                  href={sub.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileInfoOpen(false)}
+                  className="flex items-center gap-3 px-5 py-3.5 text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary"
+                >
+                  <span className="material-symbols-outlined text-base">{sub.icon}</span>
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest">{sub.label}</span>
+                  <span className="material-symbols-outlined ml-auto text-[13px]">open_in_new</span>
+                </a>
+              ) : (
+                <Link
+                  key={sub.label}
+                  to={sub.href}
+                  onClick={() => setMobileInfoOpen(false)}
+                  className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                    isActive(sub.href)
+                      ? 'bg-primary/5 font-semibold text-primary'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-primary'
+                  }`}
+                >
+                  <span className={`material-symbols-outlined text-base ${isActive(sub.href) ? 'fill-1' : ''}`}>{sub.icon}</span>
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest">{sub.label}</span>
+                </Link>
+              )
+            )}
+          </div>
+        </>
+      )}
+
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant/30 z-[55] flex md:hidden items-center justify-around h-16 px-2">
         {NAV_ITEMS.map((item) => (
@@ -374,7 +419,29 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
           </Link>
         ))}
         <button
-          onClick={() => setMobileMyPageOpen(prev => !prev)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setMobileInfoOpen(prev => !prev);
+            setMobileMyPageOpen(false);
+          }}
+          className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all group ${
+            isActive(INFO_ITEM.path) || mobileInfoOpen ? 'text-primary' : 'text-slate-400'
+          }`}
+        >
+          <span className="relative flex items-center justify-center">
+            <span className={`material-symbols-outlined text-2xl ${isActive(INFO_ITEM.path) ? 'fill-1' : ''} transition-all duration-300 ${INFO_ITEM.animation}`}>
+              {mobileInfoOpen ? 'close' : INFO_ITEM.icon}
+            </span>
+            {INFO_ITEM.extra}
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">{INFO_ITEM.label}</span>
+        </button>
+        <button
+          onClick={() => {
+            setMobileMyPageOpen(prev => !prev);
+            setMobileInfoOpen(false);
+          }}
           className={`group flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
             MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'text-primary' : 'text-slate-400'
           } ${mobileMyPageOpen ? 'is-mobile-open text-primary' : ''}`}

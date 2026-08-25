@@ -14,6 +14,7 @@
 
 | 날짜 | 기준 커밋 | 검증 항목 | 결과 | 증빙 | 미해결 이슈 |
 |---|---|---|---|---|---|
+| 2026-08-25 | `0ae2017` | AI Planner 폴더 주소 보강 busy-state와 Info·모바일 UI 정리 | 부분 통과. 폴더 장소 주소 보강 중 생성 요청이 실행되지 않도록 `folderHydrating`을 `plannerBusy`에 포함하고, 최신 요청일 때만 보강 결과를 반영하도록 했습니다. Info 화면은 `MVP 0.9.0-rc`로 표기했고, 모바일 하단 내비게이션에는 `Info`를 추가하되 `My Page`는 오른쪽 끝에 유지했습니다. 모바일 `Info`는 하위 메뉴 팝업을 띄워 외부 참고 링크와 About CodeTrip 화면으로 이동할 수 있게 했습니다. 개발용 API 캐시 패널은 `/info` 화면에서만 표시되며, 사이드바와 겹치지 않도록 오른쪽 하단으로 이동했습니다. `/info`에서는 캐시 카드 표시, `/explore`에서는 캐시 카드 미표시를 수동 확인했습니다. | `src/pages/AiPlanner.jsx`, `src/pages/Info.jsx`, `src/components/Layout/SideBar.jsx`, `src/components/ApiCacheStatus.jsx`, `CodeTrip_Firebase/project-log/2026-08-25.md`, `npm run lint`, `npm run build`, 사용자 수동 확인 | 모바일 실제 화면에서 하단 탭 7개 표시와 Info 하위 메뉴 팝업 위치를 추가 확인해야 합니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다. |
 | 2026-08-11 | `6314e03` | 문서 체계 갱신 확인 | 통과 | `docs/README.md`, `docs/11-ai-document-analysis-rules.md`, `docs/12-technical-debt-register.md` | 로컬 브랜치명이 원격 브랜치명과 다를 수 있음 |
 | 2026-08-11 | `6314e03` | `npm run lint` | 최근 검증 기록 있음, 현재 문서 변경 후 재실행 필요 | 이전 로컬 실행 로그 | React Hook 경고는 별도 기술 부채 후보 |
 | 2026-08-11 | `6314e03` | `npm run build` | 최근 검증 기록 있음, 현재 문서 변경 후 재실행 필요 | 이전 로컬 실행 로그 | Vite 500kB 초과 청크 경고는 `TD-01`로 추적 |
