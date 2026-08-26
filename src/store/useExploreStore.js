@@ -11,8 +11,15 @@ const getExploreItemsPerPage = () => {
 };
 
 let exploreScrollY = 0;
+let exploreFetchRequestId = 0;
 export const getExploreScrollY = () => exploreScrollY;
 export const setExploreScrollY = (y) => { exploreScrollY = y; };
+
+const resetMainScroll = () => {
+  if (typeof document === 'undefined') return;
+  const mainScroll = document.getElementById('main-scroll');
+  if (mainScroll) mainScroll.scrollTop = 0;
+};
 
 const useExploreStore = create((set, get) => ({
   regions: DEFAULT_REGIONS,
@@ -134,10 +141,12 @@ const useExploreStore = create((set, get) => ({
     if (!itemsPerPage || itemsPerPage === current) return;
     set({ itemsPerPage, currentPage: 1 });
     setExploreScrollY(0);
+    resetMainScroll();
     get().fetchPosts();
   },
 
   fetchPosts: async () => {
+    const requestId = ++exploreFetchRequestId;
     const { appliedRegions, appliedThemes, currentPage, keyword, sort, itemsPerPage } = get();
     set({ loading: true, fetchError: null });
     try {
@@ -149,12 +158,16 @@ const useExploreStore = create((set, get) => ({
         keyword,
         sort,
       });
+      if (requestId !== exploreFetchRequestId) return;
       set({ posts: items, totalCount, initialized: true });
     } catch (error) {
+      if (requestId !== exploreFetchRequestId) return;
       console.error('Failed to fetch posts:', error);
       set({ fetchError: '여행지 데이터를 불러오는 데 실패했습니다.', initialized: true });
     } finally {
-      set({ loading: false });
+      if (requestId === exploreFetchRequestId) {
+        set({ loading: false });
+      }
     }
   },
 

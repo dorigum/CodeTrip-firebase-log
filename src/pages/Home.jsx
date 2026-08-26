@@ -14,8 +14,18 @@ const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-4
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const getTodayKey = () => {
-  const today = new Date();
-  return `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+      .formatToParts(new Date())
+      .filter(({ type }) => type !== 'literal')
+      .map(({ type, value }) => [type, value])
+  );
+  return `${parts.year}${parts.month}${parts.day}`;
 };
 
 const parseDateKey = (dateKey) => {

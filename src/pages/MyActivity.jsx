@@ -175,7 +175,7 @@ const MyActivity = () => {
                 <button
                   type="button"
                   onClick={() => setMobileRecentOpen(prev => !prev)}
-                  className="rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-bold text-primary transition-colors md:hidden"
+                  className="rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-bold text-primary transition-colors sm:hidden"
                   aria-expanded={mobileRecentOpen}
                 >
                   {mobileRecentOpen ? '접기' : '전체 보기'}

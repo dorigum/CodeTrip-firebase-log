@@ -274,6 +274,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: 10개를 초과하는 TourAPI 알림 데이터가 누적된 상태에서 읽은 알림 삭제를 실행해 오래된 읽은 알림까지 숨김 처리되는지 배포 환경에서 추가 확인합니다.
 - **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 2차 반영 섹션 참고
 
+## 33. TourAPI 신규 여행지 알림이 로그인 후 표시되지 않는 문제
+
+- **발생일**: 2026-08-26
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, Realtime Database `tourApiUpdates/state`, Header 알림
+- **요약**: 배포 사이트에서 로그인해도 신규 여행지 알림이 표시되지 않았습니다. Firebase Functions 화면에서 `syncTourApiUpdates`의 최근 24시간 요청 수가 0으로 표시되어, 현재 상태만으로는 신규 데이터가 없는 것인지 함수가 아직 실행되지 않은 것인지 구분할 수 없습니다.
+- **판단 기준**: 함수 요청 수가 0이면 우선 스케줄 함수 미실행 또는 집계 전 상태로 봅니다. 함수가 정상 실행된 뒤 신규 데이터가 없었다면 `tourApiUpdates/state`에 마지막 확인 시각과 신규 항목 수 0이 기록되어야 합니다.
+- **후속 확인**: Functions 로그, Google Cloud Scheduler 실행 이력, Realtime Database `tourApiUpdates/state` 생성 여부를 순서대로 확인합니다. 필요하면 스케줄 수동 실행으로 TourAPI 호출·DB 기록·Header 알림 표시 흐름을 검증합니다.
+- **상세 기록**: [2026-08-26 개발 로그](project-log/2026-08-26.md)의 TourAPI 신규 여행지 알림 운영 확인 메모 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
