@@ -4,6 +4,7 @@ import { getWeather, getLocationName } from '../api/weatherApi';
 import { getPhotoList, getFestivalList, getCityBasedPlaces, searchKeywordPlaces, getSpontaneousTravel } from '../api/travelApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
+import { getDaysFromToday, getTodayKey } from '../utils/dateKey';
 
 const MOCK_NODE_HEADER = [
   { galContentId: 'm1', galTitle: '감성 여행', galPhotographyLocation: '대한민국', galWebImageUrl: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?q=80&w=2070' },
@@ -11,32 +12,6 @@ const MOCK_NODE_HEADER = [
 ];
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-const getTodayKey = () => {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    })
-      .formatToParts(new Date())
-      .filter(({ type }) => type !== 'literal')
-      .map(({ type, value }) => [type, value])
-  );
-  return `${parts.year}${parts.month}${parts.day}`;
-};
-
-const parseDateKey = (dateKey) => {
-  const normalized = String(dateKey || '').replace(/\D/g, '').slice(0, 8);
-  if (normalized.length !== 8) return null;
-  const year = Number(normalized.slice(0, 4));
-  const month = Number(normalized.slice(4, 6)) - 1;
-  const day = Number(normalized.slice(6, 8));
-  const date = new Date(year, month, day);
-  return Number.isNaN(date.getTime()) ? null : date;
-};
 
 const getDateKey = (item, key) => {
   const alternateKey = key === 'eventstartdate'
@@ -45,13 +20,6 @@ const getDateKey = (item, key) => {
       ? 'eventEndDate'
       : key;
   return String(item?.[key] || item?.[alternateKey] || '').replace(/\D/g, '').slice(0, 8);
-};
-
-const getDaysFromToday = (dateKey, todayKey) => {
-  const targetDate = parseDateKey(dateKey);
-  const todayDate = parseDateKey(todayKey);
-  if (!targetDate || !todayDate) return Number.POSITIVE_INFINITY;
-  return Math.round((targetDate - todayDate) / MS_PER_DAY);
 };
 
 const getFestivalBadge = (item, todayKey) => {
