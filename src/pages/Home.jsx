@@ -933,10 +933,9 @@ const Home = () => {
       </section>
 
       {/* 2. 카드 그리드 */}
-      <div className="grid grid-cols-1 gap-5 flex-1 min-h-0 lg:grid-cols-2 xl:grid-cols-3">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:col-span-2 xl:contents">
-          {/* Card 1: Regional (Near Me) */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+      <div className="grid grid-cols-1 gap-5 flex-1 min-h-0 xl:grid-cols-3">
+        {/* Card 1: Regional (Near Me) */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[86px] justify-between items-start">
@@ -957,10 +956,10 @@ const Home = () => {
                 <div className="flex items-center gap-2 mt-2 text-slate-400 font-mono text-xs italic"><span className="text-primary-container">#</span><p className="truncate">{nearbyPlaces.length > 0 ? nearbyPlaces[nearbyIndex]?.addr1 : `${province} 인기 명소 탐색`}</p></div>
               </div>
             </div>
-          </div>
+        </div>
 
-          {/* Card 2: Slot Machine */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+        {/* Card 2: Slot Machine */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[86px] justify-between items-start">
                 <div className="space-y-1 min-w-0 flex-1">
@@ -1036,7 +1035,6 @@ const Home = () => {
                 )}
               </div>
             </div>
-          </div>
         </div>
 
         {/* Card 3: Trending */}
