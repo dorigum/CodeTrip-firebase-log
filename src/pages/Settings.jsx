@@ -137,8 +137,8 @@ const Settings = () => {
   };
 
   return (
-    <div className="flex-1 bg-background overflow-y-auto custom-scrollbar px-4 py-6 sm:p-8 lg:p-10">
-      <div className="w-full max-w-4xl mx-auto space-y-8 sm:space-y-10">
+    <div className="flex-1 overflow-y-auto bg-background custom-scrollbar">
+      <div className="mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 sm:space-y-10 sm:px-6 lg:px-8 lg:py-12">
         
         {/* Page Title */}
         <PageHeader

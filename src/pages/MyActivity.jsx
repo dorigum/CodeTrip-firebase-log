@@ -153,7 +153,7 @@ const MyActivity = () => {
   const { items: pagedLikedPosts,     totalPages: lpPages,      safePage: lpPage }      = paginate(likedPosts);
 
   return (
-    <div className="min-h-screen max-w-[1000px] mx-auto px-4 py-8 sm:p-8">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <PageHeader
         className="mb-8"
         label="my_activity.log"

@@ -95,7 +95,7 @@ const BoardWrite = () => {
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
 
         {/* Header */}
         <PageHeader

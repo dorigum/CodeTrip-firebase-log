@@ -215,7 +215,7 @@ const Explore = () => {
   );
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1600px] px-4 py-8 sm:p-8">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <ConfirmModal
         open={showLoginDialog}
         title="로그인이 필요합니다"
