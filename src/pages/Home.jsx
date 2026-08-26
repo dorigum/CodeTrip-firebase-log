@@ -909,18 +909,20 @@ const Home = () => {
       </section>
 
       {/* 1. 상단 Node_Header 섹션 */}
-      <section className="relative w-full min-h-[260px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0">
+      <section className="relative w-full min-h-[320px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0 sm:min-h-[260px]">
         <img src={currentNodeHeader.galWebImageUrl || currentNodeHeader.image} key={currentNodeHeader.galContentId || currentNodeHeader.id} className="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" alt="bg" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/45 to-slate-900/10 flex items-center px-6 py-6 sm:px-10 lg:px-12">
-          <div className="max-w-[min(36rem,calc(100%-11rem))] space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
-            <div className="inline-flex items-center px-3 py-1 bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 w-fit text-white text-[10px] font-bold tracking-widest uppercase font-label">system.log: node_header_active</div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline font-bold text-white leading-tight drop-shadow-lg">Build your next <span className="text-primary-container">Adventure.</span></h1>
+        <div className="absolute inset-0 flex flex-col justify-between gap-5 bg-gradient-to-b from-slate-900/82 via-slate-900/56 to-slate-900/28 px-5 py-6 sm:flex-row sm:items-center sm:bg-gradient-to-r sm:from-slate-900/80 sm:via-slate-900/45 sm:to-slate-900/10 sm:px-10 lg:px-12">
+          <div className="max-w-xl space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
+            <div className="inline-flex max-w-full items-center rounded-lg border border-white/20 bg-white/10 px-3 py-1 font-label text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur-xl sm:text-[10px]">
+              <span className="truncate">system.log: node_header_active</span>
+            </div>
+            <h1 className="max-w-[13rem] text-3xl font-headline font-bold text-white leading-tight drop-shadow-lg min-[420px]:max-w-none sm:text-4xl lg:text-5xl">Build your next <span className="text-primary-container">Adventure.</span></h1>
             <p className="text-white/80 text-sm sm:text-base font-body max-w-lg leading-relaxed break-keep">대한민국 곳곳의 숨겨진 데이터 노드들을 탐험하세요.</p>
             <div className="pt-1"><Link to="/explore" className="bg-white/50 backdrop-blur-md text-slate-900 px-7 py-2.5 rounded-full font-bold hover:bg-white/70 transition-all flex items-center justify-center gap-2 w-fit min-w-[170px] text-sm shadow-lg font-label border border-white/20 whitespace-nowrap"><span>GET STARTED</span><span className="material-symbols-outlined text-sm font-bold">arrow_right_alt</span></Link></div>
           </div>
-          <div className="absolute right-6 bottom-6 sm:right-8 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 min-w-[132px] bg-white/75 backdrop-blur-2xl p-4 rounded-xl shadow-xl border border-white/30 text-slate-900">
+          <div className="self-end rounded-xl border border-white/30 bg-white/75 p-3 text-slate-900 shadow-xl backdrop-blur-2xl sm:absolute sm:right-8 sm:top-1/2 sm:min-w-[132px] sm:-translate-y-1/2 sm:p-4">
             <p className="text-slate-500 text-[9px] uppercase mb-0.5 font-bold tracking-widest font-label whitespace-nowrap">{province} {weather.location}</p>
-            <div className="flex items-center gap-3 whitespace-nowrap"><span className="text-3xl font-headline font-bold text-primary">{weather.temp}°C</span><span className="material-symbols-outlined text-2xl text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
+            <div className="flex items-center gap-2 whitespace-nowrap sm:gap-3"><span className="text-2xl font-headline font-bold text-primary sm:text-3xl">{weather.temp}°C</span><span className="material-symbols-outlined text-xl text-primary sm:text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
           </div>
         </div>
       </section>
