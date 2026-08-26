@@ -22,6 +22,7 @@ const Festivals = () => {
   const [festivals, setFestivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
+  const [festivalTotalCount, setFestivalTotalCount] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(getFestivalItemsPerPage);
 
   // URL 파라미터에서 현재 상태 읽기
@@ -152,6 +153,7 @@ const Festivals = () => {
         if (cancelled) return;
         setFestivalError('');
         setFestivals(data.items || []);
+        setFestivalTotalCount(data.totalCount || 0);
         setTotalPages(data.totalPages || 0);
         if (data.totalPages > 0 && page > data.totalPages) {
           setSearchParams(makeFestivalParams({ nextPage: data.totalPages }));
@@ -160,6 +162,7 @@ const Festivals = () => {
         if (cancelled) return;
         console.error('Fetch festivals failed:', err);
         setFestivalError('축제 데이터를 불러오지 못했습니다.');
+        setFestivalTotalCount(0);
         showToast('축제 데이터를 불러오는 데 실패했습니다.');
       } finally {
         if (!cancelled) setLoading(false);
@@ -296,6 +299,12 @@ const Festivals = () => {
           </div>
         )}
       </div>
+
+      {!loading && !festivalError && (
+        <div className="font-mono text-sm text-on-surface">
+          // {festivalTotalCount.toLocaleString()} results
+        </div>
+      )}
 
       {/* 리스트 섹션 */}
       <div className="flex-1 min-h-[600px]">

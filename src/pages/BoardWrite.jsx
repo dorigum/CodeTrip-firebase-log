@@ -85,7 +85,7 @@ const BoardWrite = () => {
   const handleUploadBoardImage = async (file) => {
     try {
       const imageUrl = await uploadBoardImage(file);
-      showToast('게시글 이미지가 업로드되었습니다.');
+      showToast('게시글 이미지가 업로드되었습니다.', 'success');
       return imageUrl;
     } catch (err) {
       showToast(err.message || '게시글 이미지 업로드에 실패했습니다.');
