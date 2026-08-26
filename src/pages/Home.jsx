@@ -852,7 +852,12 @@ const Home = () => {
 
           <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
             {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
-              <Link key={getFolderId(folder)} to="/mypage" className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+              <Link
+                key={getFolderId(folder)}
+                to="/mypage"
+                state={{ folderId: getFolderId(folder) }}
+                className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-headline text-base font-bold text-slate-950">{getFolderName(folder)}</p>

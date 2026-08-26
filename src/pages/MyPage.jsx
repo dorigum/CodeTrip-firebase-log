@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
@@ -14,6 +14,7 @@ const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const WISHLIST_ITEMS_PER_PAGE = 9;
 const MyPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const wishlistSectionRef = useRef(null);
   const { user, isLoggedIn } = useAuthStore();
   
@@ -110,6 +111,29 @@ const MyPage = () => {
       initWishlist();
     }
   }, [isLoggedIn, navigate, initWishlist]);
+
+  useEffect(() => {
+    const requestedFolderId = location.state?.folderId;
+    if (!requestedFolderId || folders.length === 0) return;
+
+    const targetFolder = folders.find((folder) => String(folder.id) === String(requestedFolderId));
+    if (!targetFolder) return;
+
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setSelectedAiPlan(null);
+      setEditingAiPlan(false);
+      setSelectedFolderId(targetFolder.id);
+      setWishlistPage(1);
+      setMobileFolderOpen(true);
+      navigate('/mypage', { replace: true, state: null });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [folders, location.state, navigate]);
 
   // 폴더 변경 시 노트 로드
   useEffect(() => {
