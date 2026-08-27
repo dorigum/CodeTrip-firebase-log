@@ -82,6 +82,7 @@ const MyActivity = () => {
   const [boardComments, setBoardComments] = useState([]);
   const [travelComments, setTravelComments] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
+  const [mobileRecentOpen, setMobileRecentOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -152,7 +153,7 @@ const MyActivity = () => {
   const { items: pagedLikedPosts,     totalPages: lpPages,      safePage: lpPage }      = paginate(likedPosts);
 
   return (
-    <div className="p-8 max-w-[1000px] mx-auto min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <PageHeader
         className="mb-8"
         label="my_activity.log"
@@ -163,26 +164,39 @@ const MyActivity = () => {
       {/* Recently Viewed — pinned above tabs */}
       {recentlyViewed.length > 0 && (
         <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm text-primary">history</span>
-              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">recently_viewed.log</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="material-symbols-outlined shrink-0 text-sm text-primary">history</span>
+              <span className="truncate text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">recently_viewed.log</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{recentlyViewed.length}</span>
             </div>
-            <button
-              onClick={clearRecentlyViewed}
-              className="text-[10px] font-mono text-slate-400 hover:text-red-400 transition-colors"
-            >
-              전체 삭제
-            </button>
+            <div className="flex items-center gap-2">
+              {recentlyViewed.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setMobileRecentOpen(prev => !prev)}
+                  className="rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-bold text-primary transition-colors sm:hidden"
+                  aria-expanded={mobileRecentOpen}
+                >
+                  {mobileRecentOpen ? '접기' : '전체 보기'}
+                </button>
+              )}
+              <button
+                onClick={clearRecentlyViewed}
+                className="text-[10px] font-mono text-slate-400 hover:text-red-400 transition-colors"
+              >
+                전체 삭제
+              </button>
+            </div>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
-            {recentlyViewed.map((item) => (
+          <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-4 sm:overflow-x-auto sm:pb-2 sm:custom-scrollbar">
+            {recentlyViewed.map((item, index) => (
               <Link
                 key={item.contentid}
                 to={`/explore/${item.contentid}`}
-                className="shrink-0 w-40 group"
+                className={`group min-w-0 sm:w-40 sm:shrink-0 ${!mobileRecentOpen && index >= 3 ? 'hidden sm:block' : ''}`}
               >
-                <div className="relative h-28 rounded-xl overflow-hidden mb-2 border border-outline-variant/10 group-hover:border-primary/30 transition-all shadow-sm">
+                <div className="relative h-20 overflow-hidden rounded-xl border border-outline-variant/10 shadow-sm transition-all group-hover:border-primary/30 sm:mb-2 sm:h-28">
                   <img
                     src={item.firstimage || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=400&auto=format&fit=crop'}
                     alt={item.title}
@@ -190,8 +204,8 @@ const MyActivity = () => {
                     onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=400&auto=format&fit=crop'; }}
                   />
                 </div>
-                <p className="text-xs font-bold text-on-surface truncate group-hover:text-primary transition-colors">{item.title}</p>
-                <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">{item.addr1 || '주소 정보 없음'}</p>
+                <p className="mt-2 truncate text-[11px] font-bold text-on-surface transition-colors group-hover:text-primary sm:text-xs">{item.title}</p>
+                <p className="mt-0.5 truncate text-[9px] font-mono text-slate-400 sm:text-[10px]">{item.addr1 || '주소 정보 없음'}</p>
               </Link>
             ))}
           </div>
@@ -199,12 +213,12 @@ const MyActivity = () => {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-8 bg-surface-container-low p-1 rounded-xl border border-outline-variant/10 w-fit">
+      <div className="mb-8 flex w-full max-w-full gap-1 overflow-x-auto rounded-xl border border-outline-variant/10 bg-surface-container-low p-1 custom-scrollbar sm:w-fit">
         {TABS.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-tighter transition-all ${
+            className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-mono font-bold uppercase tracking-tighter transition-all sm:px-4 sm:text-xs ${
               activeTab === tab.key
                 ? 'bg-white text-primary shadow-sm border border-outline-variant/10'
                 : 'text-slate-400 hover:text-on-surface'

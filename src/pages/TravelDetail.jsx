@@ -537,7 +537,7 @@ const TravelDetail = () => {
         </div>
       )}
 
-      <section className="relative h-[400px] w-full bg-slate-900 overflow-hidden">
+      <section className="relative h-[300px] w-full overflow-hidden bg-slate-900 sm:h-[360px] md:h-[400px]">
         {nodeHeaderImage ? (
           <img alt={common.title} className="w-full h-full object-cover opacity-80" src={nodeHeaderImage} />
         ) : (
@@ -546,17 +546,17 @@ const TravelDetail = () => {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-        <div className="absolute bottom-10 left-10">
+        <div className="absolute inset-x-5 bottom-7 max-w-[calc(100%-2.5rem)] sm:left-8 sm:right-auto sm:bottom-10 sm:max-w-[calc(100%-4rem)] lg:left-10">
           <span className="bg-primary/20 backdrop-blur-md text-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full border border-white/20 mb-4 inline-block">
             {CONTENT_TYPE[common.contenttypeid] || '기타'}
           </span>
-          <div className="flex items-center gap-4">
-            <h1 className="text-5xl font-headline font-extrabold text-white tracking-tighter drop-shadow-2xl">
+          <div className="flex max-w-full items-center gap-3 sm:gap-4">
+            <h1 className="min-w-0 max-w-full break-keep font-headline text-4xl font-extrabold tracking-tighter text-white drop-shadow-2xl [overflow-wrap:anywhere] sm:text-5xl">
               {common.title}
             </h1>
             <button 
               onClick={handleWishlistToggle}
-              className={`group/heart relative flex items-center justify-center w-12 h-12 rounded-full transition-all shadow-lg active:scale-75 mt-1 select-none outline-none cursor-pointer ${
+              className={`group/heart relative mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-lg transition-all active:scale-75 select-none outline-none cursor-pointer sm:h-12 sm:w-12 ${
                 wishlistIds.has(String(contentId)) 
                   ? 'bg-red-500 text-white' 
                   : 'bg-white/20 backdrop-blur-md text-white hover:bg-white/40'
@@ -573,7 +573,7 @@ const TravelDetail = () => {
         </div>
       </section>
 
-      <div className="px-8 lg:px-12 py-10 grid grid-cols-12 gap-8 max-w-[1600px] mx-auto">
+      <div className="mx-auto grid max-w-[1600px] grid-cols-12 gap-6 px-5 py-8 sm:px-8 lg:gap-8 lg:px-12 lg:py-10">
         <div className="col-span-12 lg:col-span-8 space-y-10">
           <div className="bg-white rounded-2xl border border-outline-variant/10 shadow-sm font-mono text-sm leading-relaxed overflow-hidden">
             <div className="flex items-center gap-2 px-8 py-5 border-b border-slate-50">

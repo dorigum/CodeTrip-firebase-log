@@ -7,6 +7,7 @@
   └─ React 19 / React Router / Tailwind CSS / Zustand
        ├─ Firebase Authentication
        ├─ Firebase Realtime Database
+       ├─ Firebase Storage
        ├─ Firebase Hosting (Vite dist)
        ├─ TourAPI
        ├─ Open-Meteo / Nominatim
@@ -14,7 +15,7 @@
        └─ Gemini API
 ```
 
-프론트엔드는 `pages`, `components`, `store`, `hooks`, `api`로 구분됩니다. `apiCache`가 메모리·localStorage·Realtime Database 캐시를 공통으로 다루며, Firebase SDK를 브라우저에서 직접 사용합니다.
+프론트엔드는 `pages`, `components`, `store`, `hooks`, `api`로 구분됩니다. `apiCache`가 메모리·localStorage·Realtime Database 캐시를 공통으로 다루며, Firebase SDK를 브라우저에서 직접 사용합니다. 사용자 프로필 이미지와 게시글 첨부 이미지는 Firebase Storage에 업로드한 뒤 다운로드 URL만 사용자 프로필 또는 게시글 본문에 저장합니다.
 
 ## 번들 구조와 코드 스플리팅 계획
 

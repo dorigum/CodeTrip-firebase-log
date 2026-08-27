@@ -1,13 +1,18 @@
 const { initializeApp } = require('firebase-admin/app');
+const { getDatabase } = require('firebase-admin/database');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
+const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
 
 initializeApp();
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+const TOUR_API_SERVICE_KEY = defineSecret('TOUR_API_SERVICE_KEY');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const TOUR_API_BASE_URL = 'https://apis.data.go.kr/B551011/KorService2';
 const GEMINI_MAX_RETRIES = 1;
 const GEMINI_RETRY_BASE_DELAY_MS = 1000;
 const GEMINI_REQUEST_TIMEOUT_MS = 20000;
@@ -20,6 +25,8 @@ const MAX_CONCURRENT_REQUESTS_PER_UID = 2;
 const MAX_PREFERRED_PLACES = 12;
 const MAX_TEXT_LENGTH = 120;
 const MAX_DURATION_DAYS = 5;
+const TOUR_UPDATE_LOOKBACK_ROWS = 30;
+const TOUR_UPDATE_RETENTION_LIMIT = 100;
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -434,6 +441,53 @@ const leaveConcurrentRequest = (uid) => {
   concurrentRequests.set(uid, current - 1);
 };
 
+const buildTourApiUrl = () => {
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(TOUR_API_SERVICE_KEY.value() || ''),
+    MobileOS: 'ETC',
+    MobileApp: 'CodeTrip',
+    _type: 'json',
+    arrange: 'R',
+    pageNo: '1',
+    numOfRows: String(TOUR_UPDATE_LOOKBACK_ROWS),
+  });
+
+  return `${TOUR_API_BASE_URL}/areaBasedList2?${params.toString()}`;
+};
+
+const fetchRecentTourApiItems = async () => {
+  const response = await fetch(buildTourApiUrl());
+  if (!response.ok) {
+    logger.warn('TourAPI update sync failed', {
+      status: response.status,
+      statusText: response.statusText,
+    });
+    throw new Error('TourAPI 신규 여행지 조회에 실패했습니다.');
+  }
+
+  const data = await response.json();
+  return parseRecentTourApiItemsResponse(data, logger);
+};
+
+const readExistingTourApiUpdates = async (itemsRef) => {
+  const snapshot = await itemsRef.once('value');
+  const items = [];
+  snapshot.forEach((child) => {
+    items.push({ key: child.key, detectedAt: child.child('detectedAt').val() || '' });
+  });
+  return items;
+};
+
+const buildTourApiUpdateCleanup = (items) => {
+  return items
+    .sort((a, b) => String(b.detectedAt).localeCompare(String(a.detectedAt)))
+    .slice(TOUR_UPDATE_RETENTION_LIMIT)
+    .reduce((updates, item) => {
+      updates[`tourApiUpdates/items/${item.key}`] = null;
+      return updates;
+    }, {});
+};
+
 exports.generateTripPlan = onCall(
   {
     region: REGION,
@@ -483,5 +537,55 @@ exports.generateTripPlan = onCall(
     } finally {
       leaveConcurrentRequest(uid);
     }
+  }
+);
+
+exports.syncTourApiUpdates = onSchedule(
+  {
+    region: REGION,
+    schedule: 'every 24 hours',
+    timeZone: 'Asia/Seoul',
+    secrets: [TOUR_API_SERVICE_KEY],
+    timeoutSeconds: 60,
+    memory: '256MiB',
+    maxInstances: 1,
+  },
+  async () => {
+    const db = getDatabase();
+    const itemsRef = db.ref('tourApiUpdates/items');
+    const now = new Date().toISOString();
+    const [recentItems, existingItems] = await Promise.all([
+      fetchRecentTourApiItems(),
+      readExistingTourApiUpdates(itemsRef),
+    ]);
+    const existingIds = new Set(existingItems.map((item) => item.key));
+    const nextItemsForRetention = [...existingItems];
+    const updates = {
+      'tourApiUpdates/state/lastRunAt': now,
+      'tourApiUpdates/state/source': 'KorService2.areaBasedList2',
+    };
+    let newItemCount = 0;
+
+    recentItems.forEach((item) => {
+      if (existingIds.has(item.contentId)) return;
+
+      newItemCount += 1;
+      nextItemsForRetention.push({ key: item.contentId, detectedAt: now });
+      updates[`tourApiUpdates/items/${item.contentId}`] = {
+        ...item,
+        detectedAt: now,
+        source: 'KorService2.areaBasedList2',
+      };
+    });
+
+    Object.assign(updates, buildTourApiUpdateCleanup(nextItemsForRetention));
+    updates['tourApiUpdates/state/lastSuccessAt'] = now;
+    updates['tourApiUpdates/state/lastNewItemCount'] = newItemCount;
+    await db.ref().update(updates);
+
+    logger.info('TourAPI update sync completed', {
+      checkedCount: recentItems.length,
+      newItemCount,
+    });
   }
 );

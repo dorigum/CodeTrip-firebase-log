@@ -35,7 +35,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="settings" element={<ProtectedRoute title="회원정보 접근 제한"><Settings /></ProtectedRoute>} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="festivals" element={<Festivals />} />
-          <Route path="ai-planner" element={<ProtectedRoute title="AI 여행 코스 접근 제한" description="AI 여행 코스는 로그인 후 사용할 수 있습니다. 위시리스트와 저장된 코스를 함께 관리하려면 먼저 로그인해주세요."><AiPlanner /></ProtectedRoute>} />
+          <Route path="ai-planner" element={<ProtectedRoute title="AI 플래너 접근 제한" description="AI 여행 플래너는 로그인 후 사용할 수 있습니다. 위시리스트와 저장된 코스를 함께 관리하려면 먼저 로그인해주세요."><AiPlanner /></ProtectedRoute>} />
           <Route path="info" element={<Info />} />
           <Route path="board" element={<ProtectedRoute title="게시판 접근 제한" description="여행 게시판은 로그인한 사용자만 이용할 수 있습니다. 로그인 후 게시글과 댓글을 확인하고 여행 경험을 공유해보세요."><Board /></ProtectedRoute>} />
           <Route path="board/write" element={<ProtectedRoute title="게시글 작성 접근 제한"><BoardWrite /></ProtectedRoute>} />

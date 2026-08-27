@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
@@ -11,8 +11,11 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const WISHLIST_ITEMS_PER_PAGE = 9;
 const MyPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const wishlistSectionRef = useRef(null);
   const { user, isLoggedIn } = useAuthStore();
   
   const {
@@ -29,6 +32,8 @@ const MyPage = () => {
 
   const [sortBy, setSortBy] = useState('CREATED');
   const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
+  const [wishlistPage, setWishlistPage] = useState(1);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderStart, setNewFolderStart] = useState('');
   const [newFolderEnd, setNewFolderEnd] = useState('');
@@ -106,6 +111,29 @@ const MyPage = () => {
       initWishlist();
     }
   }, [isLoggedIn, navigate, initWishlist]);
+
+  useEffect(() => {
+    const requestedFolderId = location.state?.folderId;
+    if (!requestedFolderId || folders.length === 0) return;
+
+    const targetFolder = folders.find((folder) => String(folder.id) === String(requestedFolderId));
+    if (!targetFolder) return;
+
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setSelectedAiPlan(null);
+      setEditingAiPlan(false);
+      setSelectedFolderId(targetFolder.id);
+      setWishlistPage(1);
+      setMobileFolderOpen(true);
+      navigate('/mypage', { replace: true, state: null });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [folders, location.state, navigate]);
 
   // 폴더 변경 시 노트 로드
   useEffect(() => {
@@ -312,6 +340,32 @@ const MyPage = () => {
     });
   }, [filteredItems, sortBy]);
 
+  const totalWishlistPages = useMemo(
+    () => Math.max(1, Math.ceil(sortedWishList.length / WISHLIST_ITEMS_PER_PAGE)),
+    [sortedWishList.length]
+  );
+  const currentWishlistPage = Math.min(wishlistPage, totalWishlistPages);
+  const paginatedWishList = useMemo(() => {
+    const start = (currentWishlistPage - 1) * WISHLIST_ITEMS_PER_PAGE;
+    return sortedWishList.slice(start, start + WISHLIST_ITEMS_PER_PAGE);
+  }, [currentWishlistPage, sortedWishList]);
+  const wishlistPageNumbers = useMemo(() => {
+    const visibleCount = Math.min(5, totalWishlistPages);
+    const half = Math.floor(visibleCount / 2);
+    let start = Math.max(1, currentWishlistPage - half);
+    const end = Math.min(totalWishlistPages, start + visibleCount - 1);
+    start = Math.max(1, end - visibleCount + 1);
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  }, [currentWishlistPage, totalWishlistPages]);
+
+  const handleWishlistPageChange = (nextPage) => {
+    const safePage = Math.min(Math.max(1, nextPage), totalWishlistPages);
+    if (safePage === currentWishlistPage) return;
+    setWishlistPage(safePage);
+    wishlistSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const stats = useMemo(() => {
     const total = wishlistItems.length;
     const folderCount = folders.length;
@@ -375,6 +429,11 @@ const MyPage = () => {
 
   const selectedFolder = selectedFolderId ? folders.find(f => String(f.id) === String(selectedFolderId)) : null;
   const currentFolderName = selectedFolderId === 'UNCATEGORIZED' ? 'UNCATEGORIZED' : (selectedFolder?.name || 'UNKNOWN');
+  const selectedFolderLabel = !selectedFolderId
+    ? 'ALL_PLACES'
+    : selectedFolderId === 'UNCATEGORIZED'
+      ? 'UNCATEGORIZED'
+      : selectedFolder?.name || 'UNKNOWN';
   const openExploreForCurrentFolder = () => {
     navigate('/explore', {
       state: {
@@ -516,6 +575,7 @@ const MyPage = () => {
     setSelectedAiPlan(null);
     setEditingAiPlan(false);
     setSelectedFolderId(folderId);
+    setWishlistPage(1);
   };
 
   if (!isLoggedIn) return null;
@@ -1064,7 +1124,7 @@ const MyPage = () => {
         }}
       />
 
-      <main className="p-10 flex flex-col lg:flex-row gap-8 max-w-[1600px] mx-auto">
+      <main className="mx-auto flex max-w-[1600px] flex-col gap-8 px-4 py-8 sm:p-8 lg:flex-row lg:p-10">
         <aside className="w-full lg:w-72 flex flex-col gap-6 flex-shrink-0">
           <PageHeader
             label="wishlist.workspace"
@@ -1110,10 +1170,34 @@ const MyPage = () => {
                 <span className="font-label text-xs font-bold uppercase tracking-wider">FOLDERS</span>
                 <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{folders.length}</span>
               </div>
-              <button onClick={() => setShowFolderModal(true)} className="material-symbols-outlined text-primary text-sm bg-primary/10 w-6 h-6 rounded flex items-center justify-center">add</button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMobileFolderOpen(prev => !prev)}
+                  className="material-symbols-outlined flex h-6 w-6 items-center justify-center rounded bg-primary/10 text-sm text-primary"
+                  aria-label={mobileFolderOpen ? '폴더 목록 접기' : '폴더 목록 펼치기'}
+                  aria-expanded={mobileFolderOpen}
+                >
+                  {mobileFolderOpen ? 'expand_less' : 'expand_more'}
+                </button>
+                <button onClick={() => setShowFolderModal(true)} className="material-symbols-outlined text-primary text-sm bg-primary/10 w-6 h-6 rounded flex items-center justify-center">add</button>
+              </div>
             </div>
-            
-            <nav className="flex flex-col gap-1">
+
+            <button
+              type="button"
+              onClick={() => setMobileFolderOpen(prev => !prev)}
+              className="mb-3 flex w-full items-center justify-between rounded-lg border border-outline-variant/15 bg-white px-3 py-3 text-left shadow-sm"
+              aria-expanded={mobileFolderOpen}
+            >
+              <div className="min-w-0">
+                <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">selected_folder</span>
+                <span className="mt-1 block truncate text-[13px] font-bold text-slate-800">{selectedFolderLabel}</span>
+              </div>
+              <span className="material-symbols-outlined text-base text-primary">{mobileFolderOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}</span>
+            </button>
+
+            <nav className={`${mobileFolderOpen ? 'flex' : 'hidden'} max-h-[320px] flex-col gap-1 overflow-y-auto pr-1 custom-scrollbar md:max-h-[420px]`}>
               <button onClick={() => handleSelectFolder(null)} className={`flex justify-between px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight transition-all ${!selectedFolderId ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
                 <span className="font-mono uppercase">ALL_PLACES</span>
                 <span className="opacity-60 font-mono text-[11px]">{wishlistItems.length}</span>
@@ -1256,11 +1340,20 @@ const MyPage = () => {
           </section>
         </aside>
 
-        <div className="flex-1">
+        <div ref={wishlistSectionRef} className="flex-1 scroll-mt-24">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h3 className="font-headline text-xl font-bold">{selectedFolderId === 'UNCATEGORIZED' ? '미분류' : selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name : '전체 위시리스트'}</h3>
               {selectedFolder?.start_date && <p className="text-[11px] font-mono text-primary mt-1">{formatScheduleShort(selectedFolder.start_date, selectedFolder.end_date)}</p>}
+              {sortedWishList.length > 0 && (
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+                  {((currentWishlistPage - 1) * WISHLIST_ITEMS_PER_PAGE) + 1}
+                  -
+                  {Math.min(currentWishlistPage * WISHLIST_ITEMS_PER_PAGE, sortedWishList.length)}
+                  {' '}
+                  / {sortedWishList.length} saved_places
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {selectedFolderId && (
@@ -1273,7 +1366,14 @@ const MyPage = () => {
                   EXPLORE_ADD
                 </button>
               )}
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setWishlistPage(1);
+                }}
+                className="bg-surface-container-low text-[10px] font-mono px-3 py-1.5 rounded-lg outline-none border border-outline-variant/10"
+              >
                 <option value="CREATED">NEWEST</option>
                 <option value="TITLE">TITLE A-Z</option>
                 <option value="TITLE_DESC">TITLE Z-A</option>
@@ -1423,8 +1523,9 @@ const MyPage = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {sortedWishList.map((item) => {
+            <>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {paginatedWishList.map((item) => {
                 const itemId = item.contentid || item.content_id;
                 const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;
                 const itemTitle = item.title || '여행지';
@@ -1460,14 +1561,54 @@ const MyPage = () => {
                       <h3 className="font-headline text-base font-bold truncate mb-1">{itemTitle}</h3>
                       <p className="text-[10px] text-slate-400 font-mono mb-4 truncate">{item.addr1 || '주소 정보 없음'}</p>
                       <div className="flex justify-between items-center mt-4">
-                        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
+                        <span className="min-w-0 truncate text-[10px] font-mono text-slate-500 uppercase tracking-tighter">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
                         <Link to={`/explore/${itemId}`} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-primary hover:text-white transition-all border border-slate-100">VIEW_DATA</Link>
                       </div>
                     </div>
                   </div>
                 );
               })}
-            </div>
+              </div>
+              {totalWishlistPages > 1 && (
+                <nav className="mt-8 flex items-center justify-center gap-2 pb-4" aria-label="위시리스트 페이지 이동">
+                  <button
+                    type="button"
+                    onClick={() => handleWishlistPageChange(currentWishlistPage - 1)}
+                    disabled={currentWishlistPage === 1}
+                    className="material-symbols-outlined flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/15 bg-white text-base text-slate-500 transition hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-30"
+                    aria-label="이전 위시리스트 페이지"
+                  >
+                    chevron_left
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {wishlistPageNumbers.map((pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handleWishlistPageChange(pageNumber)}
+                        className={`h-10 min-w-10 rounded-xl px-3 font-mono text-xs font-bold transition ${
+                          currentWishlistPage === pageNumber
+                            ? 'bg-primary text-white shadow-md'
+                            : 'border border-outline-variant/15 bg-white text-slate-500 hover:border-primary hover:text-primary'
+                        }`}
+                        aria-current={currentWishlistPage === pageNumber ? 'page' : undefined}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleWishlistPageChange(currentWishlistPage + 1)}
+                    disabled={currentWishlistPage === totalWishlistPages}
+                    className="material-symbols-outlined flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/15 bg-white text-base text-slate-500 transition hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-30"
+                    aria-label="다음 위시리스트 페이지"
+                  >
+                    chevron_right
+                  </button>
+                </nav>
+              )}
+            </>
           )}
         </div>
       </main>

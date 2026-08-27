@@ -1,16 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createBoardPost, updateBoardPost } from '../api/boardApi';
+import { uploadBoardImage } from '../api/storageApi';
 import useAuthStore from '../store/useAuthStore';
 import useBoardWriteStore from '../store/useBoardWriteStore';
 import MarkdownEditor from '../components/MarkdownEditor';
 import PageHeader from '../components/PageHeader';
+import useToast from '../hooks/useToast';
 
 const BoardWrite = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { isLoggedIn } = useAuthStore();
   const { title, content, tags, editId, setTitle, setContent, setTags, resetForm } = useBoardWriteStore();
+  const showToast = useToast();
 
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -79,9 +82,20 @@ const BoardWrite = () => {
     setTags(tags.filter((t) => t.content_id !== contentId));
   };
 
+  const handleUploadBoardImage = async (file) => {
+    try {
+      const imageUrl = await uploadBoardImage(file);
+      showToast('게시글 이미지가 업로드되었습니다.', 'success');
+      return imageUrl;
+    } catch (err) {
+      showToast(err.message || '게시글 이미지 업로드에 실패했습니다.');
+      throw err;
+    }
+  };
+
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
 
         {/* Header */}
         <PageHeader
@@ -137,6 +151,7 @@ const BoardWrite = () => {
                 onChange={(v) => { setContent(v); if (errors.content) setErrors((p) => ({ ...p, content: '' })); }}
                 placeholder="// 여행 경험을 공유해주세요..."
                 minRows={16}
+                onImageUpload={handleUploadBoardImage}
               />
               {errors.content && (
                 <p className="text-[10px] font-mono text-error mt-1">// {errors.content}</p>

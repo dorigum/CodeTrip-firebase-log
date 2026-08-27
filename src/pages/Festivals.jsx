@@ -14,7 +14,7 @@ const getFestivalItemsPerPage = () => {
   if (window.innerWidth >= 1280) return 12;
   if (window.innerWidth >= 1024) return 9;
   if (window.innerWidth >= 640) return 10;
-  return 8;
+  return 6;
 };
 
 const Festivals = () => {
@@ -22,6 +22,7 @@ const Festivals = () => {
   const [festivals, setFestivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
+  const [festivalTotalCount, setFestivalTotalCount] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(getFestivalItemsPerPage);
 
   // URL 파라미터에서 현재 상태 읽기
@@ -152,6 +153,7 @@ const Festivals = () => {
         if (cancelled) return;
         setFestivalError('');
         setFestivals(data.items || []);
+        setFestivalTotalCount(data.totalCount || 0);
         setTotalPages(data.totalPages || 0);
         if (data.totalPages > 0 && page > data.totalPages) {
           setSearchParams(makeFestivalParams({ nextPage: data.totalPages }));
@@ -160,6 +162,7 @@ const Festivals = () => {
         if (cancelled) return;
         console.error('Fetch festivals failed:', err);
         setFestivalError('축제 데이터를 불러오지 못했습니다.');
+        setFestivalTotalCount(0);
         showToast('축제 데이터를 불러오는 데 실패했습니다.');
       } finally {
         if (!cancelled) setLoading(false);
@@ -232,7 +235,7 @@ const Festivals = () => {
   };
 
   return (
-    <div className="p-6 lg:p-10 space-y-8 flex-1 flex flex-col bg-background">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-1 flex-col space-y-8 bg-background px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       {/* Header 섹션 */}
       <div className="border-b border-outline-variant/20 pb-6">
         <PageHeader
@@ -297,6 +300,12 @@ const Festivals = () => {
         )}
       </div>
 
+      {!loading && !festivalError && (
+        <div className="font-mono text-sm text-on-surface">
+          // {festivalTotalCount.toLocaleString()} results
+        </div>
+      )}
+
       {/* 리스트 섹션 */}
       <div className="flex-1 min-h-[600px]">
         {loading ? (
@@ -316,7 +325,7 @@ const Festivals = () => {
             <p className="font-mono text-sm">// no_active_or_upcoming_festivals</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-6">
             {festivals.map((fest) => (
               <div 
                 key={fest.contentid} 
@@ -343,7 +352,7 @@ const Festivals = () => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=2070'; }}
                     />
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-200/50 uppercase font-mono tracking-tight flex items-center gap-1.5 shadow-lg z-10">
+                    <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-lg border border-slate-200/50 bg-white/90 px-2 py-1 text-[9px] font-bold uppercase tracking-tight text-slate-900 shadow-lg backdrop-blur-md sm:left-3 sm:top-3 sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[10px]">
                       <span className="material-symbols-outlined text-[12px] text-primary">calendar_today</span>
                       <span>
                         {fest.eventstartdate && String(fest.eventstartdate).length >= 8 ? (
@@ -356,16 +365,16 @@ const Festivals = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="flex flex-1 flex-col justify-between space-y-3 p-4 sm:p-5">
                     <div className="space-y-1">
-                      <h3 className="font-headline font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{fest.title}</h3>
-                      <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                        <span className="material-symbols-outlined text-sm">location_on</span>
+                      <h3 className="line-clamp-2 min-h-[2.5rem] font-headline text-sm font-bold leading-5 text-slate-900 transition-colors group-hover:text-primary sm:text-base">{fest.title}</h3>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 sm:text-xs">
+                        <span className="material-symbols-outlined text-[13px] sm:text-sm">location_on</span>
                         <p className="truncate font-body">{fest.addr1 || '전국 각지'}</p>
                       </div>
                     </div>
                     <div className="pt-2 flex items-center justify-between border-t border-slate-50">
-                      <span className="text-[10px] text-slate-300 font-mono uppercase tracking-tighter">type: 15_fest</span>
+                      <span className="hidden text-[10px] text-slate-300 font-mono uppercase tracking-tighter sm:inline">type: 15_fest</span>
                       <div className="flex items-center gap-1 text-primary group-hover:gap-2 transition-all">
                         <span className="text-[10px] font-bold tracking-widest font-label uppercase">Explore</span>
                         <span className="material-symbols-outlined text-xs">arrow_forward</span>

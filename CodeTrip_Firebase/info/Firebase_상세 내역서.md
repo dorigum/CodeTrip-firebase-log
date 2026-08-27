@@ -69,8 +69,9 @@ Realtime Database URL: https://newagent-9c2a8.firebaseio.com
   - 프로젝트의 기본 Firestore DB가 Datastore Mode라 Web SDK 기반 Native Firestore로 바로 사용하기 어렵기 때문에 사용하지 않았습니다.
 
 - Firebase Storage
-  - 현재 프로젝트에서는 이미지 업로드 저장소로 사용하지 않습니다.
-  - 사용자 이미지가 필요한 경우 data URL 또는 외부 이미지 URL을 사용합니다.
+  - 프로필 이미지와 게시글 첨부 이미지 업로드 저장소로 사용합니다.
+  - Realtime Database에는 이미지 원본 또는 data URL을 저장하지 않고 Storage 다운로드 URL만 저장합니다.
+  - 쓰기 권한은 인증된 동일 UID의 `users/{uid}/profile`, `users/{uid}/board` 경로로 제한합니다.
 
 ---
 

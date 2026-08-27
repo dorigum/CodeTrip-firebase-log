@@ -202,6 +202,87 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다.
 - **상세 기록**: [2026-08-23 개발 로그](project-log/2026-08-23.md)의 AI 플래너 폴더 일정 정규화 보완, 비동기 폴더 선택 최신성 검증 보완 섹션 참고
 
+## 25. TourAPI 신규 여행지 스케줄 함수 배포 후 DB 경로가 바로 생성되지 않는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, Realtime Database `tourApiUpdates/items`, `tourApiUpdates/state`, Header 알림
+- **요약**: `syncTourApiUpdates` Scheduled Function은 배포 직후 즉시 실행되는 함수가 아니므로, Firebase Console에서 함수가 정상 배포되어도 요청 수가 0이면 Realtime Database에 `tourApiUpdates/items`와 `tourApiUpdates/state` 경로가 아직 보이지 않을 수 있습니다.
+- **처리**: Functions 화면에서 `syncTourApiUpdates`가 `asia-northeast3` 리전의 v2 스케줄 함수로 배포된 것을 확인했습니다. 즉시 DB 경로가 없는 상태는 “아직 스케줄 실행 전”으로 분류하고, 다음 스케줄 실행 후 Functions 로그와 Realtime Database 경로를 재확인하기로 했습니다.
+- **확인**: Firebase Console에서 `syncTourApiUpdates` 요청 수가 0이고 호출 그래프에 데이터가 없는 상태를 확인했습니다. 후속 확인은 스케줄 실행 이후 진행합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 TourAPI 신규 여행지 알림 구조 추가 및 CodeRabbit 피드백 반영 섹션 참고
+
+## 26. TourAPI 신규 여행지 동기화가 실패 응답을 성공한 빈 결과로 기록할 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, TourAPI 신규 여행지 알림, Realtime Database `tourApiUpdates/state`
+- **요약**: TourAPI HTTP 응답이 200이어도 `response.header.resultCode`가 실패 코드이거나 `response.body.items.item` 구조가 없으면 실제 동기화 실패입니다. 기존 구조에서는 이런 응답을 빈 결과처럼 처리할 가능성이 있어 신규 여행지 알림 실패를 정상 실행으로 오해할 수 있었습니다.
+- **처리**: `resultCode === "0000"` 검증과 `response.body.items.item` 구조 검증을 추가했습니다. 실패 코드 또는 잘못된 응답 구조는 오류로 던져 동기화 실패로 기록되도록 했습니다. 신규 등록 감지 목적에 맞게 TourAPI 조회 정렬 기준도 이미지 포함 등록일 최신순으로 변경했습니다.
+- **확인**: `npm --prefix functions run lint`, `npm run lint`, `npm run build`가 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 TourAPI 신규 여행지 알림 CodeRabbit 피드백 반영 섹션 참고
+
+## 27. 프로필 이미지 data URL이 Firebase Auth photoURL 제한을 초과하는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: 프로필 수정 화면, Firebase Authentication `photoURL`, 게시글 이미지 첨부 UX
+- **요약**: 데스크톱 파일을 프로필 이미지로 선택하면 기존 구현이 이미지를 base64 data URL로 변환해 `photoURL`에 저장했습니다. 이 값이 길어지면 Firebase Auth가 `auth/invalid-profile-attribute` 오류를 반환해 프로필 저장이 실패했습니다. 게시글 이미지도 외부 URL 직접 입력에 의존해 사용자가 로컬 이미지를 첨부하기 어려웠습니다.
+- **처리**: 프로필 이미지와 게시글 이미지를 Firebase Storage에 업로드하고, 다운로드 URL만 프로필 또는 Markdown 본문에 저장하도록 변경했습니다. Storage Rules는 `users/{uid}/profile`, `users/{uid}/board` 경로에 대해 동일 UID만 이미지 파일을 쓸 수 있도록 제한했습니다.
+- **확인**: `npm run lint`와 `npm run build`를 통과했습니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다. 실제 확인은 Storage Rules와 Hosting 배포 후 프로필 이미지 업로드·저장, 게시글 이미지 업로드·미리보기·상세 표시 흐름으로 수행합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 프로필·게시글 이미지 Firebase Storage 업로드 전환 섹션 참고
+
+## 28. TourAPI 정상 빈 응답이 동기화 실패로 오인될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, TourAPI 신규 여행지 알림, Realtime Database `tourApiUpdates/state`
+- **요약**: 한국관광공사 TourAPI는 조회 결과가 없을 때도 `resultCode: "0000"`, `totalCount: "0"`, `items: ""` 형태의 정상 응답을 반환할 수 있습니다. 이 경우를 응답 구조 오류로 처리하면 신규 데이터가 없는 정상 상태를 장애로 오해할 수 있습니다.
+- **처리**: TourAPI 응답 파싱 로직을 분리하고, `totalCount`가 0이면 빈 배열로 반환하도록 수정했습니다. 반대로 `totalCount`가 0이 아닌데 `items.item`이 없으면 구조 오류로 유지했습니다.
+- **확인**: 정상 빈 응답 fixture, 비정상 누락 구조 fixture, 단일 item 정규화 fixture를 `functions/test/tourApiUpdates.test.js`에 추가했고, `npm --prefix functions test`에서 3건 모두 통과했습니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 반영 섹션 참고
+
+## 29. 작은 용량의 초고해상도 이미지가 압축 없이 업로드될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Storage 이미지 업로드, 프로필 이미지, 게시글 첨부 이미지, 모바일 렌더링 성능
+- **요약**: 기존 압축 로직은 파일 용량이 1MB 이하이면 바로 원본을 반환했습니다. 이 경우 용량은 작지만 해상도가 큰 이미지가 그대로 업로드되어 렌더링 비용이 커질 수 있었습니다.
+- **처리**: 업로드 전 모든 이미지의 실제 해상도를 확인하고, 가로 또는 세로가 1920px을 초과하면 용량과 관계없이 리사이즈하도록 수정했습니다.
+- **확인**: `src/api/storageApi.js`에서 이미지 로드 후 해상도 기준을 먼저 계산하도록 변경했습니다. 실제 업로드 검증은 Storage 배포 환경에서 프로필 이미지와 게시글 이미지 첨부 흐름으로 확인합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 반영 섹션 참고
+
+## 30. 프로필 이미지 변경 시 Storage 파일이 계속 누적될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: 프로필 수정 화면, Firebase Storage `users/{uid}/profile`, Storage 사용량
+- **요약**: 프로필 이미지를 바꿀 때마다 timestamp 기반 새 파일이 생성되어 이전 프로필 이미지가 Storage에 계속 남을 수 있었습니다.
+- **처리**: 프로필 이미지는 `users/{uid}/profile/avatar` 고정 경로에 업로드해 덮어쓰기 방식으로 관리하도록 수정했습니다. 같은 URL 캐시 문제를 줄이기 위해 저장 URL에는 업로드 시각 기반 `v` 쿼리 파라미터를 추가합니다.
+- **확인**: 게시글 이미지는 과거 게시글 본문 참조를 유지해야 하므로 기존 timestamp 누적 저장 방식을 유지합니다. 프로필 이미지는 배포 후 여러 번 변경하면서 Storage `profile/avatar` 객체만 갱신되는지 확인합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 프로필 이미지 저장 경로 보정 섹션 참고
+
+## 31. 이미지 압축 실패 시 업로드 제한을 우회할 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Firebase Storage 이미지 업로드, 프로필 이미지, 게시글 첨부 이미지
+- **요약**: 이미지 압축 과정에서 Canvas context 생성 실패, Blob 생성 실패, 이미지 로드 실패가 발생하면 원본 파일을 그대로 반환할 수 있었습니다. 이 경우 1MB 또는 1920px 제한을 만족하지 않는 이미지가 Storage 업로드로 이어질 수 있었습니다.
+- **처리**: 압축 실패와 기준 초과 상황을 업로드 실패로 처리하도록 변경했습니다. 압축 결과가 1MB 이하가 되지 않으면 사용자에게 용량 제한 안내 오류를 반환합니다.
+- **확인**: `npm run lint`와 `npm run build`로 정적 검증과 production build를 확인합니다. 배포 후에는 초과 용량 이미지 업로드 실패 안내와 정상 이미지 업로드 성공 흐름을 수동 검증합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 2차 반영 섹션 참고
+
+## 32. 읽은 TourAPI 알림 삭제가 최신 10개에만 적용될 수 있는 문제
+
+- **발생일**: 2026-08-25
+- **영향 범위**: Header 알림, TourAPI 신규 여행지 알림, 사용자별 `tourApiUpdateReads`
+- **요약**: `deleteReadNotifications()`가 표시용 기본 제한을 사용하면 최신 10개를 초과하는 읽은 TourAPI 알림은 숨김 처리되지 않고 목록에 남을 수 있었습니다.
+- **처리**: 읽은 알림 삭제 시에는 `limit: null`로 TourAPI 알림 전체를 조회하도록 수정했습니다. 표시용 조회 제한과 일괄 상태 변경용 조회 범위를 분리했습니다.
+- **확인**: 10개를 초과하는 TourAPI 알림 데이터가 누적된 상태에서 읽은 알림 삭제를 실행해 오래된 읽은 알림까지 숨김 처리되는지 배포 환경에서 추가 확인합니다.
+- **상세 기록**: [2026-08-25 개발 로그](project-log/2026-08-25.md)의 PR #29 CodeRabbit 추가 피드백 2차 반영 섹션 참고
+
+## 33. TourAPI 신규 여행지 알림이 로그인 후 표시되지 않는 문제
+
+- **발생일**: 2026-08-26
+- **영향 범위**: Firebase Functions `syncTourApiUpdates`, Realtime Database `tourApiUpdates/state`, Header 알림
+- **요약**: 배포 사이트에서 로그인해도 신규 여행지 알림이 표시되지 않았습니다. Firebase Functions 화면에서 `syncTourApiUpdates`의 최근 24시간 요청 수가 0으로 표시되어, 현재 상태만으로는 신규 데이터가 없는 것인지 함수가 아직 실행되지 않은 것인지 구분할 수 없습니다.
+- **판단 기준**: 함수 요청 수가 0이면 우선 스케줄 함수 미실행 또는 집계 전 상태로 봅니다. 함수가 정상 실행된 뒤 신규 데이터가 없었다면 `tourApiUpdates/state`에 마지막 확인 시각과 신규 항목 수 0이 기록되어야 합니다.
+- **후속 확인**: Functions 로그, Google Cloud Scheduler 실행 이력, Realtime Database `tourApiUpdates/state` 생성 여부를 순서대로 확인합니다. 필요하면 스케줄 수동 실행으로 TourAPI 호출·DB 기록·Header 알림 표시 흐름을 검증합니다.
+- **상세 기록**: [2026-08-26 개발 로그](project-log/2026-08-26.md)의 TourAPI 신규 여행지 알림 운영 확인 메모 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

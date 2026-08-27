@@ -557,7 +557,7 @@ const AiPlanner = () => {
       return;
     }
     if (nextDuration && nextDuration > MAX_DURATION_DAYS) {
-      showToast(`AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+      showToast(`AI 여행 플래너는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
       return;
     }
 
@@ -696,7 +696,7 @@ const AiPlanner = () => {
     }
 
     if (tripDuration && tripDuration > MAX_DURATION_DAYS) {
-      showToast(`AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
+      showToast(`AI 여행 플래너는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
       return;
     }
 
@@ -834,10 +834,10 @@ const AiPlanner = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 pb-24 md:pb-8">
+    <div className="mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
       <PageHeader
         label="ai_trip.planner"
-        title="AI 여행 코스"
+        title="AI 여행 플래너"
         description="조건을 입력하고 저장 가능한 여행 코스를 생성합니다."
         action={(
           <button
@@ -855,12 +855,12 @@ const AiPlanner = () => {
         <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
           <div>
             <FieldLabel>Plan Mode</FieldLabel>
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1 border border-outline-variant/30">
+            <div className="grid grid-cols-1 gap-2 rounded-xl border border-outline-variant/30 bg-slate-50 p-1 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => handlePlanningModeChange(PLAN_MODE.CUSTOM)}
                 disabled={plannerBusy}
-                className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
+                className={`min-h-11 rounded-lg px-3 py-2 text-[11px] font-black leading-snug break-keep transition-all ${
                   planningMode === PLAN_MODE.CUSTOM
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-500 hover:text-primary hover:bg-white'
@@ -872,7 +872,7 @@ const AiPlanner = () => {
                 type="button"
                 onClick={() => handlePlanningModeChange(PLAN_MODE.FOLDER)}
                 disabled={plannerBusy}
-                className={`h-11 rounded-lg px-2 text-[11px] font-black leading-none whitespace-nowrap transition-all ${
+                className={`min-h-11 rounded-lg px-3 py-2 text-[11px] font-black leading-snug break-keep transition-all ${
                   planningMode === PLAN_MODE.FOLDER
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-500 hover:text-primary hover:bg-white'
@@ -1064,8 +1064,8 @@ const AiPlanner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="col-span-2 sm:col-span-1">
               <FieldLabel>Pace</FieldLabel>
               <select
                 value={form.pace}
@@ -1083,7 +1083,7 @@ const AiPlanner = () => {
                 value={form.startTime}
                 onChange={(e) => updateForm('startTime', e.target.value)}
                 disabled={plannerBusy}
-                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
             <div>
@@ -1093,7 +1093,7 @@ const AiPlanner = () => {
                 value={form.endTime}
                 onChange={(e) => updateForm('endTime', e.target.value)}
                 disabled={plannerBusy}
-                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
           </div>
@@ -1163,10 +1163,10 @@ const AiPlanner = () => {
           </button>
         </section>
 
-        <section className="min-h-[620px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden">
+        <section className="min-h-[360px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden md:min-h-[620px]">
           {!plan ? (
-            <div className="h-full min-h-[620px] flex flex-col items-center justify-center text-center px-6">
-              <span className="material-symbols-outlined text-6xl text-primary/30 mb-4">travel_explore</span>
+            <div className="flex h-full min-h-[360px] flex-col items-center justify-center px-6 text-center md:min-h-[620px]">
+              <span className="material-symbols-outlined mb-3 text-5xl text-primary/30 md:mb-4 md:text-6xl">travel_explore</span>
               <p className="font-mono text-xs text-slate-400">// generated_course_preview</p>
             </div>
           ) : (

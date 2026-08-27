@@ -4,6 +4,7 @@ import { getWeather, getLocationName } from '../api/weatherApi';
 import { getPhotoList, getFestivalList, getCityBasedPlaces, searchKeywordPlaces, getSpontaneousTravel } from '../api/travelApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
+import { getDaysFromToday, getTodayKey } from '../utils/dateKey';
 
 const MOCK_NODE_HEADER = [
   { galContentId: 'm1', galTitle: '감성 여행', galPhotographyLocation: '대한민국', galWebImageUrl: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?q=80&w=2070' },
@@ -11,6 +12,46 @@ const MOCK_NODE_HEADER = [
 ];
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
+
+const getDateKey = (item, key) => {
+  const alternateKey = key === 'eventstartdate'
+    ? 'eventStartDate'
+    : key === 'eventenddate'
+      ? 'eventEndDate'
+      : key;
+  return String(item?.[key] || item?.[alternateKey] || '').replace(/\D/g, '').slice(0, 8);
+};
+
+const getFestivalBadge = (item, todayKey) => {
+  const startDate = getDateKey(item, 'eventstartdate');
+  const endDate = getDateKey(item, 'eventenddate') || startDate;
+  const daysToStart = getDaysFromToday(startDate, todayKey);
+  const daysToEnd = getDaysFromToday(endDate, todayKey);
+
+  if (Number.isFinite(daysToStart) && daysToStart === 0) return 'TODAY';
+  if (Number.isFinite(daysToStart) && daysToStart > 0) return `D-${daysToStart}`;
+  if (Number.isFinite(daysToEnd) && daysToEnd === 0) return '오늘 종료';
+  if (Number.isFinite(daysToEnd) && daysToEnd > 0) return '진행중';
+  return startDate.length >= 8 ? `${startDate.slice(4, 6)}.${startDate.slice(6, 8)}` : 'NOW';
+};
+
+const sortFestivalsByNearestDate = (items, todayKey) => (
+  [...items].sort((a, b) => {
+    const getRank = (item) => {
+      const startDate = getDateKey(item, 'eventstartdate');
+      const endDate = getDateKey(item, 'eventenddate') || startDate;
+      const daysToStart = getDaysFromToday(startDate, todayKey);
+      const daysToEnd = getDaysFromToday(endDate, todayKey);
+
+      if (Number.isFinite(daysToStart) && daysToStart >= 0) return [0, daysToStart];
+      if (Number.isFinite(daysToEnd) && daysToEnd >= 0) return [1, daysToEnd];
+      return [2, Number.POSITIVE_INFINITY];
+    };
+    const [aGroup, aDays] = getRank(a);
+    const [bGroup, bDays] = getRank(b);
+    return aGroup - bGroup || aDays - bDays || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+  })
+);
 
 const GUEST_FEATURES = [
   {
@@ -183,7 +224,7 @@ const GuestHome = () => (
             <span className="guest-gradient-text">나만의 코스</span>로 연결하세요<span className="text-primary-container">.</span>
           </h1>
           <p className="guest-fade-up mt-5 max-w-2xl break-keep text-base leading-8 text-white/80 sm:text-lg" style={{ animationDelay: '.16s' }}>
-            CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 코스 생성, 여행 게시판을 하나의 흐름으로 연결하는 개발자 감성의 여행 큐레이션 서비스입니다.
+            CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 플래너, 여행 게시판을 하나의 흐름으로 연결하는 개발자 감성의 여행 큐레이션 서비스입니다.
           </p>
           <div className="guest-fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: '.24s' }}>
             <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label">
@@ -302,33 +343,36 @@ const GuestHome = () => (
 
     <GuestReveal delay={80}>
       <section className="mt-8 overflow-hidden rounded-2xl border border-slate-600/25 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-white shadow-xl">
-        <div className="grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_520px]">
-          <div className="p-8 lg:p-10">
+        <div className="grid grid-cols-1 gap-0 xl:grid-cols-[minmax(0,1fr)_520px]">
+          <div className="p-8 xl:p-10">
             <div className="flex items-center gap-2 text-primary">
               <span className="h-2 w-2 rounded-full bg-primary" />
               <p className="text-[11px] font-bold uppercase tracking-widest font-label">member.workspace</p>
             </div>
-            <h2 className="mt-5 break-keep text-3xl font-black leading-tight font-headline">
+            <h2 className="mt-5 break-keep text-2xl font-black leading-tight font-headline sm:text-3xl">
               <span className="text-primary">로그인하면</span> 여행 계획이{' '}
               <span className="relative inline-block text-cyan-100 drop-shadow-sm">
                 하나의 작업 공간
                 <span className="absolute inset-x-0 bottom-1 -z-10 h-3 rounded-full bg-primary/55" />
-              </span>으로 이어집니다.
+              </span>
+              <span className="block sm:inline">으로 이어집니다.</span>
             </h2>
             <p className="mt-4 max-w-2xl break-keep text-sm leading-7 text-white/80">
               저장한 장소를 폴더로 묶고, CodeTrip이 코스를 제안하면 체크리스트와 메모까지
               <br className="hidden sm:block" />
               같은 흐름에서 관리할 수 있습니다.
             </p>
-            <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
               {MEMBER_PREVIEW.map((item) => (
-                <div key={item.title} className="flex min-h-[230px] flex-col rounded-2xl border border-white/12 bg-slate-900/25 p-5 transition-all hover:-translate-y-1 hover:bg-slate-900/35">
-                  <div className="flex h-9 items-center gap-2">
-                    <span className="material-symbols-outlined flex h-7 w-7 items-center justify-center text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{item.icon}</span>
-                    <p className="inline-flex min-h-7 items-center rounded-full border border-primary/25 bg-primary/15 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-cyan-100 font-label">{item.value}</p>
+                <div key={item.title} className="flex min-h-[180px] min-w-0 flex-col rounded-2xl border border-white/12 bg-slate-900/25 p-4 transition-all hover:-translate-y-1 hover:bg-slate-900/35 sm:p-5">
+                  <div className="flex min-h-9 flex-wrap items-center gap-2">
+                    <span className="material-symbols-outlined flex h-7 w-7 shrink-0 items-center justify-center text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{item.icon}</span>
+                    <p className="inline-flex min-h-7 min-w-0 max-w-full items-center rounded-full border border-primary/25 bg-primary/15 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-100 font-label">
+                      <span className="truncate">{item.value}</span>
+                    </p>
                   </div>
-                  <h3 className="mt-4 text-sm font-bold">{item.title}</h3>
-                  <p className="mt-3 break-keep text-xs leading-5 text-white/70">{item.desc}</p>
+                  <h3 className="mt-4 break-keep text-sm font-bold leading-6">{item.title}</h3>
+                  <p className="mt-3 break-keep text-xs leading-5 text-white/70 sm:break-normal">{item.desc}</p>
                   <div className="mt-auto border-t border-white/10 pt-4">
                     <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white/65 font-label">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -340,7 +384,7 @@ const GuestHome = () => (
             </div>
           </div>
 
-          <div className="border-t border-white/10 bg-slate-900/15 p-6 lg:border-l lg:border-t-0">
+          <div className="border-t border-white/10 bg-slate-900/15 p-6 xl:border-l xl:border-t-0">
             <div className="rounded-2xl border border-white/15 bg-slate-800/75 p-5 backdrop-blur-md">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -515,7 +559,7 @@ const Home = () => {
         const [tops, near, festData] = await Promise.all([
           getPhotoList(null, 20),
           getCityBasedPlaces(locProv),
-          getFestivalList(1, 10, 'default', '', '', '', { poolMaxRows: 100 }) // 홈 트렌딩 미리보기는 작은 pool만 조회
+          getFestivalList(1, 10, 'date_asc', '', '', '', { poolMaxRows: 100 }) // 홈 트렌딩 미리보기는 작은 pool만 조회
         ]);
 
         if (!isActiveRequest()) return false;
@@ -530,14 +574,13 @@ const Home = () => {
         }
         setLoading(prev => ({ ...prev, nearby: false }));
 
-        const fests = festData?.items || festData || [];
+        const todayKey = getTodayKey();
+        const fests = sortFestivalsByNearestDate(festData?.items || festData || [], todayKey);
         const festItems = fests.slice(0, 3).map(f => ({
           type: 'festival', 
           icon: 'celebration', 
           title: f.title, 
-          subtitle: f.eventstartdate && typeof f.eventstartdate === 'string' && f.eventstartdate.length >= 8 
-            ? `${f.eventstartdate.slice(4, 6)}.${f.eventstartdate.slice(6, 8)}` 
-            : 'NOW',
+          subtitle: getFestivalBadge(f, todayKey),
           location: f.addr1?.split(' ')[0] || '전국', 
           image: f.firstimage,
           contentid: f.contentid
@@ -809,7 +852,12 @@ const Home = () => {
 
           <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
             {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
-              <Link key={getFolderId(folder)} to="/mypage" className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+              <Link
+                key={getFolderId(folder)}
+                to="/mypage"
+                state={{ folderId: getFolderId(folder) }}
+                className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-headline text-base font-bold text-slate-950">{getFolderName(folder)}</p>
@@ -866,27 +914,28 @@ const Home = () => {
       </section>
 
       {/* 1. 상단 Node_Header 섹션 */}
-      <section className="relative w-full min-h-[260px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0">
+      <section className="relative w-full min-h-[320px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0 sm:min-h-[260px]">
         <img src={currentNodeHeader.galWebImageUrl || currentNodeHeader.image} key={currentNodeHeader.galContentId || currentNodeHeader.id} className="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" alt="bg" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/45 to-slate-900/10 flex items-center px-6 py-6 sm:px-10 lg:px-12">
-          <div className="max-w-[min(36rem,calc(100%-11rem))] space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
-            <div className="inline-flex items-center px-3 py-1 bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 w-fit text-white text-[10px] font-bold tracking-widest uppercase font-label">system.log: node_header_active</div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline font-bold text-white leading-tight drop-shadow-lg">Build your next <span className="text-primary-container">Adventure.</span></h1>
+        <div className="absolute inset-0 flex flex-col justify-between gap-5 bg-gradient-to-b from-slate-900/82 via-slate-900/56 to-slate-900/28 px-5 py-6 sm:flex-row sm:items-center sm:bg-gradient-to-r sm:from-slate-900/80 sm:via-slate-900/45 sm:to-slate-900/10 sm:px-10 lg:px-12">
+          <div className="max-w-xl space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
+            <div className="inline-flex max-w-full items-center rounded-lg border border-white/20 bg-white/10 px-3 py-1 font-label text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur-xl sm:text-[10px]">
+              <span className="truncate">system.log: node_header_active</span>
+            </div>
+            <h1 className="max-w-[13rem] text-3xl font-headline font-bold text-white leading-tight drop-shadow-lg min-[420px]:max-w-none sm:text-4xl lg:text-5xl">Build your next <span className="text-primary-container">Adventure.</span></h1>
             <p className="text-white/80 text-sm sm:text-base font-body max-w-lg leading-relaxed break-keep">대한민국 곳곳의 숨겨진 데이터 노드들을 탐험하세요.</p>
             <div className="pt-1"><Link to="/explore" className="bg-white/50 backdrop-blur-md text-slate-900 px-7 py-2.5 rounded-full font-bold hover:bg-white/70 transition-all flex items-center justify-center gap-2 w-fit min-w-[170px] text-sm shadow-lg font-label border border-white/20 whitespace-nowrap"><span>GET STARTED</span><span className="material-symbols-outlined text-sm font-bold">arrow_right_alt</span></Link></div>
           </div>
-          <div className="absolute right-6 bottom-6 sm:right-8 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 min-w-[132px] bg-white/75 backdrop-blur-2xl p-4 rounded-xl shadow-xl border border-white/30 text-slate-900">
+          <div className="self-end rounded-xl border border-white/30 bg-white/75 p-3 text-slate-900 shadow-xl backdrop-blur-2xl sm:absolute sm:right-8 sm:top-1/2 sm:min-w-[132px] sm:-translate-y-1/2 sm:p-4">
             <p className="text-slate-500 text-[9px] uppercase mb-0.5 font-bold tracking-widest font-label whitespace-nowrap">{province} {weather.location}</p>
-            <div className="flex items-center gap-3 whitespace-nowrap"><span className="text-3xl font-headline font-bold text-primary">{weather.temp}°C</span><span className="material-symbols-outlined text-2xl text-primary" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
+            <div className="flex items-center gap-2 whitespace-nowrap sm:gap-3"><span className="text-2xl font-headline font-bold text-primary sm:text-3xl">{weather.temp}°C</span><span className="material-symbols-outlined text-xl text-primary sm:text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
           </div>
         </div>
       </section>
 
       {/* 2. 카드 그리드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0">
-        <div className="lg:col-span-2 grid grid-cols-1 xl:grid-cols-2 gap-5">
-          {/* Card 1: Regional (Near Me) */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+      <div className="grid grid-cols-1 gap-5 flex-1 min-h-0 xl:grid-cols-3">
+        {/* Card 1: Regional (Near Me) */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[86px] justify-between items-start">
@@ -907,10 +956,10 @@ const Home = () => {
                 <div className="flex items-center gap-2 mt-2 text-slate-400 font-mono text-xs italic"><span className="text-primary-container">#</span><p className="truncate">{nearbyPlaces.length > 0 ? nearbyPlaces[nearbyIndex]?.addr1 : `${province} 인기 명소 탐색`}</p></div>
               </div>
             </div>
-          </div>
+        </div>
 
-          {/* Card 2: Slot Machine */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+        {/* Card 2: Slot Machine */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[86px] justify-between items-start">
                 <div className="space-y-1 min-w-0 flex-1">
@@ -986,11 +1035,10 @@ const Home = () => {
                 )}
               </div>
             </div>
-          </div>
         </div>
 
         {/* Card 3: Trending */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group">
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group">
           <div className="flex justify-between items-start mb-4 shrink-0">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold">

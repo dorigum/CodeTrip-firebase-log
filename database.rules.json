@@ -24,6 +24,11 @@
             ".validate": "!newData.exists() || (newData.hasChildren(['user_id', 'message', 'is_read', 'created_at']) && newData.child('user_id').val() === $uid)"
           }
         },
+        "tourApiUpdateReads": {
+          "$contentId": {
+            ".validate": "!newData.exists() || (newData.hasChild('is_read') && newData.child('is_read').isBoolean())"
+          }
+        },
         "activities": {
           "boardPosts": {
             "$postId": {
@@ -98,6 +103,15 @@
         ".read": "auth != null",
         ".write": false,
         ".validate": "newData.hasChildren(['data', 'expiresAt', 'updatedAt']) && newData.child('expiresAt').isNumber() && newData.child('updatedAt').isNumber()"
+      }
+    },
+    "tourApiUpdates": {
+      ".read": "auth != null",
+      ".write": false,
+      "items": {
+        "$contentId": {
+          ".validate": "newData.hasChildren(['contentId', 'title', 'detectedAt', 'source']) && newData.child('contentId').val() === $contentId"
+        }
       }
     }
   }

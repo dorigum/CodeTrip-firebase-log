@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../App.css';
-import useExploreStore, { NUM_OF_ROWS, getExploreScrollY, setExploreScrollY } from '../store/useExploreStore';
+import useExploreStore, { getExploreItemsPerPage, getExploreScrollY, setExploreScrollY } from '../store/useExploreStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useAuthStore from '../store/useAuthStore';
 import WishlistModal from '../components/WishlistModal';
@@ -20,6 +20,7 @@ const Explore = () => {
   const [searchTerm] = useState('');
   const [regionOpen, setRegionOpen] = useState(true);
   const [themeOpen, setThemeOpen] = useState(true);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [activeAnimId, setActiveAnimId] = useState(null); // 강제 애니메이션 트리거용 ID
   const [favoriteRegions, setFavoriteRegions] = useState([]);
 
@@ -31,6 +32,7 @@ const Explore = () => {
     selectedRegions, toggleRegion,
     selectedThemes, toggleTheme,
     posts, loading, totalCount, currentPage,
+    itemsPerPage, setItemsPerPage,
     keyword, setKeyword,
     sort, setSort,
     initialized, fetchError,
@@ -124,7 +126,7 @@ const Explore = () => {
     }
   };
 
-  const totalPages = Math.ceil(totalCount / NUM_OF_ROWS);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
   const exploreEntryHandledRef = useRef(false);
   const shouldPreserveExploreStateRef = useRef(false);
 
@@ -142,6 +144,13 @@ const Explore = () => {
       resetPage();
     }
   }, [currentPage, initialized, keyword, queryKeyword, resetPage]);
+
+  useEffect(() => {
+    const handleResize = () => setItemsPerPage(getExploreItemsPerPage());
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setItemsPerPage]);
 
   useEffect(() => {
     const init = async () => {
@@ -206,7 +215,7 @@ const Explore = () => {
   );
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <ConfirmModal
         open={showLoginDialog}
         title="로그인이 필요합니다"
@@ -220,7 +229,7 @@ const Explore = () => {
         onConfirm={goToLogin}
       />
 
-      <header className="mb-10">
+      <header className="mb-8 sm:mb-10">
         <PageHeader
           label="travel_explore.exe"
           title="여행지 탐색"
@@ -247,11 +256,28 @@ const Explore = () => {
         {/* Sidebar Filters */}
         <aside className="col-span-12 lg:col-span-3 xl:col-span-2 self-start">
           <div className="bg-surface-container-low rounded-xl p-5 lg:sticky lg:top-8 border border-outline-variant/10 shadow-sm">
-            <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/20 pb-4">
-              <span className="material-symbols-outlined text-primary text-lg">settings_ethernet</span>
-              <span className="font-bold text-on-surface font-mono text-sm uppercase tracking-tight">FILTERS.CONFIG</span>
+            <div className="flex items-center justify-between gap-3 border-b border-outline-variant/20 pb-4 lg:mb-6">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-lg">settings_ethernet</span>
+                <span className="truncate font-mono text-sm font-bold uppercase tracking-tight text-on-surface">FILTERS.CONFIG</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterPanelOpen((prev) => !prev)}
+                className="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-outline-variant/20 px-3 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/10 lg:hidden"
+                aria-expanded={filterPanelOpen}
+                aria-controls="explore-filter-panel"
+              >
+                {filterPanelOpen ? '접기' : '열기'}
+                <span className={`material-symbols-outlined text-base transition-transform ${filterPanelOpen ? '-rotate-180' : ''}`}>
+                  expand_more
+                </span>
+              </button>
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:block lg:space-y-6">
+            <div
+              id="explore-filter-panel"
+              className={`${filterPanelOpen ? 'grid' : 'hidden'} mt-5 grid-cols-1 gap-6 md:grid-cols-2 lg:mt-0 lg:block lg:space-y-6`}
+            >
               {/* Region */}
               <section>
                 <div
@@ -393,14 +419,14 @@ const Explore = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-2 gap-4 md:gap-8 lg:grid-cols-3 2xl:grid-cols-4">
                 {filteredPosts.map((post) => (
                   <article
                     key={post.contentid}
                     className="group/card bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-outline-variant/10"
                   >
                     <div 
-                      className="relative h-64 overflow-hidden bg-surface-container-low cursor-pointer"
+                      className="relative h-32 overflow-hidden bg-surface-container-low cursor-pointer sm:h-52 md:h-64"
                       onDoubleClick={() => handleImageDoubleClick(post)}
                     >
                       <img
@@ -410,19 +436,19 @@ const Explore = () => {
                         onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                       />
                     </div>
-                    <div className="p-6">
-                      <h3 className="text-[18px] font-body font-bold text-on-surface mb-1 truncate tracking-tight">{post.title}</h3>
-                      <div className="flex items-center gap-1 text-slate-400 text-[12px] font-body mb-4">
-                        <span className="material-symbols-outlined text-[14px]">location_on</span>
+                    <div className="p-4 md:p-6">
+                      <h3 className="text-[14px] font-body font-bold text-on-surface mb-1 truncate tracking-tight sm:text-[16px] md:text-[18px]">{post.title}</h3>
+                      <div className="flex items-center gap-1 text-slate-400 text-[11px] font-body mb-3 md:text-[12px] md:mb-4">
+                        <span className="material-symbols-outlined text-[13px] md:text-[14px]">location_on</span>
                         <span className="truncate font-bold">{post.addr1}</span>
                       </div>
-                      <div className="mt-6 flex justify-between items-center">
+                      <div className="mt-4 flex justify-between items-center gap-2 md:mt-6">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             handleHeartToggle(post);
                           }}
-                          className={`group/heart relative flex items-center justify-center w-10 h-10 rounded-full transition-all shadow-sm active:scale-75 select-none outline-none cursor-pointer ${
+                          className={`group/heart relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all shadow-sm active:scale-75 select-none outline-none cursor-pointer md:h-10 md:w-10 ${
                             wishlistIds.has(String(post.contentid)) 
                               ? 'bg-red-50 text-red-500' 
                               : 'bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500'
@@ -438,7 +464,7 @@ const Explore = () => {
                         <Link
                           to={`/explore/${post.contentid}`}
                           state={{ firstimage: post.firstimage }}
-                          className="px-5 py-2 bg-primary text-white rounded-lg text-[12px] font-body font-bold hover:brightness-110 transition-all shadow-md"
+                          className="rounded-lg bg-primary px-3 py-2 text-[11px] font-body font-bold text-white shadow-md transition-all hover:brightness-110 md:px-5 md:text-[12px]"
                         >
                           상세보기
                         </Link>

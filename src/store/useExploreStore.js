@@ -2,11 +2,24 @@ import { create } from 'zustand';
 import { getTravelList } from '../api/travelInfoApi';
 import { DEFAULT_REGIONS } from '../constants/regions';
 
-const NUM_OF_ROWS = 10;
+const DESKTOP_NUM_OF_ROWS = 10;
+const MOBILE_NUM_OF_ROWS = 6;
+
+const getExploreItemsPerPage = () => {
+  if (typeof window === 'undefined') return DESKTOP_NUM_OF_ROWS;
+  return window.innerWidth < 768 ? MOBILE_NUM_OF_ROWS : DESKTOP_NUM_OF_ROWS;
+};
 
 let exploreScrollY = 0;
+let exploreFetchRequestId = 0;
 export const getExploreScrollY = () => exploreScrollY;
 export const setExploreScrollY = (y) => { exploreScrollY = y; };
+
+const resetMainScroll = () => {
+  if (typeof document === 'undefined') return;
+  const mainScroll = document.getElementById('main-scroll');
+  if (mainScroll) mainScroll.scrollTop = 0;
+};
 
 const useExploreStore = create((set, get) => ({
   regions: DEFAULT_REGIONS,
@@ -20,6 +33,7 @@ const useExploreStore = create((set, get) => ({
   keyword: '',
   sort: 'default',
   currentPage: 1,
+  itemsPerPage: getExploreItemsPerPage(),
   posts: [],
   totalCount: 0,
   loading: false,
@@ -115,35 +129,49 @@ const useExploreStore = create((set, get) => ({
   },
 
   changePage: (page) => {
-    const { currentPage, totalCount } = get();
-    const totalPages = Math.ceil(totalCount / NUM_OF_ROWS);
+    const { currentPage, totalCount, itemsPerPage } = get();
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
     if (page < 1 || page > totalPages || page === currentPage) return;
     set({ currentPage: page });
     get().fetchPosts();
   },
 
+  setItemsPerPage: (itemsPerPage) => {
+    const current = get().itemsPerPage;
+    if (!itemsPerPage || itemsPerPage === current) return;
+    set({ itemsPerPage, currentPage: 1 });
+    setExploreScrollY(0);
+    resetMainScroll();
+    get().fetchPosts();
+  },
+
   fetchPosts: async () => {
-    const { appliedRegions, appliedThemes, currentPage, keyword, sort } = get();
+    const requestId = ++exploreFetchRequestId;
+    const { appliedRegions, appliedThemes, currentPage, keyword, sort, itemsPerPage } = get();
     set({ loading: true, fetchError: null });
     try {
       const { items, totalCount } = await getTravelList({
         regions: appliedRegions,
         themes: appliedThemes,
         pageNo: currentPage,
-        numOfRows: NUM_OF_ROWS,
+        numOfRows: itemsPerPage,
         keyword,
         sort,
       });
+      if (requestId !== exploreFetchRequestId) return;
       set({ posts: items, totalCount, initialized: true });
     } catch (error) {
+      if (requestId !== exploreFetchRequestId) return;
       console.error('Failed to fetch posts:', error);
       set({ fetchError: '여행지 데이터를 불러오는 데 실패했습니다.', initialized: true });
     } finally {
-      set({ loading: false });
+      if (requestId === exploreFetchRequestId) {
+        set({ loading: false });
+      }
     }
   },
 
 }));
 
-export { NUM_OF_ROWS };
+export { DESKTOP_NUM_OF_ROWS as NUM_OF_ROWS, getExploreItemsPerPage };
 export default useExploreStore;
