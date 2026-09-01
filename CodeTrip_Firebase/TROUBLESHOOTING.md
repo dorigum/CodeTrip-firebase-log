@@ -391,6 +391,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인 기준**: 마이그레이션 중 같은 좋아요 경로에서 발생한 추가·취소가 유실되지 않고, 이미 변환된 UID 맵은 다시 기록하지 않아야 합니다.
 - **상세 기록**: [2026-09-01 개발 로그](project-log/2026-09-01.md)의 레거시 좋아요 마이그레이션 동시성 보완 섹션 참고
 
+## 46. 로컬 Admin SDK 마이그레이션의 Database URL 미설정
+
+- **발생일**: 2026-09-01
+- **영향 범위**: 레거시 좋아요 dry-run·마이그레이션 스크립트
+- **요약**: 로컬 Admin SDK는 Vite `.env`를 자동으로 읽지 않아 `initializeApp()`만으로는 Realtime Database URL을 판단할 수 없었습니다.
+- **처리**: `GOOGLE_CLOUD_PROJECT`에서 기본 Database URL을 구성하고, 필요 시 `FIREBASE_DATABASE_URL`로 덮어쓸 수 있도록 초기화 설정을 추가했습니다.
+- **확인 기준**: 프로젝트 ID를 지정한 스크립트 실행이 Database URL 오류 없이 인증 단계까지 진행되어야 합니다.
+- **상세 기록**: [2026-09-01 개발 로그](project-log/2026-09-01.md)의 로컬 마이그레이션 스크립트의 Database URL 설정 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

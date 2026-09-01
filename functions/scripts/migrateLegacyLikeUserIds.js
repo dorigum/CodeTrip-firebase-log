@@ -1,7 +1,14 @@
 const { initializeApp } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
 
-initializeApp();
+const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
+if (!projectId) {
+  throw new Error('GOOGLE_CLOUD_PROJECT 환경 변수를 설정하세요.');
+}
+
+initializeApp({
+  databaseURL: process.env.FIREBASE_DATABASE_URL || `https://${projectId}.firebaseio.com`,
+});
 
 const ROOTS = ['boardPosts', 'boardComments', 'travelComments'];
 const commit = process.argv.includes('--commit');
