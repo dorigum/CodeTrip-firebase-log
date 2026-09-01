@@ -71,11 +71,11 @@ const waitForDatabaseAuth = (delayMs) => new Promise((resolve) => {
   window.setTimeout(resolve, delayMs);
 });
 
-const getOAuthProfileSnapshot = async (authUser, profileRef) => {
+const runOAuthDatabaseOperation = async (authUser, operation) => {
   let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await get(profileRef);
+      return await operation();
     } catch (error) {
       lastError = error;
       if (!isPermissionDeniedError(error) || attempt === 2) throw error;
@@ -152,11 +152,14 @@ const authApi = {
       const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false;
       await credential.user.getIdToken();
       const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
-      const profileSnap = await getOAuthProfileSnapshot(credential.user, profileRef);
+      const profileSnap = await runOAuthDatabaseOperation(
+        credential.user,
+        () => get(profileRef),
+      );
       const profile = profileSnap.exists() ? profileSnap.val() : {};
 
       if (!profileSnap.exists()) {
-        await set(profileRef, {
+        await runOAuthDatabaseOperation(credential.user, () => set(profileRef, {
           email: credential.user.email || '',
           name: credential.user.displayName || 'CodeTrip 사용자',
           profileImg: credential.user.photoURL || '',
@@ -164,7 +167,7 @@ const authApi = {
           created_at: nowIso(),
           updated_at: nowIso(),
           authProvider: 'google',
-        });
+        }));
       } else if (profile.authProvider !== 'google') {
         await update(profileRef, { authProvider: 'google', updated_at: nowIso() });
       }
