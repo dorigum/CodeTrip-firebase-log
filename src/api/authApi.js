@@ -145,11 +145,15 @@ const authApi = {
     return { url: await uploadProfileImage(file) };
   },
 
-  loginWithGoogle: async () => {
+  loginWithGoogle: async ({ skipProfileForExistingUser = false } = {}) => {
     try {
       await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
       const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false;
+      if (skipProfileForExistingUser && !isNewUser) {
+        return { user: userPayload(credential.user), isNewUser };
+      }
+
       await credential.user.getIdToken();
       const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
       const profileSnap = await runOAuthDatabaseOperation(

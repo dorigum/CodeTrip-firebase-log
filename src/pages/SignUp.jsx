@@ -66,7 +66,7 @@ const SignUp = () => {
     try {
       setIsLoading(true);
       prepareLogin();
-      const data = await authApi.loginWithGoogle();
+      const data = await authApi.loginWithGoogle({ skipProfileForExistingUser: true });
       if (!data.isNewUser) {
         cancelLogin();
         setError('이미 Google 계정으로 가입되어 있습니다. 로그인 화면에서 Google 로그인을 이용해 주세요.');
