@@ -67,16 +67,26 @@ const isPermissionDeniedError = (error) => (
   error?.code === 'PERMISSION_DENIED' || /permission denied/i.test(error?.message || '')
 );
 
-const getOAuthProfileSnapshot = async (authUser, profileRef) => {
-  try {
-    return await get(profileRef);
-  } catch (error) {
-    if (!isPermissionDeniedError(error)) throw error;
+const waitForDatabaseAuth = (delayMs) => new Promise((resolve) => {
+  window.setTimeout(resolve, delayMs);
+});
 
-    // OAuth 직후에는 Realtime Database 연결에 새 인증 토큰이 반영되기 전일 수 있습니다.
-    await authUser.getIdToken(true);
-    return get(profileRef);
+const getOAuthProfileSnapshot = async (authUser, profileRef) => {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await get(profileRef);
+    } catch (error) {
+      lastError = error;
+      if (!isPermissionDeniedError(error) || attempt === 2) throw error;
+
+      // OAuth 직후에는 Realtime Database 연결에 새 인증 토큰이 반영되기 전일 수 있습니다.
+      await authUser.getIdToken(true);
+      await waitForDatabaseAuth(150 * (attempt + 1));
+    }
   }
+
+  throw lastError;
 };
 
 const authApi = {
