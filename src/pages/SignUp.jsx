@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authApi from '../api/authApi';
 import ConfirmModal from '../components/ConfirmModal';
@@ -23,11 +23,12 @@ const SignUp = () => {
   const [error, setError] = useState('');
   const [signupSuccessOpen, setSignupSuccessOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isLoggedIn } = useAuthStore();
+  const { login, cancelLogin, isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
+  const googleSignupInProgressRef = useRef(false);
 
   useEffect(() => {
-    if (isLoggedIn) navigate('/', { replace: true });
+    if (isLoggedIn && !googleSignupInProgressRef.current) navigate('/', { replace: true });
   }, [isLoggedIn, navigate]);
 
   const handleChange = (e) => {
@@ -61,15 +62,22 @@ const SignUp = () => {
 
   const handleGoogleSignup = async () => {
     setError('');
+    googleSignupInProgressRef.current = true;
     try {
       setIsLoading(true);
       const data = await authApi.loginWithGoogle();
+      if (!data.isNewUser) {
+        cancelLogin();
+        setError('이미 Google 계정으로 가입되어 있습니다. 로그인 화면에서 Google 로그인을 이용해 주세요.');
+        return;
+      }
       login(data.user);
       localStorage.setItem('trip_token', data.token);
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || 'Google 회원가입에 실패했습니다.');
     } finally {
+      googleSignupInProgressRef.current = false;
       setIsLoading(false);
     }
   };

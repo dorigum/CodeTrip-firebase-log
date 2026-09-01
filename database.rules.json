@@ -70,7 +70,12 @@
     "boardComments": {
       ".read": true,
       "$commentId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
+        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+        "likeUserIds": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
       }
     },
     "boardCommentsByPost": {
@@ -86,7 +91,12 @@
     "travelComments": {
       ".read": true,
       "$commentId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)"
+        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+        "likeUserIds": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
       }
     },
     "travelCommentsByContent": {

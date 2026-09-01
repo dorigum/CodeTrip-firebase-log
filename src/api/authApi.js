@@ -3,6 +3,7 @@ import {
   EmailAuthProvider,
   GoogleAuthProvider,
   browserSessionPersistence,
+  getAdditionalUserInfo,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
   setPersistence,
@@ -140,6 +141,7 @@ const authApi = {
     try {
       await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+      const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false;
       const token = await credential.user.getIdToken();
       const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
       const profileSnap = await getOAuthProfileSnapshot(credential.user, profileRef);
@@ -161,7 +163,7 @@ const authApi = {
 
       const user = userPayload(credential.user, profile);
       localStorage.setItem('trip_token', token);
-      return { token, user };
+      return { token, user, isNewUser };
     } catch (error) {
       throw { message: authErrorMessage(error, 'Google 로그인에 실패했습니다.') };
     }
