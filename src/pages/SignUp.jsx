@@ -23,7 +23,7 @@ const SignUp = () => {
   const [error, setError] = useState('');
   const [signupSuccessOpen, setSignupSuccessOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, cancelLogin, isLoggedIn } = useAuthStore();
+  const { login, prepareLogin, cancelLogin, isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
   const googleSignupInProgressRef = useRef(false);
 
@@ -65,6 +65,7 @@ const SignUp = () => {
     googleSignupInProgressRef.current = true;
     try {
       setIsLoading(true);
+      prepareLogin();
       const data = await authApi.loginWithGoogle();
       if (!data.isNewUser) {
         cancelLogin();
