@@ -105,13 +105,11 @@ const authApi = {
     try {
       await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
-      const token = await credential.user.getIdToken();
       const profileSnap = await get(ref(realtimeDb, `users/${credential.user.uid}`));
       const profile = profileSnap.exists() ? profileSnap.val() : {};
       const user = userPayload(credential.user, profile);
 
-      localStorage.setItem('trip_token', token);
-      return { token, user };
+      return { user };
     } catch (error) {
       throw { message: authErrorMessage(error, '로그인에 실패했습니다.') };
     }
@@ -142,7 +140,7 @@ const authApi = {
       await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
       const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false;
-      const token = await credential.user.getIdToken();
+      await credential.user.getIdToken();
       const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
       const profileSnap = await getOAuthProfileSnapshot(credential.user, profileRef);
       const profile = profileSnap.exists() ? profileSnap.val() : {};
@@ -162,8 +160,7 @@ const authApi = {
       }
 
       const user = userPayload(credential.user, profile);
-      localStorage.setItem('trip_token', token);
-      return { token, user, isNewUser };
+      return { user, isNewUser };
     } catch (error) {
       throw { message: authErrorMessage(error, 'Google 로그인에 실패했습니다.') };
     }

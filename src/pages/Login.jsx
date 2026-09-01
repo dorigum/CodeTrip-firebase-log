@@ -71,7 +71,6 @@ const Login = () => {
 
       // Store token and user data in Zustand + LocalStorage
       login(data.user);
-      localStorage.setItem('trip_token', data.token);
       sessionStorage.removeItem(RETURN_AFTER_LOGIN_KEY);
       if (returnPath.startsWith('/explore')) {
         shouldKeepExploreStateRef.current = true;
@@ -96,7 +95,6 @@ const Login = () => {
       prepareLogin();
       const data = await authApi.loginWithGoogle();
       login(data.user);
-      localStorage.setItem('trip_token', data.token);
       sessionStorage.removeItem(RETURN_AFTER_LOGIN_KEY);
       if (returnPath.startsWith('/explore')) {
         shouldKeepExploreStateRef.current = true;

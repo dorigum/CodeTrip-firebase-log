@@ -72,9 +72,9 @@ const SignUp = () => {
         return;
       }
       login(data.user);
-      localStorage.setItem('trip_token', data.token);
       navigate('/', { replace: true });
     } catch (err) {
+      cancelLogin();
       setError(err.message || 'Google 회원가입에 실패했습니다.');
     } finally {
       googleSignupInProgressRef.current = false;

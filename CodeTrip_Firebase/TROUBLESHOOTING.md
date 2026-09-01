@@ -319,6 +319,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인 기준**: 기존 Google 계정 가입 안내, 게시글·게시글 댓글·여행지 댓글의 좋아요 추가·새로고침·취소가 Google OAuth 계정에서 유지되어야 합니다. Rules는 Firebase에 별도 배포해야 합니다.
 - **상세 기록**: [2026-09-01 개발 로그](project-log/2026-09-01.md)의 Google 기존 계정 가입 안내와 게시판·댓글 좋아요 권한 보정 섹션 참고
 
+## 38. 좋아요 부모 트랜잭션 권한 거부와 ID 토큰 Web Storage 보관 문제
+
+- **발생일**: 2026-09-01
+- **영향 범위**: 게시글·댓글 좋아요, Google OAuth 실패 정리, Firebase ID 토큰 세션 보안
+- **요약**: `likeUserIds` 부모 경로 트랜잭션은 댓글 작성자 전용 상위 Rules와 충돌해 비작성자의 좋아요가 거부될 수 있었습니다. 또한 앱이 Firebase ID 토큰을 중복으로 `localStorage`에 보관해 XSS 발생 시 bearer 토큰 노출 범위를 넓힐 수 있었습니다.
+- **처리**: 좋아요 트랜잭션을 인증 사용자 UID의 단일 하위 키로 제한했습니다. 앱의 `trip_token` 저장·반환을 제거하고 Firebase SDK의 `browserSessionPersistence`로 인증 상태를 관리합니다. Google 가입 중 예외가 발생하면 `cancelLogin()`으로 세션을 정리합니다.
+- **확인 기준**: Rules 배포 후 타인의 게시글·게시글 댓글·여행지 댓글 좋아요가 UID별로 유지되고, 앱 코드에서 `trip_token`을 Web Storage에 기록하지 않아야 합니다.
+- **상세 기록**: [2026-09-01 개발 로그](project-log/2026-09-01.md)의 PR #30 CodeRabbit 좋아요·토큰·실패 정리 피드백 반영 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

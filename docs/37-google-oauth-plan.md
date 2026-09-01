@@ -27,7 +27,7 @@ Kakao, Naver OAuth는 Firebase Authentication 기본 제공 Provider가 아니�
 | `src/api/authApi.js` | `signup`, `login`, `forgotPassword`, `updatePassword` 중심 | `loginWithGoogle` 추가 필요 |
 | `src/store/useAuthStore.js` | `onAuthStateChanged` 기반 | OAuth 사용자도 `prepareLogin()` → Firebase 인증 → `login()` 흐름으로 연결 |
 | 사용자 프로필 | `users/{uid}`에 별도 저장 | 최초 OAuth 로그인 시에만 기본 프로필 생성, 기존 프로필은 사용자 관리 필드를 보존하며 병합 |
-| 세션 정책 | 2시간 만료 정책, 만료·로그아웃 시 `trip_token` 정리 | Google OAuth도 `browserSessionPersistence`와 기존 2시간 만료·정리 정책을 동일하게 적용 |
+| 세션 정책 | 2시간 만료 정책과 Firebase Auth 상태 사용 | Google OAuth도 `browserSessionPersistence`와 기존 2시간 만료·정리 정책을 동일하게 적용 |
 | 비밀번호 변경 | 이메일 계정 기준 | Provider 구성에 따라 이메일·비밀번호 계정만 허용하고 Google-only 계정은 명확한 안내 표시 |
 | 제출 테스트 계정 | 이메일·비밀번호 방식 | 그대로 유지 권장 |
 
@@ -113,9 +113,9 @@ Google OAuth는 별도 세션 체계를 만들지 않고 현재 이메일·비�
 | Firebase Auth persistence | `browserSessionPersistence`를 사용해 브라우저 세션 기준으로 Firebase Auth 상태를 유지합니다. |
 | 앱 로그인 완료 | Firebase 인증 성공 후 기존 `login()` 경로로 앱 사용자 상태를 반영합니다. |
 | 세션 만료 | 기존 2시간 만료 정책을 동일하게 적용합니다. |
-| `trip_token` 정리 | 로그아웃 또는 만료 시 기존 정리 로직을 그대로 적용합니다. |
+| ID 토큰 보관 | Firebase SDK가 관리하며, 앱이 bearer 토큰을 Web Storage에 별도 저장하지 않습니다. |
 
-현재 `trip_token`은 `localStorage`에 저장되므로 탭 종료만으로 자동 삭제된다고 가정하지 않습니다. 탭 종료를 세션 종료로 정의하려면 `trip_token` 저장소와 GO-V04·GO-V06 검증 기준을 함께 변경해야 합니다.
+인증 상태는 `browserSessionPersistence`로 Firebase SDK가 관리합니다. 앱의 2시간 만료 시에는 Firebase 로그아웃과 사용자 UI 상태를 함께 정리합니다.
 
 ## 프로필 upsert 기준
 
@@ -189,7 +189,7 @@ Google OAuth를 실제 구현한 뒤에만 아래처럼 표기합니다.
 | GO-V03 | 프로필 생성 | 신규 프로필은 기본값으로 생성되고 기존 프로필은 사용자 관리 필드를 보존한 채 병합됩니다. |
 | GO-V04 | 세션 만료 | `browserSessionPersistence`와 기존 2시간 세션 정책이 함께 적용됩니다. |
 | GO-V05 | 보호 라우트 접근 | AI Planner, 마이페이지, 커뮤니티 접근이 가능합니다. |
-| GO-V06 | 로그아웃 | Firebase Auth와 로컬 세션, `trip_token`이 함께 정리됩니다. |
+| GO-V06 | 로그아웃 | Firebase Auth와 앱 사용자 UI 상태가 함께 정리되고, bearer 토큰이 Web Storage에 남지 않습니다. |
 | GO-V07 | 비밀번호 변경 예외 | Google-only 계정에서는 비밀번호 변경 UI가 잘못 표시되지 않고, 복수 Provider 계정은 `password` provider 기준으로 처리됩니다. |
 | GO-V08 | 캡처 보안 | Google 계정 이메일이 이름 fallback으로 렌더링되거나 기능설명서 캡처에 노출되지 않습니다. |
 | GO-V09 | 반복 로그인 | 동일 Google 계정으로 반복 로그인해도 `created_at`, `favoriteRegions`, 사용자 지정 `name`, `profileImg`가 덮어써지지 않습니다. |

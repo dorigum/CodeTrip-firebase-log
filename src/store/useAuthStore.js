@@ -68,7 +68,6 @@ const stopSessionMonitoring = () => {
 const clearSession = () => {
   stopSessionMonitoring();
   localStorage.removeItem('trip_user');
-  localStorage.removeItem('trip_token');
   localStorage.removeItem(AUTH_EXPIRES_AT_KEY);
 };
 
