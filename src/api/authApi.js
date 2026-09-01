@@ -148,7 +148,9 @@ const authApi = {
   loginWithGoogle: async ({ skipProfileForExistingUser = false } = {}) => {
     try {
       await setPersistence(firebaseAuth, browserSessionPersistence);
-      const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+      const googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({ prompt: 'select_account' });
+      const credential = await signInWithPopup(firebaseAuth, googleProvider);
       const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false;
       if (skipProfileForExistingUser && !isNewUser) {
         return { user: userPayload(credential.user), isNewUser };
