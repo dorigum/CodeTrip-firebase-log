@@ -72,6 +72,12 @@ Google 팝업에서 `401: deleted_client` 또는 `flowName=GeneralOAuthFlow`가 
 
 OAuth Client Secret은 프론트엔드 코드나 저장소에 넣지 않습니다. 웹 팝업 로그인에는 Client ID와 Firebase의 승인 도메인 설정만 필요합니다.
 
+## OAuth 직후 Realtime Database 권한 오류 대응
+
+Google 계정이 Firebase Authentication의 사용자 목록에 생성되고 `users/{uid}` Rules가 `auth.uid === $uid`인데도 첫 로그인에서 `PERMISSION_DENIED`가 발생할 수 있습니다. OAuth 팝업 성공 직후 Realtime Database 연결이 새 ID 토큰을 아직 반영하지 않은 경우입니다.
+
+`loginWithGoogle()`은 인증 성공 직후 ID 토큰을 먼저 확보하고, 사용자 프로필을 처음 읽는 요청에서만 권한 오류가 발생하면 토큰을 강제 갱신한 뒤 한 번 재시도합니다. 재시도도 실패하면 실제 Rules·프로젝트·데이터베이스 인스턴스 설정 문제로 처리합니다. 브라우저 Console의 `Cross-Origin-Opener-Policy` 팝업 경고는 이 권한 오류와 별개이며, OAuth 인증 실패를 뜻하지 않습니다.
+
 ## 코드 구현 계획
 
 구현 및 검증은 아래 순서로 진행합니다.

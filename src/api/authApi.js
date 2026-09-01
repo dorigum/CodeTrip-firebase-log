@@ -62,6 +62,22 @@ const authErrorMessage = (error, fallback) => {
   }
 };
 
+const isPermissionDeniedError = (error) => (
+  error?.code === 'PERMISSION_DENIED' || /permission denied/i.test(error?.message || '')
+);
+
+const getOAuthProfileSnapshot = async (authUser, profileRef) => {
+  try {
+    return await get(profileRef);
+  } catch (error) {
+    if (!isPermissionDeniedError(error)) throw error;
+
+    // OAuth 직후에는 Realtime Database 연결에 새 인증 토큰이 반영되기 전일 수 있습니다.
+    await authUser.getIdToken(true);
+    return get(profileRef);
+  }
+};
+
 const authApi = {
   signup: async ({ email, password, name }) => {
     try {
@@ -124,8 +140,9 @@ const authApi = {
     try {
       await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+      const token = await credential.user.getIdToken();
       const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
-      const profileSnap = await get(profileRef);
+      const profileSnap = await getOAuthProfileSnapshot(credential.user, profileRef);
       const profile = profileSnap.exists() ? profileSnap.val() : {};
 
       if (!profileSnap.exists()) {
@@ -142,7 +159,6 @@ const authApi = {
         await update(profileRef, { authProvider: 'google', updated_at: nowIso() });
       }
 
-      const token = await credential.user.getIdToken();
       const user = userPayload(credential.user, profile);
       localStorage.setItem('trip_token', token);
       return { token, user };
