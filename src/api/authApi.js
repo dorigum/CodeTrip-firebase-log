@@ -1,11 +1,13 @@
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
+  GoogleAuthProvider,
   browserSessionPersistence,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
+  signInWithPopup,
   updatePassword as updateFirebasePassword,
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
@@ -38,7 +40,13 @@ const authErrorMessage = (error, fallback) => {
     case 'auth/weak-password':
       return '비밀번호는 최소 6자 이상이어야 합니다.';
     case 'auth/operation-not-allowed':
-      return 'Firebase 콘솔에서 이메일/비밀번호 로그인을 활성화해야 합니다.';
+      return 'Firebase 콘솔에서 해당 로그인 제공업체를 활성화해야 합니다.';
+    case 'auth/popup-closed-by-user':
+      return 'Google 로그인이 취소되었습니다.';
+    case 'auth/popup-blocked':
+      return '브라우저에서 로그인 팝업이 차단되었습니다. 팝업을 허용한 후 다시 시도해 주세요.';
+    case 'auth/account-exists-with-different-credential':
+      return '같은 이메일로 가입한 계정이 있습니다. 기존 로그인 방법을 사용해 주세요.';
     case 'auth/invalid-credential':
     case 'auth/user-not-found':
     case 'auth/wrong-password':
@@ -108,6 +116,37 @@ const authApi = {
     const file = formData.get('profileImage');
     if (!file) throw { message: 'No file uploaded' };
     return { url: await uploadProfileImage(file) };
+  },
+
+  loginWithGoogle: async () => {
+    try {
+      await setPersistence(firebaseAuth, browserSessionPersistence);
+      const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+      const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
+      const profileSnap = await get(profileRef);
+      const profile = profileSnap.exists() ? profileSnap.val() : {};
+
+      if (!profileSnap.exists()) {
+        await set(profileRef, {
+          email: credential.user.email || '',
+          name: credential.user.displayName || 'CodeTrip 사용자',
+          profileImg: credential.user.photoURL || '',
+          favoriteRegions: [],
+          created_at: nowIso(),
+          updated_at: nowIso(),
+          authProvider: 'google',
+        });
+      } else if (profile.authProvider !== 'google') {
+        await update(profileRef, { authProvider: 'google', updated_at: nowIso() });
+      }
+
+      const token = await credential.user.getIdToken();
+      const user = userPayload(credential.user, profile);
+      localStorage.setItem('trip_token', token);
+      return { token, user };
+    } catch (error) {
+      throw { message: authErrorMessage(error, 'Google 로그인에 실패했습니다.') };
+    }
   },
 
   updatePassword: async ({ currentPassword, newPassword }) => {

@@ -42,9 +42,25 @@ Kakao, Naver OAuth는 Firebase Authentication 기본 제공 Provider가 아니�
 | GO-05 | API 키 제한 확인 | Identity Toolkit API, Firebase Auth 관련 호출이 차단되지 않는지 확인 |
 | GO-06 | 개인정보 표시 확인 | Google 계정 이메일이 화면 캡처에 노출되지 않도록 UI 확인 |
 
+## 현재 프로젝트 기준값
+
+아래 값은 OAuth 구현과 검증에 사용할 공개 설정 기준값입니다. 비밀번호, API 키, OAuth Client Secret과 같은 비밀값은 문서와 저장소에 기록하지 않습니다.
+
+| 항목 | 현재 값 또는 확인 상태 | 용도 |
+|---|---|---|
+| Firebase 프로젝트 ID | `newagent-9c2a8` | Firebase Console 프로젝트 선택 기준 |
+| Hosting 서비스 도메인 | `https://dorigum-codetrip.web.app` | 배포 환경 OAuth 승인 도메인 및 최종 검증 URL |
+| 로컬 개발 도메인 | `http://localhost:5173`, `http://localhost:5180` | 개발 환경 승인 도메인 확인 및 로컬 검증 |
+| Firebase Auth 도메인 | `.env`의 `VITE_FIREBASE_AUTH_DOMAIN` 값 확인 필요 | Firebase 초기화 및 OAuth 리디렉션 기준 |
+| Functions 리전 | `asia-northeast3` | 현재 Firebase Functions 호출 리전과 일치 여부 확인 |
+| Google Provider 활성화 | Console에서 활성화 완료 | Authentication > Sign-in method에서 확인 |
+| 지원 이메일 | Console 설정 확인 필요 | Google Provider 설정에서 확인 |
+
+현재 코드에는 Google 로그인 버튼과 `GoogleAuthProvider` 기반 팝업 인증 흐름이 추가되었습니다. Provider 활성화 후에도 이메일·비밀번호 테스트 계정 로그인은 유지합니다.
+
 ## 코드 구현 계획
 
-구현이 필요해지면 아래 순서로 진행합니다.
+구현 및 검증은 아래 순서로 진행합니다.
 
 | 순서 | 작업 | 대상 |
 |---:|---|---|
@@ -162,4 +178,4 @@ Google OAuth를 실제 구현한 뒤에만 아래처럼 표기합니다.
 
 ## 현재 상태
 
-Google OAuth는 현재 `계획됨` 상태입니다. 공모전 제출 전 필수 차단 항목은 아니며, 먼저 접수 팀명, 지역 특화 여부, 테스트 계정, OpenAPI 인증키 확인, 최종 PPTX/PDF 검증을 완료합니다.
+Google OAuth는 현재 `코드 구현 완료·환경별 검증 대기` 상태입니다. 공모전 제출 전 필수 차단 항목은 아니며, 이메일·비밀번호 테스트 계정과 기존 세션 흐름을 유지한 선택 로그인으로 추가했습니다. Firebase Console의 Google Provider, 지원 이메일, 승인 도메인 설정을 확인한 뒤 로컬과 배포 환경에서 GO-V01~GO-V11 검증 기준을 실행합니다.

@@ -80,6 +80,30 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    try {
+      setIsLoading(true);
+      prepareLogin();
+      const data = await authApi.loginWithGoogle();
+      login(data.user);
+      localStorage.setItem('trip_token', data.token);
+      sessionStorage.removeItem(RETURN_AFTER_LOGIN_KEY);
+      if (returnPath.startsWith('/explore')) {
+        shouldKeepExploreStateRef.current = true;
+      } else {
+        sessionStorage.removeItem(PRESERVE_EXPLORE_STATE_KEY);
+      }
+      navigate(returnPath, { replace: true });
+    } catch (err) {
+      shouldKeepExploreStateRef.current = false;
+      cancelLogin();
+      setError(err.message || 'Google 로그인에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-160px)] flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-md glass-panel p-10 rounded-3xl shadow-2xl border border-white/50">
@@ -155,6 +179,22 @@ const Login = () => {
             {isLoading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
+
+        <div className="my-6 flex items-center gap-3 text-xs text-outline">
+          <span className="h-px flex-1 bg-outline/20" />
+          <span>OR</span>
+          <span className="h-px flex-1 bg-outline/20" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-outline/20 bg-white py-4 font-headline font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
+        >
+          <span className="font-bold text-[#4285F4]">G</span>
+          Continue with Google
+        </button>
 
         <div className="mt-8 text-center text-sm">
           <span className="text-on-secondary-container">Don't have an account? </span>
