@@ -19,7 +19,7 @@ import { uploadProfileImage } from './storageApi';
 const userPayload = (authUser, profile = {}) => ({
   id: authUser.uid,
   email: authUser.email,
-  name: profile.name || authUser.displayName || authUser.email,
+  name: profile.name || authUser.displayName || 'CodeTrip 사용자',
   profileImg: profile.profileImg || authUser.photoURL || '',
 });
 
