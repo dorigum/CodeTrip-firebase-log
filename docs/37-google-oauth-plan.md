@@ -189,7 +189,7 @@ Google OAuth를 실제 구현한 뒤에만 아래처럼 표기합니다.
 | GO-V03 | 프로필 생성 | 신규 프로필은 기본값으로 생성되고 기존 프로필은 사용자 관리 필드를 보존한 채 병합됩니다. |
 | GO-V04 | 세션 만료 | `browserSessionPersistence`와 기존 2시간 세션 정책이 함께 적용됩니다. |
 | GO-V05 | 보호 라우트 접근 | AI Planner, 마이페이지, 커뮤니티 접근이 가능합니다. |
-| GO-V06 | 로그아웃 | Firebase Auth와 앱 사용자 UI 상태가 함께 정리되고, bearer 토큰이 Web Storage에 남지 않습니다. |
+| GO-V06 | 로그아웃 | Firebase Auth와 앱 사용자 UI 상태가 함께 정리되고, 앱이 직접 관리하는 bearer 토큰이 Web Storage에 남지 않습니다. Firebase SDK의 `browserSessionPersistence` 저장소는 SDK가 관리합니다. |
 | GO-V07 | 비밀번호 변경 예외 | Google-only 계정에서는 비밀번호 변경 UI가 잘못 표시되지 않고, 복수 Provider 계정은 `password` provider 기준으로 처리됩니다. |
 | GO-V08 | 캡처 보안 | Google 계정 이메일이 이름 fallback으로 렌더링되거나 기능설명서 캡처에 노출되지 않습니다. |
 | GO-V09 | 반복 로그인 | 동일 Google 계정으로 반복 로그인해도 `created_at`, `favoriteRegions`, 사용자 지정 `name`, `profileImg`가 덮어써지지 않습니다. |
