@@ -283,6 +283,24 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **후속 확인**: Functions 로그, Google Cloud Scheduler 실행 이력, Realtime Database `tourApiUpdates/state` 생성 여부를 순서대로 확인합니다. 필요하면 스케줄 수동 실행으로 TourAPI 호출·DB 기록·Header 알림 표시 흐름을 검증합니다.
 - **상세 기록**: [2026-08-26 개발 로그](project-log/2026-08-26.md)의 TourAPI 신규 여행지 알림 운영 확인 메모 섹션 참고
 
+## 34. Google OAuth 설정 오류와 인증 직후 사용자 프로필 권한 오류
+
+- **발생일**: 2026-09-01
+- **영향 범위**: Firebase Authentication Google Provider, Google Cloud OAuth 클라이언트, Realtime Database `users/{uid}`, 로그인·회원가입 화면
+- **요약**: Google OAuth 도입 과정에서 삭제된 OAuth 클라이언트를 참조해 `401: deleted_client`가 발생했고, 새 클라이언트 생성 후 Firebase handler URI를 저장하지 않아 `400: redirect_uri_mismatch`가 이어졌습니다. 설정 완료 후에는 Google 인증 직후 Realtime Database 연결이 새 토큰을 반영하기 전에 프로필 조회를 시도하면 일시적으로 `PERMISSION_DENIED`가 발생할 수 있었습니다.
+- **처리**: Firebase Google Provider의 웹 SDK Client ID/Secret을 새 OAuth 웹 클라이언트와 일치시키고, `https://newagent-9c2a8.firebaseapp.com/__/auth/handler`를 승인된 리디렉션 URI로 등록했습니다. 클라이언트는 OAuth 성공 직후 토큰을 확보하고 권한 오류인 경우에만 토큰 강제 갱신 후 프로필 읽기를 1회 재시도합니다.
+- **확인**: Firebase Authentication 사용자 목록에서 Google 계정 생성과 Realtime Database Rules의 `auth.uid === $uid` 접근 조건을 확인했습니다. 로컬 Google 로그인·회원가입 성공, `npm run lint` 오류 없음, `npm run build` 성공을 확인했습니다.
+- **상세 기록**: [2026-09-01 개발 로그](project-log/2026-09-01.md) 참고
+
+## 35. Google 가입 성공 후 회원가입 화면에 남는 문제
+
+- **발생일**: 2026-09-01
+- **영향 범위**: Google 회원가입 화면, React Router 경로 전환, 인증 완료 UX
+- **요약**: Google 가입 성공 후 인증 Header가 표시되지만 `/signup` 화면이 유지되어 사용자가 가입 완료 상태를 직관적으로 확인하기 어려웠습니다.
+- **처리**: Google 가입 성공 시 홈으로 `replace` 이동하도록 수정하고, 이미 인증된 사용자가 회원가입 경로에 남지 않도록 `isLoggedIn` 기반 홈 리디렉션을 추가했습니다.
+- **확인 기준**: Google 가입 후 홈으로 이동하고, 인증 사용자가 직접 `/signup`에 진입해도 홈으로 이동해야 합니다.
+- **상세 기록**: [2026-09-01 개발 로그](project-log/2026-09-01.md) 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.

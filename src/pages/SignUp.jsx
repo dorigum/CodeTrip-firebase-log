@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authApi from '../api/authApi';
 import ConfirmModal from '../components/ConfirmModal';
@@ -23,8 +23,12 @@ const SignUp = () => {
   const [error, setError] = useState('');
   const [signupSuccessOpen, setSignupSuccessOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuthStore();
+  const { login, isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoggedIn) navigate('/', { replace: true });
+  }, [isLoggedIn, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +66,7 @@ const SignUp = () => {
       const data = await authApi.loginWithGoogle();
       login(data.user);
       localStorage.setItem('trip_token', data.token);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || 'Google 회원가입에 실패했습니다.');
     } finally {
