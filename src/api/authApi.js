@@ -45,6 +45,8 @@ const authErrorMessage = (error, fallback) => {
       return 'Google 로그인이 취소되었습니다.';
     case 'auth/popup-blocked':
       return '브라우저에서 로그인 팝업이 차단되었습니다. 팝업을 허용한 후 다시 시도해 주세요.';
+    case 'auth/internal-error':
+      return 'Google 로그인 설정을 확인할 수 없습니다. Firebase의 웹 SDK 설정과 OAuth 클라이언트를 확인해 주세요.';
     case 'auth/account-exists-with-different-credential':
       return '같은 이메일로 가입한 계정이 있습니다. 기존 로그인 방법을 사용해 주세요.';
     case 'auth/invalid-credential':

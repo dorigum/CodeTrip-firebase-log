@@ -1,6 +1,6 @@
 # Google OAuth 추가 계획
 
-이 문서는 CodeTrip에 Google OAuth 로그인을 추가하기 전 검토해야 할 범위와 실행 계획을 정리합니다. 현재 공모전 제출 준비 단계에서는 코드 구현보다 제출 필수값과 테스트 계정 검증이 우선이므로, 이 문서는 구현 전 계획 문서로 관리합니다.
+이 문서는 CodeTrip의 Google OAuth 로그인·회원가입 구현 범위, 설정값, 검증 절차와 장애 대응을 정리합니다.
 
 ## 결론
 
@@ -57,6 +57,20 @@ Kakao, Naver OAuth는 Firebase Authentication 기본 제공 Provider가 아니�
 | 지원 이메일 | Console 설정 확인 필요 | Google Provider 설정에서 확인 |
 
 현재 코드에는 Google 로그인 버튼과 `GoogleAuthProvider` 기반 팝업 인증 흐름이 추가되었습니다. Provider 활성화 후에도 이메일·비밀번호 테스트 계정 로그인은 유지합니다.
+
+## 401 `deleted_client` 대응
+
+Google 팝업에서 `401: deleted_client` 또는 `flowName=GeneralOAuthFlow`가 표시되면, Google이 요청에 사용된 OAuth 클라이언트 ID를 삭제된 클라이언트로 판단한 상태입니다. 일반적으로 코드나 Firebase 사용자 데이터 문제가 아니라 Firebase 프로젝트와 Google Cloud OAuth 클라이언트의 연결 상태 문제입니다.
+
+1. Firebase Console에서 `newagent-9c2a8` 프로젝트를 선택하고 `Authentication > Sign-in method > Google`로 이동합니다.
+2. Google Provider가 사용 설정되어 있는지 확인하고, 프로젝트 지원 이메일을 지정한 뒤 저장합니다.
+3. Google Cloud Console의 같은 프로젝트에서 `APIs & Services > Credentials`를 열고 OAuth 2.0 Client ID 목록을 확인합니다. 삭제됨 또는 잘못된 프로젝트에 속한 웹 클라이언트는 사용하지 않습니다.
+4. 웹 클라이언트가 없다면 `Create credentials > OAuth client ID > Web application`으로 새 클라이언트를 생성합니다. 승인된 JavaScript 원본에 `http://localhost:5173`, 실제 사용 포트인 `http://localhost:5180`, `https://dorigum-codetrip.web.app`을 등록합니다.
+5. Firebase Authentication의 Google Provider 설정에서 연결된 웹 클라이언트가 새 클라이언트인지 확인합니다. Firebase가 자동으로 관리하는 클라이언트가 보이면 삭제하거나 교체하지 말고, 새 클라이언트 생성 후 설정을 다시 저장합니다.
+6. `Authentication > Settings > Authorized domains`에 `localhost`와 `dorigum-codetrip.web.app`이 등록되어 있는지 확인합니다. 커스텀 도메인을 사용하면 해당 도메인도 추가합니다.
+7. 브라우저의 기존 Google 로그인 팝업·Firebase 세션을 닫고 시크릿 창에서 다시 테스트합니다. 여전히 같은 오류가 나면 배포된 JS가 최신 버전인지, `.env`의 `VITE_FIREBASE_PROJECT_ID`와 `VITE_FIREBASE_AUTH_DOMAIN`이 해당 Firebase 프로젝트를 가리키는지 확인합니다.
+
+OAuth Client Secret은 프론트엔드 코드나 저장소에 넣지 않습니다. 웹 팝업 로그인에는 Client ID와 Firebase의 승인 도메인 설정만 필요합니다.
 
 ## 코드 구현 계획
 
