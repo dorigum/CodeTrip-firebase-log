@@ -34,6 +34,7 @@ let sessionCheckInterval = null;
 let sessionVisibilityHandler = null;
 let sessionFocusHandler = null;
 let loginInProgress = false;
+let authStateVersion = 0;
 
 const setSessionExpiry = () => {
   const expiresAt = Date.now() + SESSION_DURATION_MS;
@@ -68,12 +69,12 @@ const stopSessionMonitoring = () => {
 const clearSession = () => {
   stopSessionMonitoring();
   localStorage.removeItem('trip_user');
-  localStorage.removeItem('trip_token');
   localStorage.removeItem(AUTH_EXPIRES_AT_KEY);
 };
 
 const expireSession = (set) => {
   if (!isSessionExpired()) return false;
+  authStateVersion += 1;
   clearSession();
   firebaseAuth.signOut().catch(() => {});
   set({ user: null, isLoggedIn: false, isLoading: false });
@@ -125,6 +126,7 @@ const useAuthStore = create((set) => ({
     if (unsubscribeAuth) return unsubscribeAuth;
 
     const stopAuthListener = onAuthStateChanged(firebaseAuth, async (authUser) => {
+      const eventVersion = ++authStateVersion;
       if (!authUser) {
         if (loginInProgress) {
           set({ user: null, isLoggedIn: false, isLoading: true });
@@ -143,10 +145,15 @@ const useAuthStore = create((set) => ({
       }
 
       try {
-        const user = persistUser(await buildAuthUser(authUser));
+        const user = await buildAuthUser(authUser);
+        if (eventVersion !== authStateVersion || firebaseAuth.currentUser?.uid !== authUser.uid) return;
+
+        persistUser(user);
         scheduleSessionExpiry(set);
         set({ user, isLoggedIn: true, isLoading: false });
       } catch {
+        if (eventVersion !== authStateVersion || firebaseAuth.currentUser?.uid !== authUser.uid) return;
+
         const fallbackUser = persistUser({
           id: authUser.uid,
           email: authUser.email,
@@ -168,12 +175,14 @@ const useAuthStore = create((set) => ({
   },
 
   prepareLogin: () => {
+    authStateVersion += 1;
     loginInProgress = true;
     setSessionExpiry();
     set({ user: null, isLoggedIn: false, isLoading: true });
   },
 
   cancelLogin: () => {
+    authStateVersion += 1;
     loginInProgress = false;
     firebaseAuth.signOut().catch(() => {});
     clearSession();
@@ -188,6 +197,7 @@ const useAuthStore = create((set) => ({
   },
 
   logout: () => {
+    authStateVersion += 1;
     loginInProgress = false;
     firebaseAuth.signOut().catch(() => {});
     clearSession();

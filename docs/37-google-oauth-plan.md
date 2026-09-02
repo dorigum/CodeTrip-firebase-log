@@ -1,6 +1,6 @@
 # Google OAuth 추가 계획
 
-이 문서는 CodeTrip에 Google OAuth 로그인을 추가하기 전 검토해야 할 범위와 실행 계획을 정리합니다. 현재 공모전 제출 준비 단계에서는 코드 구현보다 제출 필수값과 테스트 계정 검증이 우선이므로, 이 문서는 구현 전 계획 문서로 관리합니다.
+이 문서는 CodeTrip의 Google OAuth 로그인·회원가입 구현 범위, 설정값, 검증 절차와 장애 대응을 정리합니다.
 
 ## 결론
 
@@ -27,7 +27,7 @@ Kakao, Naver OAuth는 Firebase Authentication 기본 제공 Provider가 아니�
 | `src/api/authApi.js` | `signup`, `login`, `forgotPassword`, `updatePassword` 중심 | `loginWithGoogle` 추가 필요 |
 | `src/store/useAuthStore.js` | `onAuthStateChanged` 기반 | OAuth 사용자도 `prepareLogin()` → Firebase 인증 → `login()` 흐름으로 연결 |
 | 사용자 프로필 | `users/{uid}`에 별도 저장 | 최초 OAuth 로그인 시에만 기본 프로필 생성, 기존 프로필은 사용자 관리 필드를 보존하며 병합 |
-| 세션 정책 | 2시간 만료 정책, 만료·로그아웃 시 `trip_token` 정리 | Google OAuth도 `browserSessionPersistence`와 기존 2시간 만료·정리 정책을 동일하게 적용 |
+| 세션 정책 | 2시간 만료 정책과 Firebase Auth 상태 사용 | Google OAuth도 `browserSessionPersistence`와 기존 2시간 만료·정리 정책을 동일하게 적용 |
 | 비밀번호 변경 | 이메일 계정 기준 | Provider 구성에 따라 이메일·비밀번호 계정만 허용하고 Google-only 계정은 명확한 안내 표시 |
 | 제출 테스트 계정 | 이메일·비밀번호 방식 | 그대로 유지 권장 |
 
@@ -42,9 +42,45 @@ Kakao, Naver OAuth는 Firebase Authentication 기본 제공 Provider가 아니�
 | GO-05 | API 키 제한 확인 | Identity Toolkit API, Firebase Auth 관련 호출이 차단되지 않는지 확인 |
 | GO-06 | 개인정보 표시 확인 | Google 계정 이메일이 화면 캡처에 노출되지 않도록 UI 확인 |
 
+## 현재 프로젝트 기준값
+
+아래 값은 OAuth 구현과 검증에 사용할 공개 설정 기준값입니다. 비밀번호, API 키, OAuth Client Secret과 같은 비밀값은 문서와 저장소에 기록하지 않습니다.
+
+| 항목 | 현재 값 또는 확인 상태 | 용도 |
+|---|---|---|
+| Firebase 프로젝트 ID | `newagent-9c2a8` | Firebase Console 프로젝트 선택 기준 |
+| Hosting 서비스 도메인 | `https://dorigum-codetrip.web.app` | 배포 환경 OAuth 승인 도메인 및 최종 검증 URL |
+| 로컬 개발 도메인 | `http://localhost:5173`, `http://localhost:5180` | 개발 환경 승인 도메인 확인 및 로컬 검증 |
+| Firebase Auth 도메인 | `.env`의 `VITE_FIREBASE_AUTH_DOMAIN` 값 확인 필요 | Firebase 초기화 및 OAuth 리디렉션 기준 |
+| Functions 리전 | `asia-northeast3` | 현재 Firebase Functions 호출 리전과 일치 여부 확인 |
+| Google Provider 활성화 | Console에서 활성화 완료 | Authentication > Sign-in method에서 확인 |
+| 지원 이메일 | Console 설정 확인 필요 | Google Provider 설정에서 확인 |
+
+현재 코드에는 Google 로그인 버튼과 `GoogleAuthProvider` 기반 팝업 인증 흐름이 추가되었습니다. Provider 활성화 후에도 이메일·비밀번호 테스트 계정 로그인은 유지합니다.
+
+## 401 `deleted_client` 대응
+
+Google 팝업에서 `401: deleted_client` 또는 `flowName=GeneralOAuthFlow`가 표시되면, Google이 요청에 사용된 OAuth 클라이언트 ID를 삭제된 클라이언트로 판단한 상태입니다. 일반적으로 코드나 Firebase 사용자 데이터 문제가 아니라 Firebase 프로젝트와 Google Cloud OAuth 클라이언트의 연결 상태 문제입니다.
+
+1. Firebase Console에서 `newagent-9c2a8` 프로젝트를 선택하고 `Authentication > Sign-in method > Google`로 이동합니다.
+2. Google Provider가 사용 설정되어 있는지 확인하고, 프로젝트 지원 이메일을 지정한 뒤 저장합니다.
+3. Google Cloud Console의 같은 프로젝트에서 `APIs & Services > Credentials`를 열고 OAuth 2.0 Client ID 목록을 확인합니다. 삭제됨 또는 잘못된 프로젝트에 속한 웹 클라이언트는 사용하지 않습니다.
+4. 웹 클라이언트가 없다면 `Create credentials > OAuth client ID > Web application`으로 새 클라이언트를 생성합니다. 승인된 JavaScript 원본에 `http://localhost:5173`, 실제 사용 포트인 `http://localhost:5180`, `https://dorigum-codetrip.web.app`을 등록합니다.
+5. Firebase Authentication의 Google Provider 설정에서 연결된 웹 클라이언트가 새 클라이언트인지 확인합니다. Firebase가 자동으로 관리하는 클라이언트가 보이면 삭제하거나 교체하지 말고, 새 클라이언트 생성 후 설정을 다시 저장합니다.
+6. `Authentication > Settings > Authorized domains`에 `localhost`와 `dorigum-codetrip.web.app`이 등록되어 있는지 확인합니다. 커스텀 도메인을 사용하면 해당 도메인도 추가합니다.
+7. 브라우저의 기존 Google 로그인 팝업·Firebase 세션을 닫고 시크릿 창에서 다시 테스트합니다. 여전히 같은 오류가 나면 배포된 JS가 최신 버전인지, `.env`의 `VITE_FIREBASE_PROJECT_ID`와 `VITE_FIREBASE_AUTH_DOMAIN`이 해당 Firebase 프로젝트를 가리키는지 확인합니다.
+
+OAuth Client Secret은 프론트엔드 코드나 저장소에 넣지 않습니다. 웹 팝업 로그인에는 Client ID와 Firebase의 승인 도메인 설정만 필요합니다.
+
+## OAuth 직후 Realtime Database 권한 오류 대응
+
+Google 계정이 Firebase Authentication의 사용자 목록에 생성되고 `users/{uid}` Rules가 `auth.uid === $uid`인데도 첫 로그인에서 `PERMISSION_DENIED`가 발생할 수 있습니다. OAuth 팝업 성공 직후 Realtime Database 연결이 새 ID 토큰을 아직 반영하지 않은 경우입니다.
+
+`loginWithGoogle()`은 인증 성공 직후 ID 토큰을 먼저 확보하고, 사용자 프로필을 처음 읽는 요청에서만 권한 오류가 발생하면 토큰을 강제 갱신한 뒤 한 번 재시도합니다. 재시도도 실패하면 실제 Rules·프로젝트·데이터베이스 인스턴스 설정 문제로 처리합니다. 브라우저 Console의 `Cross-Origin-Opener-Policy` 팝업 경고는 이 권한 오류와 별개이며, OAuth 인증 실패를 뜻하지 않습니다.
+
 ## 코드 구현 계획
 
-구현이 필요해지면 아래 순서로 진행합니다.
+구현 및 검증은 아래 순서로 진행합니다.
 
 | 순서 | 작업 | 대상 |
 |---:|---|---|
@@ -77,9 +113,9 @@ Google OAuth는 별도 세션 체계를 만들지 않고 현재 이메일·비�
 | Firebase Auth persistence | `browserSessionPersistence`를 사용해 브라우저 세션 기준으로 Firebase Auth 상태를 유지합니다. |
 | 앱 로그인 완료 | Firebase 인증 성공 후 기존 `login()` 경로로 앱 사용자 상태를 반영합니다. |
 | 세션 만료 | 기존 2시간 만료 정책을 동일하게 적용합니다. |
-| `trip_token` 정리 | 로그아웃 또는 만료 시 기존 정리 로직을 그대로 적용합니다. |
+| ID 토큰 보관 | Firebase SDK가 관리하며, 앱이 bearer 토큰을 Web Storage에 별도 저장하지 않습니다. |
 
-현재 `trip_token`은 `localStorage`에 저장되므로 탭 종료만으로 자동 삭제된다고 가정하지 않습니다. 탭 종료를 세션 종료로 정의하려면 `trip_token` 저장소와 GO-V04·GO-V06 검증 기준을 함께 변경해야 합니다.
+인증 상태는 `browserSessionPersistence`로 Firebase SDK가 관리합니다. 앱의 2시간 만료 시에는 Firebase 로그아웃과 사용자 UI 상태를 함께 정리합니다.
 
 ## 프로필 upsert 기준
 
@@ -153,7 +189,7 @@ Google OAuth를 실제 구현한 뒤에만 아래처럼 표기합니다.
 | GO-V03 | 프로필 생성 | 신규 프로필은 기본값으로 생성되고 기존 프로필은 사용자 관리 필드를 보존한 채 병합됩니다. |
 | GO-V04 | 세션 만료 | `browserSessionPersistence`와 기존 2시간 세션 정책이 함께 적용됩니다. |
 | GO-V05 | 보호 라우트 접근 | AI Planner, 마이페이지, 커뮤니티 접근이 가능합니다. |
-| GO-V06 | 로그아웃 | Firebase Auth와 로컬 세션, `trip_token`이 함께 정리됩니다. |
+| GO-V06 | 로그아웃 | Firebase Auth와 앱 사용자 UI 상태가 함께 정리되고, 앱이 직접 관리하는 bearer 토큰이 Web Storage에 남지 않습니다. Firebase SDK의 `browserSessionPersistence` 저장소는 SDK가 관리합니다. |
 | GO-V07 | 비밀번호 변경 예외 | Google-only 계정에서는 비밀번호 변경 UI가 잘못 표시되지 않고, 복수 Provider 계정은 `password` provider 기준으로 처리됩니다. |
 | GO-V08 | 캡처 보안 | Google 계정 이메일이 이름 fallback으로 렌더링되거나 기능설명서 캡처에 노출되지 않습니다. |
 | GO-V09 | 반복 로그인 | 동일 Google 계정으로 반복 로그인해도 `created_at`, `favoriteRegions`, 사용자 지정 `name`, `profileImg`가 덮어써지지 않습니다. |
@@ -162,4 +198,4 @@ Google OAuth를 실제 구현한 뒤에만 아래처럼 표기합니다.
 
 ## 현재 상태
 
-Google OAuth는 현재 `계획됨` 상태입니다. 공모전 제출 전 필수 차단 항목은 아니며, 먼저 접수 팀명, 지역 특화 여부, 테스트 계정, OpenAPI 인증키 확인, 최종 PPTX/PDF 검증을 완료합니다.
+Google OAuth는 현재 `코드 구현 완료·환경별 검증 대기` 상태입니다. 공모전 제출 전 필수 차단 항목은 아니며, 이메일·비밀번호 테스트 계정과 기존 세션 흐름을 유지한 선택 로그인으로 추가했습니다. Firebase Console의 Google Provider, 지원 이메일, 승인 도메인 설정을 확인한 뒤 로컬과 배포 환경에서 GO-V01~GO-V11 검증 기준을 실행합니다.

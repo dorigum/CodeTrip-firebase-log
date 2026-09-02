@@ -232,20 +232,14 @@ export const deleteBoardComment = async (id) => {
 
 const toggleLike = async (path) => {
   const user = await getCurrentUser();
-  let liked = false;
-  let likes = 0;
-  await runTransaction(ref(realtimeDb, `${path}/likeUserIds`), (current = {}) => {
-    const next = { ...current };
-    if (next[user.id]) {
-      delete next[user.id];
-      liked = false;
-    } else {
-      next[user.id] = true;
-      liked = true;
-    }
-    likes = likeMapToIds(next).length;
-    return next;
+  const likeUserRef = ref(realtimeDb, `${path}/likeUserIds/${user.id}`);
+  const transaction = await runTransaction(likeUserRef, (current) => {
+    const nextLiked = !current;
+    return nextLiked ? true : null;
   });
+  const liked = transaction.snapshot.val() === true;
+  const likeSnapshot = await get(ref(realtimeDb, `${path}/likeUserIds`));
+  const likes = likeMapToIds(likeSnapshot.val()).length;
   if (path.startsWith('boardPosts/')) {
     const postId = path.split('/')[1];
     await update(ref(realtimeDb), {

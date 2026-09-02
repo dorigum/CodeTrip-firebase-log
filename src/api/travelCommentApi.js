@@ -24,20 +24,14 @@ export const getTravelComments = async (contentId) => {
 
 export const toggleTravelCommentLike = async (commentId) => {
   const user = await getCurrentUser();
-  let liked = false;
-  let likes = 0;
-  await runTransaction(ref(realtimeDb, `travelComments/${commentId}/likeUserIds`), (current = {}) => {
-    const next = { ...current };
-    if (next[user.id]) {
-      delete next[user.id];
-      liked = false;
-    } else {
-      next[user.id] = true;
-      liked = true;
-    }
-    likes = likeMapToIds(next).length;
-    return next;
+  const likeUserRef = ref(realtimeDb, `travelComments/${commentId}/likeUserIds/${user.id}`);
+  const transaction = await runTransaction(likeUserRef, (current) => {
+    const nextLiked = !current;
+    return nextLiked ? true : null;
   });
+  const liked = transaction.snapshot.val() === true;
+  const likeSnapshot = await get(ref(realtimeDb, `travelComments/${commentId}/likeUserIds`));
+  const likes = likeMapToIds(likeSnapshot.val()).length;
   return { liked, likes };
 };
 
