@@ -8,10 +8,7 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 
 프로젝트 헌장, 요구사항, 사용자 흐름, 아키텍처, 데이터·보안, 품질 계획, WBS, 운영, KPI, AI 하네스, 공모전 제출 문서는 [통합 프로젝트 문서](docs/README.md)에서 관리합니다.
 
-최근 작업 기록은 다음 문서에서 확인합니다.
-
-- [2026-08-25 작업 로그](CodeTrip_Firebase/project-log/2026-08-25.md)
-- [2026-08-16 작업 로그](CodeTrip_Firebase/project-log/2026-08-16.md)
+최근 작업 기록은 [전체 작업 로그](CodeTrip_Firebase/project-log/)에서 확인합니다.
 - [검증 보고서](docs/13-validation-report.md)
 - [기술 부채 등록부](docs/12-technical-debt-register.md)
 - [백로그](docs/14-backlog.md)
