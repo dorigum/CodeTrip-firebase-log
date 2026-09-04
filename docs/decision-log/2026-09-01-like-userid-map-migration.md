@@ -16,18 +16,20 @@
 
 ## 결정
 
-- 좋아요는 `likeUserIds/{uid}` 경로에서만 Realtime Database 트랜잭션으로 토글합니다.
+- 좋아요는 콘텐츠와 분리된 `likes/{콘텐츠유형}/{콘텐츠ID}/{uid}` 경로에서만 Realtime Database 트랜잭션으로 토글합니다.
 - 저장 형식은 `{ "사용자 UID": true }`인 UID Boolean 맵으로 통일합니다.
-- Realtime Database Rules는 인증된 사용자가 자신의 `likeUserIds/{uid}` 키만 변경하도록 제한합니다. 부모 경로 전체에는 일반 사용자 쓰기 권한을 부여하지 않습니다.
-- 레거시 배열·숫자 키 데이터는 Admin SDK 스크립트 `functions/scripts/migrateLegacyLikeUserIds.js`로 변환합니다. 기본 실행은 dry-run이며, 검토 후 `--commit`을 명시했을 때만 실제 변경합니다.
-- 실제 마이그레이션은 경로별 트랜잭션으로 수행해 동시 좋아요 변경이 발생하면 최신 값으로 재시도합니다.
+- Realtime Database Rules는 인증된 사용자가 분리된 좋아요 경로에서 자신의 UID 키만 변경하도록 제한합니다. 콘텐츠 경로의 기존 `likeUserIds`는 새 쓰기를 검증 단계에서 차단해 상위 콘텐츠 `.write` 권한으로도 변경할 수 없게 합니다.
+- 레거시 배열·숫자 키·UID 맵 데이터는 Admin SDK 스크립트 `functions/scripts/migrateLegacyLikeUserIds.js`로 분리 경로에 이전합니다. 기본 실행은 dry-run이며, 검토 후 `--commit`을 명시했을 때만 실제 변경합니다.
+- 실제 마이그레이션은 대상 분리 경로의 트랜잭션으로 수행해 새 좋아요 키를 보존하고, 성공한 원본 `likeUserIds`만 제거합니다.
 
 ## 영향
 
 - 게시글, 게시글 댓글, 여행지 댓글 모두 같은 권한 모델과 데이터 형식을 사용합니다.
-- 사용자는 타인의 좋아요 키를 변경할 수 없고, 자신의 좋아요만 추가·취소할 수 있습니다.
+- 사용자는 타인의 좋아요 키를 변경할 수 없고, 자신의 좋아요만 추가·취소할 수 있습니다. 콘텐츠 작성자 권한과 좋아요 권한은 서로 다른 트리 경로에 있습니다.
 - 운영 데이터에 레거시 형식이 있으면 배포 전 또는 배포 직후 dry-run 결과를 검토해야 합니다. 2026-09-01 dry-run에서는 변환 대상이 0건으로 확인됐습니다.
 - Rules 변경은 `firebase deploy --only database`로 별도 배포해야 효력이 적용됩니다.
+- Firebase Emulator 회귀 테스트에서 콘텐츠 작성자의 레거시 좋아요 맵 변경과 타 사용자 분리 좋아요 키 변경은 거부되고, 일반 사용자의 자기 키 토글은 허용돼야 합니다.
+- 운영 마이그레이션은 `database` Rules 배포 → dry-run → `--commit` 이전 → Hosting 배포 순서로 진행합니다. Rules 배포 직후부터 Hosting 배포 전까지는 기존 클라이언트의 좋아요 요청이 잠시 거부될 수 있으므로 짧은 점검 시간에 수행합니다.
 
 ## 재검토 조건
 

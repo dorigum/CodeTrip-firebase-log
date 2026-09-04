@@ -10,7 +10,17 @@ import {
   snapshotToArray,
 } from './firebaseHelpers';
 
-const getAllPosts = async () => snapshotToArray(await get(ref(realtimeDb, 'boardPosts')));
+const getAllPosts = async () => {
+  const [postsSnapshot, likesSnapshot] = await Promise.all([
+    get(ref(realtimeDb, 'boardPosts')),
+    get(ref(realtimeDb, 'likes/boardPosts')),
+  ]);
+  const likesByPostId = likesSnapshot.val() || {};
+  return snapshotToArray(postsSnapshot).map((post) => ({
+    ...post,
+    likeUserIds: likesByPostId[post.id] ?? post.likeUserIds,
+  }));
+};
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
 const boardCommentIndexPath = (postId, commentId = '') =>
   `boardCommentsByPost/${postId}${commentId ? `/${commentId}` : ''}`;
@@ -30,15 +40,17 @@ const getBoardCommentCounts = async () => {
 
 const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
   if (!ids.length) return [];
-  const [postSnaps, counts] = await Promise.all([
+  const [postSnaps, counts, likesSnapshot] = await Promise.all([
     Promise.all(ids.map((id) => get(ref(realtimeDb, `boardPosts/${id}`)).then((snap) => ({ id, snap })))),
     commentCounts ? Promise.resolve(commentCounts) : getBoardCommentCounts(),
+    get(ref(realtimeDb, 'likes/boardPosts')),
   ]);
+  const likesByPostId = likesSnapshot.val() || {};
   return sortPosts(
     postSnaps
       .filter(({ snap }) => snap.exists())
       .map(({ id, snap }) => ({
-        ...normalizePost({ id, ...snap.val() }, currentUserId),
+        ...normalizePost({ id, ...snap.val(), likeUserIds: likesByPostId[id] ?? snap.val().likeUserIds }, currentUserId),
         comment_count: counts[id] || 0,
       })),
     'created_at'
@@ -85,13 +97,16 @@ export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', 
 export const getBoardPost = async (id) => {
   const currentUserId = getStoredUser()?.id || null;
   const postRef = ref(realtimeDb, `boardPosts/${id}`);
-  const snap = await get(postRef);
+  const [snap, likesSnapshot] = await Promise.all([
+    get(postRef),
+    get(ref(realtimeDb, `likes/boardPosts/${id}`)),
+  ]);
   if (!snap.exists()) throw { message: '게시글을 찾을 수 없습니다.' };
 
   const post = snap.val();
   const nextViewCount = Number(post.view_count || 0) + 1;
   await update(postRef, { view_count: nextViewCount });
-  return normalizePost({ id, ...post, view_count: nextViewCount }, currentUserId);
+  return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: nextViewCount }, currentUserId);
 };
 
 export const createBoardPost = async ({ title, content, tags = [] }) => {
@@ -105,7 +120,6 @@ export const createBoardPost = async ({ title, content, tags = [] }) => {
     content,
     tags: tags.map((tag, index) => ({ id: `${Date.now()}-${index}`, ...tag })),
     view_count: 0,
-    likeUserIds: {},
     created_at,
     updated_at: created_at,
   };
@@ -163,12 +177,14 @@ export const getBoardComments = async (postId) => {
   const indexSnap = await get(ref(realtimeDb, boardCommentIndexPath(postId)));
   const ids = Object.keys(indexSnap.val() || {});
   if (!ids.length) return [];
-  const commentSnaps = await Promise.all(
-    ids.map((id) => get(ref(realtimeDb, `boardComments/${id}`)).then((snap) => ({ id, snap })))
-  );
+  const [commentSnaps, likesSnapshot] = await Promise.all([
+    Promise.all(ids.map((id) => get(ref(realtimeDb, `boardComments/${id}`)).then((snap) => ({ id, snap })))),
+    get(ref(realtimeDb, 'likes/boardComments')),
+  ]);
+  const likesByCommentId = likesSnapshot.val() || {};
   return commentSnaps
     .filter(({ snap }) => snap.exists())
-    .map(({ id, snap }) => normalizeComment({ id, ...snap.val() }, currentUserId))
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, currentUserId))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
@@ -184,7 +200,6 @@ export const createBoardComment = async (postId, body) => {
     user_id: user.id,
     nickname: user.name,
     body,
-    likeUserIds: {},
     created_at,
     updated_at: created_at,
   };
@@ -230,18 +245,19 @@ export const deleteBoardComment = async (id) => {
   });
 };
 
-const toggleLike = async (path) => {
+const toggleLike = async (likeType, id) => {
   const user = await getCurrentUser();
-  const likeUserRef = ref(realtimeDb, `${path}/likeUserIds/${user.id}`);
+  const likePath = `likes/${likeType}/${id}`;
+  const likeUserRef = ref(realtimeDb, `${likePath}/${user.id}`);
   const transaction = await runTransaction(likeUserRef, (current) => {
     const nextLiked = !current;
     return nextLiked ? true : null;
   });
   const liked = transaction.snapshot.val() === true;
-  const likeSnapshot = await get(ref(realtimeDb, `${path}/likeUserIds`));
+  const likeSnapshot = await get(ref(realtimeDb, likePath));
   const likes = likeMapToIds(likeSnapshot.val()).length;
-  if (path.startsWith('boardPosts/')) {
-    const postId = path.split('/')[1];
+  if (likeType === 'boardPosts') {
+    const postId = id;
     await update(ref(realtimeDb), {
       [userActivityPath(user.id, `likedPosts/${postId}`)]: liked
         ? { post_id: postId, created_at: nowIso() }
@@ -251,8 +267,8 @@ const toggleLike = async (path) => {
   return { liked, likes };
 };
 
-export const toggleBoardPostLike = async (id) => toggleLike(`boardPosts/${id}`);
-export const toggleBoardCommentLike = async (id) => toggleLike(`boardComments/${id}`);
+export const toggleBoardPostLike = async (id) => toggleLike('boardPosts', id);
+export const toggleBoardCommentLike = async (id) => toggleLike('boardComments', id);
 
 export const getMyBoardPosts = async () => {
   const user = await getCurrentUser();
@@ -272,13 +288,15 @@ export const getMyBoardComments = async () => {
   if (!ids.length) return [];
   const activitySnap = await get(ref(realtimeDb, userActivityPath(user.id, 'boardComments')));
   const activityMap = activitySnap.val() || {};
-  const commentSnaps = await Promise.all(
-    ids.map((id) => get(ref(realtimeDb, `boardComments/${id}`)).then((snap) => ({ id, snap })))
-  );
+  const [commentSnaps, likesSnapshot] = await Promise.all([
+    Promise.all(ids.map((id) => get(ref(realtimeDb, `boardComments/${id}`)).then((snap) => ({ id, snap })))),
+    get(ref(realtimeDb, 'likes/boardComments')),
+  ]);
+  const likesByCommentId = likesSnapshot.val() || {};
   return commentSnaps
     .filter(({ snap }) => snap.exists())
     .map(({ id, snap }) => ({
-      ...normalizeComment({ id, ...snap.val() }, user.id),
+      ...normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, user.id),
       post_title: activityMap[id]?.post_title || '',
     }))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -288,11 +306,13 @@ export const getMyTravelComments = async () => {
   const user = await getCurrentUser();
   const ids = await getActivityIds(user.id, 'travelComments');
   if (!ids.length) return [];
-  const commentSnaps = await Promise.all(
-    ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))
-  );
+  const [commentSnaps, likesSnapshot] = await Promise.all([
+    Promise.all(ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))),
+    get(ref(realtimeDb, 'likes/travelComments')),
+  ]);
+  const likesByCommentId = likesSnapshot.val() || {};
   return commentSnaps
     .filter(({ snap }) => snap.exists())
-    .map(({ id, snap }) => normalizeComment({ id, ...snap.val() }, user.id))
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, user.id))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 };

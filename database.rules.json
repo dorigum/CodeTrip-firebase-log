@@ -61,6 +61,7 @@
           ".write": "auth != null && data.exists() && newData.isNumber() && newData.val() >= data.val()"
         },
         "likeUserIds": {
+          ".validate": "!newData.exists()",
           "$uid": {
             ".write": "auth != null && auth.uid === $uid"
           }
@@ -70,8 +71,9 @@
     "boardComments": {
       ".read": true,
       "$commentId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+        ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
         "likeUserIds": {
+          ".validate": "!newData.exists()",
           "$uid": {
             ".write": "auth != null && auth.uid === $uid"
           }
@@ -83,7 +85,13 @@
       "$postId": {
         ".write": "auth != null && !newData.exists() && root.child('boardPosts').child($postId).child('user_id').val() === auth.uid",
         "$commentId": {
-          ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+          ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
+          "likeUserIds": {
+            ".validate": "!newData.exists()",
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid"
+            }
+          },
           ".validate": "!newData.exists() || (newData.hasChildren(['comment_id', 'user_id', 'created_at']) && newData.child('comment_id').val() === $commentId)"
         }
       }
@@ -91,8 +99,9 @@
     "travelComments": {
       ".read": true,
       "$commentId": {
-        ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+        ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
         "likeUserIds": {
+          ".validate": "!newData.exists()",
           "$uid": {
             ".write": "auth != null && auth.uid === $uid"
           }
@@ -103,8 +112,41 @@
       ".read": true,
       "$contentId": {
         "$commentId": {
-          ".write": "auth != null && (!data.exists() || data.child('user_id').val() === auth.uid || newData.child('user_id').val() === auth.uid)",
+          ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
+          "likeUserIds": {
+            ".validate": "!newData.exists()",
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid"
+            }
+          },
           ".validate": "!newData.exists() || (newData.hasChildren(['comment_id', 'user_id', 'created_at']) && newData.child('comment_id').val() === $commentId)"
+        }
+      }
+    },
+    "likes": {
+      ".read": true,
+      "boardPosts": {
+        "$postId": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $uid !== '__migrated' && root.child('boardPosts').child($postId).exists()",
+            ".validate": "!newData.exists() || newData.val() === true"
+          }
+        }
+      },
+      "boardComments": {
+        "$commentId": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $uid !== '__migrated' && root.child('boardComments').child($commentId).exists()",
+            ".validate": "!newData.exists() || newData.val() === true"
+          }
+        }
+      },
+      "travelComments": {
+        "$commentId": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $uid !== '__migrated' && root.child('travelComments').child($commentId).exists()",
+            ".validate": "!newData.exists() || newData.val() === true"
+          }
         }
       }
     },

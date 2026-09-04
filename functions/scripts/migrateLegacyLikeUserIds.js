@@ -10,59 +10,71 @@ initializeApp({
   databaseURL: process.env.FIREBASE_DATABASE_URL || `https://${projectId}.firebaseio.com`,
 });
 
-const ROOTS = ['boardPosts', 'boardComments', 'travelComments'];
+const SOURCES = [
+  { sourceRoot: 'boardPosts', targetRoot: 'boardPosts' },
+  { sourceRoot: 'boardComments', targetRoot: 'boardComments' },
+  { sourceRoot: 'travelComments', targetRoot: 'travelComments' },
+];
 const commit = process.argv.includes('--commit');
 
 const toUidMap = (likeUserIds) => {
   if (Array.isArray(likeUserIds)) {
     const ids = likeUserIds.filter((id) => typeof id === 'string' && id);
-    return ids.length ? Object.fromEntries(ids.map((id) => [id, true])) : {};
+    return Object.fromEntries(ids.map((id) => [id, true]));
   }
 
   if (!likeUserIds || typeof likeUserIds !== 'object') return null;
 
   const next = {};
-  let migrated = false;
   for (const [key, value] of Object.entries(likeUserIds)) {
     if (/^\d+$/.test(key) && typeof value === 'string' && value) {
       next[value] = true;
-      migrated = true;
       continue;
     }
 
     if (value === true) {
       next[key] = true;
-      continue;
     }
-
-    return null;
   }
 
-  return migrated ? next : null;
+  return next;
 };
 
 const main = async () => {
   const db = getDatabase();
-  const paths = [];
+  const records = [];
 
-  for (const root of ROOTS) {
-    const snapshot = await db.ref(root).get();
+  for (const { sourceRoot, targetRoot } of SOURCES) {
+    const snapshot = await db.ref(sourceRoot).get();
     snapshot.forEach((child) => {
       const next = toUidMap(child.val()?.likeUserIds);
-      if (next) paths.push(`${root}/${child.key}/likeUserIds`);
+      if (next) {
+        records.push({
+          sourcePath: `${sourceRoot}/${child.key}/likeUserIds`,
+          targetPath: `likes/${targetRoot}/${child.key}`,
+          likes: next,
+        });
+      }
     });
   }
 
-  console.log(`${commit ? 'Migrating' : 'Dry run:'} ${paths.length} legacy likeUserIds record(s).`);
-  paths.forEach((path) => console.log(`- ${path}`));
+  console.log(`${commit ? 'Migrating' : 'Dry run:'} ${records.length} legacy likeUserIds record(s).`);
+  records.forEach(({ sourcePath, targetPath }) => console.log(`- ${sourcePath} -> ${targetPath}`));
 
-  if (commit && paths.length) {
+  if (commit && records.length) {
     let migratedCount = 0;
-    for (const path of paths) {
-      const result = await db.ref(path).transaction((current) => toUidMap(current) ?? undefined);
-      if (result.committed) migratedCount += 1;
+    for (const { sourcePath, targetPath, likes } of records) {
+      const result = await db.ref(targetPath).transaction((current) => ({
+        ...(toUidMap(current) || {}),
+        ...likes,
+        __migrated: true,
+      }));
+      if (result.committed) {
+        await db.ref(sourcePath).remove();
+        migratedCount += 1;
+      }
     }
-    console.log(`Migration completed: ${migratedCount} record(s) converted.`);
+    console.log(`Migration completed: ${migratedCount} record(s) moved to likes/*.`);
   }
 };
 
