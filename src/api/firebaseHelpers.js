@@ -57,7 +57,7 @@ export const likeMapToIds = (likes) => {
   if (Array.isArray(likes)) return likes;
   if (!likes || typeof likes !== 'object') return [];
   return Object.entries(likes)
-    .filter(([, liked]) => !!liked)
+    .filter(([userId, liked]) => userId !== '__migrated' && !!liked)
     .map(([userId]) => userId);
 };
 

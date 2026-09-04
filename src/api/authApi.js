@@ -188,6 +188,10 @@ const authApi = {
   updatePassword: async ({ currentPassword, newPassword }) => {
     const authUser = firebaseAuth.currentUser;
     if (!authUser?.email) throw { message: '로그인이 필요합니다.' };
+    const hasPasswordProvider = authUser.providerData.some(({ providerId }) => providerId === 'password');
+    if (!hasPasswordProvider) {
+      throw { message: 'Google 계정의 비밀번호는 Google 계정에서 관리합니다.' };
+    }
 
     const credential = EmailAuthProvider.credential(authUser.email, currentPassword);
     await reauthenticateWithCredential(authUser, credential);
