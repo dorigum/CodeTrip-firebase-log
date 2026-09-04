@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import authApi from '../api/authApi';
+import { firebaseAuth } from '../firebase';
 import { DEFAULT_REGIONS } from '../constants/regions';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
@@ -72,6 +73,7 @@ const Settings = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
   const [pwdMessage, setPwdMessage] = useState({ type: '', text: '' });
+  const canChangePassword = firebaseAuth.currentUser?.providerData.some(({ providerId }) => providerId === 'password') ?? false;
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -346,6 +348,7 @@ const Settings = () => {
             <span className="break-all font-mono text-[10px] uppercase tracking-widest text-outline sm:text-right">// security_credentials</span>
           </div>
 
+          {canChangePassword ? (
           <form onSubmit={handleUpdatePassword} className="space-y-6 p-5 sm:p-8">
             <div className="space-y-1.5 max-w-md">
               <label className="text-[11px] font-label text-secondary uppercase font-bold tracking-wider ml-1">Current_Password</label>
@@ -407,6 +410,17 @@ const Settings = () => {
               </button>
             </div>
           </form>
+          ) : (
+            <div className="space-y-3 p-5 sm:p-8">
+              <div className="flex items-start gap-3 rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm text-on-surface">
+                <span className="material-symbols-outlined mt-0.5 text-primary">account_circle</span>
+                <div className="space-y-1">
+                  <p className="font-bold">Google 계정으로 로그인되어 있습니다.</p>
+                  <p className="leading-relaxed text-on-secondary-container">비밀번호는 CodeTrip에서 변경할 수 없으며, Google 계정의 보안 설정에서 관리할 수 있습니다.</p>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
       </div>

@@ -14,7 +14,7 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 
 ## 📅 날짜별 개발 기록
 
-- [2026-09-04](project-log/2026-09-04.md): Firebase 인증 세션 복원 전 홈이 비회원 화면을 먼저 표시하는 깜빡임을 보정하고, 인증 초기화 중 홈 데이터·위시리스트 요청을 보류했습니다.
+- [2026-09-04](project-log/2026-09-04.md): Firebase 인증 세션 복원 전 홈이 비회원 화면을 먼저 표시하는 깜빡임을 보정하고, 인증 초기화 중 홈 데이터·위시리스트 요청을 보류했습니다. Google-only 계정에는 비밀번호 변경 폼 대신 Google 계정 관리 안내를 표시하고 API에서도 변경 요청을 차단했습니다.
 - [2026-09-01](project-log/2026-09-01.md): Google OAuth 로그인·회원가입을 도입하고 Firebase·Google Cloud OAuth 설정의 `deleted_client`, `redirect_uri_mismatch`, 인증 직후 Realtime Database 권한 지연 문제를 보완했습니다. 기존 Google 계정 재가입 안내와 인증 상태 경쟁을 정리했으며, 게시글·댓글 좋아요를 사용자 UID별 원자 트랜잭션으로 전환하고 레거시 좋아요 데이터 마이그레이션 및 동시성 보호 절차를 추가했습니다.
 - [2026-08-25](project-log/2026-08-25.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 주소 보강 상태와 Info 모바일 UI를 정리하고, TourAPI 신규 여행지 감지 알림을 Firebase Scheduled Function과 공용 업데이트 피드 구조로 추가했습니다. 이후 PR #29 CodeRabbit 피드백에 따라 TourAPI 최신 등록순 조회, 응답 구조 검증, 숨김 알림 필터 순서, 관련 트러블슈팅 색인을 보강했습니다. 프로필 이미지와 게시글 첨부 이미지는 data URL 저장 방식에서 Firebase Storage 업로드 후 다운로드 URL 저장 방식으로 전환했습니다.
 - [2026-08-23](project-log/2026-08-23.md): PR #28 CodeRabbit 피드백 대응으로 AI 플래너 폴더 일정 정규화와 비동기 폴더 선택 최신성 검증을 보완하고, 공모전 1차 제출 자료 누락 여부와 남은 제출 차단 항목을 재점검
