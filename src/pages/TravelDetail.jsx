@@ -100,6 +100,13 @@ const splitFestivalOverview = (value) => {
     .filter(({ text: sectionText }) => sectionText);
 };
 
+const summarizeFestivalOverview = (sections) => {
+  const description = sections.find((section) => section.title === '축제 설명')?.text
+    || sections.map((section) => section.text).join(' ');
+  const summary = description.split(/(?<=[.!?])\s+/).filter(Boolean).slice(0, 2).join(' ');
+  return summary.length > 260 ? `${summary.slice(0, 257).trim()}...` : summary;
+};
+
 const renderTextWithLinks = (value) => {
   const text = String(value || '');
   const parts = [];
@@ -593,8 +600,9 @@ const TravelDetail = () => {
     : [];
   const hasFestivalDetailIntro = String(common?.contenttypeid) === '15'
     && infoItems.some((item) => /(행사|축제)\s*소개/.test(stripHtml(item.infoname)));
-  const visibleFestivalOverviewSections = hasFestivalDetailIntro
-    ? festivalOverviewSections.filter((section) => section.title !== '축제 설명')
+  const festivalOverviewSummary = summarizeFestivalOverview(festivalOverviewSections);
+  const visibleFestivalOverviewSections = hasFestivalDetailIntro && festivalOverviewSummary
+    ? [{ title: '축제 설명', text: festivalOverviewSummary }]
     : festivalOverviewSections;
   const shouldShowNodeDescription = common.overview
     && (String(common?.contenttypeid) !== '15' || visibleFestivalOverviewSections.length > 0);
