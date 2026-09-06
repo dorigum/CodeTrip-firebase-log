@@ -8,6 +8,7 @@ const ConfirmModal = ({
   cancelText = '취소',
   icon = 'terminal',
   tone = 'danger',
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   onClose,
@@ -114,7 +115,8 @@ const ConfirmModal = ({
             type="button"
             onClick={onConfirm}
             ref={confirmButtonRef}
-            className={`h-10 rounded-lg px-4 text-xs font-black uppercase tracking-wider transition-colors ${confirmClass}`}
+            disabled={confirmDisabled}
+            className={`h-10 rounded-lg px-4 text-xs font-black uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${confirmClass}`}
           >
             {confirmText}
           </button>
