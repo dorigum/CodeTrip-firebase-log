@@ -37,14 +37,18 @@ const stripHtml = (value) => String(value || '')
   .trim();
 
 const formatFestivalInfoText = (value) => stripHtml(value)
+  .replace(/\s*[-–—]\s*(?=(?:하절기|동절기|춘계|하계|추계|동계|상반기|하반기|평일|주말|매일|연중|매월|\d{1,2}월(?:\s*[~∼-]\s*\d{1,2}월)?|[월화수목금토일](?:\s*[~∼-]\s*[월화수목금토일])?요일))/g, '\n- ')
   .replace(/\s*(※)/g, '\n$1')
   .trim();
 
 // URL 뒤에 붙는 한국어 조사·괄호는 링크 대상에서 제외합니다.
-const URL_PATTERN = /https?:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]*/gi;
+const URL_PATTERN = /https?:\/\/[^\s<>"']+/giu;
 
 const toHttpUrl = (value) => {
-  const url = String(value || '').replace(/[.,!?;:)}\]]+$/, '');
+  let url = String(value || '').trim();
+  // "주소)를"처럼 문장 안에 붙은 한국어 조사는 URL 밖 텍스트로 남깁니다.
+  url = url.replace(/(?:을|를|은|는|이|가|와|과|에|의|로|으로|도|만|까지|부터|에서|에게|께|랑|하고)$/, '');
+  url = url.replace(/[.,!?;:)}\]]+$/, '');
   try {
     const parsedUrl = new URL(url);
     return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:' ? url : '';

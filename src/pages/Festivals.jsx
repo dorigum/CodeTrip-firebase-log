@@ -392,6 +392,17 @@ const Festivals = () => {
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-10 pb-6">
           <button
+            type="button"
+            aria-label="5페이지 이전으로 이동"
+            onClick={() => handlePageChange(Math.max(1, page - 5))}
+            disabled={page === 1}
+            className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">keyboard_double_arrow_left</span>
+          </button>
+          <button
+            type="button"
+            aria-label="이전 페이지로 이동"
             onClick={() => handlePageChange(Math.max(1, page - 1))}
             disabled={page === 1}
             className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -422,11 +433,22 @@ const Festivals = () => {
           </div>
 
           <button
+            type="button"
+            aria-label="다음 페이지로 이동"
             onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
             className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
           >
             <span className="material-symbols-outlined text-lg">chevron_right</span>
+          </button>
+          <button
+            type="button"
+            aria-label="5페이지 다음으로 이동"
+            onClick={() => handlePageChange(Math.min(totalPages, page + 5))}
+            disabled={page === totalPages}
+            className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">keyboard_double_arrow_right</span>
           </button>
         </div>
       )}

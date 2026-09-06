@@ -472,6 +472,17 @@ const Explore = () => {
               {totalPages > 1 && (
                 <div className="mt-12 flex items-center justify-center gap-2 pb-6">
                   <button
+                    type="button"
+                    aria-label="5페이지 이전으로 이동"
+                    onClick={() => changePage(Math.max(1, currentPage - 5))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">keyboard_double_arrow_left</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="이전 페이지로 이동"
                     onClick={() => changePage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                     className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -504,11 +515,22 @@ const Explore = () => {
                   </div>
 
                   <button
+                    type="button"
+                    aria-label="다음 페이지로 이동"
                     onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                     className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
                     <span className="material-symbols-outlined text-lg">chevron_right</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="5페이지 다음으로 이동"
+                    onClick={() => changePage(Math.min(totalPages, currentPage + 5))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-outline-variant/20 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">keyboard_double_arrow_right</span>
                   </button>
                 </div>
               )}
