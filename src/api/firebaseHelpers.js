@@ -1,5 +1,6 @@
 import { onAuthStateChanged } from 'firebase/auth';
-import { firebaseAuth } from '../firebase';
+import { get, ref } from 'firebase/database';
+import { firebaseAuth, realtimeDb } from '../firebase';
 
 export const nowIso = () => new Date().toISOString();
 
@@ -59,6 +60,14 @@ export const likeMapToIds = (likes) => {
   return Object.entries(likes)
     .filter(([userId, liked]) => userId !== '__migrated' && !!liked)
     .map(([userId]) => userId);
+};
+
+export const getLikesByIds = async (likeType, ids) => {
+  const uniqueIds = [...new Set(ids)];
+  const snapshots = await Promise.all(
+    uniqueIds.map((id) => get(ref(realtimeDb, `likes/${likeType}/${id}`)).then((snapshot) => [id, snapshot.val()]))
+  );
+  return Object.fromEntries(snapshots);
 };
 
 export const normalizePost = (post, currentUserId = null) => {

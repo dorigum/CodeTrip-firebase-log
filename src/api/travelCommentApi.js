@@ -1,6 +1,6 @@
 import { get, push, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
-import { getCurrentUser, getStoredUser, likeMapToIds, normalizeComment, nowIso } from './firebaseHelpers';
+import { getCurrentUser, getLikesByIds, getStoredUser, likeMapToIds, normalizeComment, nowIso } from './firebaseHelpers';
 
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
 const travelCommentIndexPath = (contentId, commentId = '') =>
@@ -12,11 +12,10 @@ export const getTravelComments = async (contentId) => {
   const ids = Object.keys(indexSnap.val() || {});
   if (!ids.length) return [];
 
-  const [commentSnaps, likesSnapshot] = await Promise.all([
+  const [commentSnaps, likesByCommentId] = await Promise.all([
     Promise.all(ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))),
-    get(ref(realtimeDb, 'likes/travelComments')),
+    getLikesByIds('travelComments', ids),
   ]);
-  const likesByCommentId = likesSnapshot.val() || {};
 
   return commentSnaps
     .filter(({ snap }) => snap.exists())

@@ -62,3 +62,49 @@ test('레거시 좋아요 맵을 유지한 콘텐츠의 일반 수정은 허용�
   const ownerDatabase = testEnv.authenticatedContext(ownerId).database();
   await assertSucceeds(update(ref(ownerDatabase, 'boardPosts/legacy-post'), { title: '수정된 게시글' }));
 });
+
+test('게시글 댓글과 인덱스를 같은 다중 경로 쓰기로 생성할 수 있다', async () => {
+  const ownerDatabase = testEnv.authenticatedContext(ownerId).database();
+  const commentId = 'board-comment-created-with-index';
+
+  await assertSucceeds(update(ref(ownerDatabase), {
+    [`boardComments/${commentId}`]: { comment_id: commentId, post_id: 'post-1', user_id: ownerId, created_at: 1 },
+    [`boardCommentsByPost/post-1/${commentId}`]: { comment_id: commentId, user_id: ownerId, created_at: 1 },
+  }));
+});
+
+test('게시글 댓글 인덱스는 다른 작성자의 댓글이나 다른 게시글을 가리킬 수 없다', async () => {
+  const otherDatabase = testEnv.authenticatedContext(otherId).database();
+  const forgedCommentId = 'forged-board-comment';
+
+  await assertFails(set(ref(otherDatabase, 'boardCommentsByPost/post-1/comment-1'), {
+    comment_id: 'comment-1', user_id: otherId, created_at: 1,
+  }));
+  await assertFails(update(ref(otherDatabase), {
+    [`boardComments/${forgedCommentId}`]: { comment_id: forgedCommentId, post_id: 'different-post', user_id: otherId, created_at: 1 },
+    [`boardCommentsByPost/post-1/${forgedCommentId}`]: { comment_id: forgedCommentId, user_id: otherId, created_at: 1 },
+  }));
+});
+
+test('여행지 댓글과 인덱스를 같은 다중 경로 쓰기로 생성할 수 있다', async () => {
+  const ownerDatabase = testEnv.authenticatedContext(ownerId).database();
+  const commentId = 'travel-comment-created-with-index';
+
+  await assertSucceeds(update(ref(ownerDatabase), {
+    [`travelComments/${commentId}`]: { comment_id: commentId, content_id: 'content-1', user_id: ownerId, created_at: 1 },
+    [`travelCommentsByContent/content-1/${commentId}`]: { comment_id: commentId, user_id: ownerId, created_at: 1 },
+  }));
+});
+
+test('여행지 댓글 인덱스는 다른 작성자의 댓글이나 다른 여행지를 가리킬 수 없다', async () => {
+  const otherDatabase = testEnv.authenticatedContext(otherId).database();
+  const forgedCommentId = 'forged-travel-comment';
+
+  await assertFails(set(ref(otherDatabase, 'travelCommentsByContent/content-1/comment-1'), {
+    comment_id: 'comment-1', user_id: otherId, created_at: 1,
+  }));
+  await assertFails(update(ref(otherDatabase), {
+    [`travelComments/${forgedCommentId}`]: { comment_id: forgedCommentId, content_id: 'different-content', user_id: otherId, created_at: 1 },
+    [`travelCommentsByContent/content-1/${forgedCommentId}`]: { comment_id: forgedCommentId, user_id: otherId, created_at: 1 },
+  }));
+});
