@@ -73,27 +73,22 @@ test('레거시 좋아요 맵을 유지한 콘텐츠의 일반 수정은 허용�
   await assertSucceeds(update(ref(ownerDatabase, 'boardPosts/legacy-post'), { title: '수정된 게시글' }));
 });
 
-test('게시글 요약은 단독 수정할 수 없으며 원본과 동기화된 다중 경로 수정만 허용한다', async () => {
+test('게시글 요약은 클라이언트가 직접 수정·삭제할 수 없고 원본 게시글만 수정할 수 있다', async () => {
   const ownerDatabase = testEnv.authenticatedContext(ownerId).database();
   const otherDatabase = testEnv.authenticatedContext(otherId).database();
 
   await assertFails(update(ref(ownerDatabase, 'boardPostSummaries/post-1'), { title: '단독 수정된 제목' }));
   await assertFails(update(ref(otherDatabase, 'boardPostSummaries/post-1'), { title: '위조된 제목' }));
   await assertFails(set(ref(ownerDatabase, 'boardPostSummaries/post-1'), null));
-
-  await assertSucceeds(update(ref(ownerDatabase), {
-    'boardPosts/post-1/title': '동기화 수정된 게시글',
-    'boardPostSummaries/post-1/title': '동기화 수정된 게시글',
-  }));
+  await assertSucceeds(update(ref(ownerDatabase, 'boardPosts/post-1'), { title: '원본 수정된 게시글' }));
 });
 
-test('게시글 및 요약의 조회수는 로그인 사용자가 정확히 1만 증가시킬 수 있다', async () => {
+test('게시글 조회수는 로그인 사용자가 정확히 1만 증가시킬 수 있고 요약은 직접 수정할 수 없다', async () => {
   const otherDatabase = testEnv.authenticatedContext(otherId).database();
 
   await assertSucceeds(set(ref(otherDatabase, 'boardPosts/post-1/view_count'), 1));
-  await assertSucceeds(set(ref(otherDatabase, 'boardPostSummaries/post-1/view_count'), 1));
   await assertFails(set(ref(otherDatabase, 'boardPosts/post-1/view_count'), 3));
-  await assertFails(set(ref(otherDatabase, 'boardPostSummaries/post-1/view_count'), 3));
+  await assertFails(set(ref(otherDatabase, 'boardPostSummaries/post-1/view_count'), 1));
 });
 
 test('게시글 댓글과 인덱스를 같은 다중 경로 쓰기로 생성할 수 있다', async () => {

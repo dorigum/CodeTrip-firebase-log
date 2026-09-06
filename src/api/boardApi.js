@@ -24,22 +24,6 @@ const boardPostSummaryPath = (postId = '') => `boardPostSummaries${postId ? `/${
 const boardCommentIndexPath = (postId, commentId = '') =>
   `boardCommentsByPost/${postId}${commentId ? `/${commentId}` : ''}`;
 
-const createContentPreview = (content) => String(content || '')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, 240);
-
-const toBoardPostSummary = (post) => ({
-  user_id: post.user_id,
-  nickname: post.nickname,
-  title: post.title,
-  content_preview: createContentPreview(post.content),
-  tags: post.tags || [],
-  view_count: Number(post.view_count || 0),
-  created_at: post.created_at,
-  updated_at: post.updated_at || post.created_at,
-});
-
 const getActivityIds = async (uid, child) => {
   const snap = await get(ref(realtimeDb, userActivityPath(uid, child)));
   return Object.keys(snap.val() || {});
@@ -163,7 +147,6 @@ export const getBoardPost = async (id) => {
   const post = snap.val();
   await update(ref(realtimeDb), {
     [`boardPosts/${id}/view_count`]: increment(1),
-    [`${boardPostSummaryPath(id)}/view_count`]: increment(1),
   });
   return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: Number(post.view_count || 0) + 1 }, currentUserId);
 };
@@ -184,7 +167,6 @@ export const createBoardPost = async ({ title, content, tags = [] }) => {
   };
   await update(ref(realtimeDb), {
     [`boardPosts/${postRef.key}`]: post,
-    [boardPostSummaryPath(postRef.key)]: toBoardPostSummary(post),
     [userActivityPath(user.id, `boardPosts/${postRef.key}`)]: {
       post_id: postRef.key,
       title,
@@ -211,7 +193,6 @@ export const updateBoardPost = async (id, { title, content, tags = [] }) => {
   };
   await update(ref(realtimeDb), {
     [`boardPosts/${id}`]: nextPost,
-    [boardPostSummaryPath(id)]: toBoardPostSummary(nextPost),
     [userActivityPath(user.id, `boardPosts/${id}`)]: {
       post_id: id,
       title,
@@ -230,7 +211,6 @@ export const deleteBoardPost = async (id) => {
 
   const updates = {
     [`boardPosts/${id}`]: null,
-    [boardPostSummaryPath(id)]: null,
     [boardCommentIndexPath(id)]: null,
     [userActivityPath(user.id, `boardPosts/${id}`)]: null,
     [userActivityPath(user.id, `likedPosts/${id}`)]: null,

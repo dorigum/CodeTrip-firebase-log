@@ -1,5 +1,6 @@
 const { initializeApp } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
+const { onValueWritten } = require('firebase-functions/v2/database');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
@@ -440,6 +441,43 @@ const leaveConcurrentRequest = (uid) => {
   }
   concurrentRequests.set(uid, current - 1);
 };
+
+const createBoardPostSummary = (post) => ({
+  user_id: post.user_id,
+  nickname: post.nickname,
+  title: post.title,
+  content_preview: String(post.content || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+  tags: post.tags || [],
+  view_count: Number(post.view_count || 0),
+  created_at: post.created_at,
+  updated_at: post.updated_at || post.created_at,
+});
+
+const hasBoardPostSummaryFields = (post) => (
+  typeof post?.user_id === 'string' && post.user_id.trim() !== ''
+  && typeof post?.nickname === 'string' && post.nickname.trim() !== ''
+  && typeof post?.title === 'string' && post.title.trim() !== ''
+  && typeof post?.created_at === 'string' && post.created_at.trim() !== ''
+);
+
+exports.syncBoardPostSummary = onValueWritten(
+  { ref: '/boardPosts/{postId}', region: REGION },
+  async (event) => {
+    const summaryRef = getDatabase().ref(`boardPostSummaries/${event.params.postId}`);
+
+    if (!event.data.after.exists()) {
+      return summaryRef.remove();
+    }
+
+    const post = event.data.after.val();
+    if (!hasBoardPostSummaryFields(post)) {
+      logger.warn('Skipping invalid board post summary', { postId: event.params.postId });
+      return summaryRef.remove();
+    }
+
+    return summaryRef.set(createBoardPostSummary(post));
+  }
+);
 
 const buildTourApiUrl = () => {
   const params = new URLSearchParams({
