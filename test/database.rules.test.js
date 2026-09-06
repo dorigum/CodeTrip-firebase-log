@@ -35,6 +35,16 @@ await testEnv.withSecurityRulesDisabled(async (context) => {
     created_at: 1,
     likeUserIds: { [likerId]: true },
   });
+  await set(ref(database, 'boardPostSummaries/post-1'), {
+    user_id: ownerId,
+    nickname: '작성자',
+    title: '게시글',
+    content_preview: '목록 미리보기',
+    tags: [],
+    view_count: 0,
+    created_at: '2026-09-06T00:00:00.000Z',
+    updated_at: '2026-09-06T00:00:00.000Z',
+  });
 });
 
 after(async () => testEnv.cleanup());
@@ -61,6 +71,15 @@ for (const { contentPath, likePath } of targets.filter(({ likePath }) => likePat
 test('레거시 좋아요 맵을 유지한 콘텐츠의 일반 수정은 허용한다', async () => {
   const ownerDatabase = testEnv.authenticatedContext(ownerId).database();
   await assertSucceeds(update(ref(ownerDatabase, 'boardPosts/legacy-post'), { title: '수정된 게시글' }));
+});
+
+test('게시글 요약은 작성자만 수정하고 조회수는 로그인 사용자가 증가시킬 수 있다', async () => {
+  const ownerDatabase = testEnv.authenticatedContext(ownerId).database();
+  const otherDatabase = testEnv.authenticatedContext(otherId).database();
+
+  await assertSucceeds(update(ref(ownerDatabase, 'boardPostSummaries/post-1'), { title: '수정된 게시글' }));
+  await assertFails(update(ref(otherDatabase, 'boardPostSummaries/post-1'), { title: '위조된 제목' }));
+  await assertSucceeds(set(ref(otherDatabase, 'boardPostSummaries/post-1/view_count'), 1));
 });
 
 test('게시글 댓글과 인덱스를 같은 다중 경로 쓰기로 생성할 수 있다', async () => {

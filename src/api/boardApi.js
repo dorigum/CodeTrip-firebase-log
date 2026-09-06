@@ -20,8 +20,25 @@ const getAllPosts = async () => {
   }));
 };
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
+const boardPostSummaryPath = (postId = '') => `boardPostSummaries${postId ? `/${postId}` : ''}`;
 const boardCommentIndexPath = (postId, commentId = '') =>
   `boardCommentsByPost/${postId}${commentId ? `/${commentId}` : ''}`;
+
+const createContentPreview = (content) => String(content || '')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 240);
+
+const toBoardPostSummary = (post) => ({
+  user_id: post.user_id,
+  nickname: post.nickname,
+  title: post.title,
+  content_preview: createContentPreview(post.content),
+  tags: post.tags || [],
+  view_count: Number(post.view_count || 0),
+  created_at: post.created_at,
+  updated_at: post.updated_at || post.created_at,
+});
 
 const getActivityIds = async (uid, child) => {
   const snap = await get(ref(realtimeDb, userActivityPath(uid, child)));
@@ -74,7 +91,7 @@ const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => 
   }
   constraints.push(limitToLast(pageSize + 1));
 
-  const pageCandidates = snapshotToArray(await get(query(ref(realtimeDb, 'boardPosts'), ...constraints)));
+  const pageCandidates = snapshotToArray(await get(query(ref(realtimeDb, boardPostSummaryPath()), ...constraints)));
   const hasNext = pageCandidates.length > pageSize;
   const pagePosts = hasNext ? pageCandidates.slice(1) : pageCandidates;
   const [commentCounts, likesByPostId] = await Promise.all([
@@ -83,7 +100,7 @@ const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => 
   ]);
   const posts = sortPosts(
     pagePosts.map((post) => ({
-      ...normalizePost({ ...post, likeUserIds: likesByPostId[post.id] ?? post.likeUserIds }, currentUserId),
+      ...normalizePost({ ...post, content: post.content_preview, likeUserIds: likesByPostId[post.id] ?? post.likeUserIds }, currentUserId),
       comment_count: commentCounts[post.id] || 0,
     })),
     'created_at'
@@ -144,7 +161,10 @@ export const getBoardPost = async (id) => {
 
   const post = snap.val();
   const nextViewCount = Number(post.view_count || 0) + 1;
-  await update(postRef, { view_count: nextViewCount });
+  await update(ref(realtimeDb), {
+    [`boardPosts/${id}/view_count`]: nextViewCount,
+    [`${boardPostSummaryPath(id)}/view_count`]: nextViewCount,
+  });
   return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: nextViewCount }, currentUserId);
 };
 
@@ -164,6 +184,7 @@ export const createBoardPost = async ({ title, content, tags = [] }) => {
   };
   await update(ref(realtimeDb), {
     [`boardPosts/${postRef.key}`]: post,
+    [boardPostSummaryPath(postRef.key)]: toBoardPostSummary(post),
     [userActivityPath(user.id, `boardPosts/${postRef.key}`)]: {
       post_id: postRef.key,
       title,
@@ -181,17 +202,22 @@ export const updateBoardPost = async (id, { title, content, tags = [] }) => {
   if (snap.val().user_id !== user.id) throw { message: '수정 권한이 없습니다.' };
 
   const updated_at = nowIso();
-  await update(postRef, {
+  const nextPost = {
+    ...snap.val(),
     title,
     content,
     tags: tags.map((tag, index) => ({ id: tag.id || `${Date.now()}-${index}`, ...tag })),
     updated_at,
-  });
-  await update(ref(realtimeDb, userActivityPath(user.id, `boardPosts/${id}`)), {
-    post_id: id,
-    title,
-    created_at: snap.val().created_at || updated_at,
-    updated_at,
+  };
+  await update(ref(realtimeDb), {
+    [`boardPosts/${id}`]: nextPost,
+    [boardPostSummaryPath(id)]: toBoardPostSummary(nextPost),
+    [userActivityPath(user.id, `boardPosts/${id}`)]: {
+      post_id: id,
+      title,
+      created_at: snap.val().created_at || updated_at,
+      updated_at,
+    },
   });
   return { message: '수정했습니다.' };
 };
@@ -204,6 +230,7 @@ export const deleteBoardPost = async (id) => {
 
   const updates = {
     [`boardPosts/${id}`]: null,
+    [boardPostSummaryPath(id)]: null,
     [boardCommentIndexPath(id)]: null,
     [userActivityPath(user.id, `boardPosts/${id}`)]: null,
     [userActivityPath(user.id, `likedPosts/${id}`)]: null,
