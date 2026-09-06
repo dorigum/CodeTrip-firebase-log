@@ -584,6 +584,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인 기준**: `npx firebase-tools deploy --only functions:syncBoardPostSummary`가 성공하고, 원본 게시글 변경 시 요약 Trigger가 실행되어야 합니다.
 - **상세 기록**: [2026-09-06 개발 로그](project-log/2026-09-06.md)의 RTDB Trigger 리전 일치 섹션 참고
 
+## 68. Hosting이 이전 번들을 배포해 게시글 저장이 권한 오류로 실패함
+
+- **발생일**: 2026-09-06
+- **영향 범위**: 배포 직후 게시글 작성, `boardPostSummaries` 쓰기 보안 규칙
+- **요약**: `firebase deploy --only hosting:codetrip`은 기존 `dist`를 그대로 업로드합니다. 최신 소스 빌드 없이 배포해 이전 클라이언트가 요약 경로 직접 쓰기를 시도했고, 새 Rules에서 `PERMISSION_DENIED`가 발생했습니다.
+- **처리**: `npm run build` 후 Hosting을 다시 배포했습니다. 이후 운영 사이트에서 게시글 생성·수정·상세 조회·삭제와 Trigger 기반 요약 생성·갱신·삭제를 확인했습니다.
+- **확인 기준**: Hosting 배포 전 최신 번들이 생성돼야 하며, 원본 게시글 삭제 뒤 대응 목록 요약도 비동기 반영 시간 후 제거돼야 합니다.
+- **상세 기록**: [2026-09-06 개발 로그](project-log/2026-09-06.md)의 게시글 요약 Trigger 운영 배포 및 CRUD 점검 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
