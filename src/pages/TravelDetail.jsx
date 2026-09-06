@@ -36,17 +36,29 @@ const stripHtml = (value) => String(value || '')
   .replace(/&nbsp;/gi, ' ')
   .trim();
 
+// URL 뒤에 붙는 한국어 조사·괄호는 링크 대상에서 제외합니다.
+const URL_PATTERN = /https?:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]*/gi;
+
+const toHttpUrl = (value) => {
+  const url = String(value || '').replace(/[.,!?;:)}\]]+$/, '');
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:' ? url : '';
+  } catch {
+    return '';
+  }
+};
+
 const extractHomepageLink = (value) => {
   const html = String(value || '');
-  const href = html.match(/href=["']([^"']+)["']/i)?.[1];
   const text = stripHtml(html);
+  const href = toHttpUrl(html.match(/href=["']([^"']+)["']/i)?.[1])
+    || toHttpUrl(text.match(URL_PATTERN)?.[0]);
   return {
-    href: href || (html.startsWith('http') ? html : ''),
+    href,
     text: text || href || '',
   };
 };
-
-const URL_PATTERN = /https?:\/\/[^\s<>"']+/gi;
 
 const splitFestivalOverview = (value) => {
   const text = stripHtml(value).replace(/\s*\n\s*/g, ' ').trim();
@@ -579,6 +591,13 @@ const TravelDetail = () => {
   const festivalOverviewSections = String(common?.contenttypeid) === '15'
     ? splitFestivalOverview(common.overview)
     : [];
+  const hasFestivalDetailIntro = String(common?.contenttypeid) === '15'
+    && infoItems.some((item) => /(행사|축제)\s*소개/.test(stripHtml(item.infoname)));
+  const visibleFestivalOverviewSections = hasFestivalDetailIntro
+    ? festivalOverviewSections.filter((section) => section.title !== '축제 설명')
+    : festivalOverviewSections;
+  const shouldShowNodeDescription = common.overview
+    && (String(common?.contenttypeid) !== '15' || visibleFestivalOverviewSections.length > 0);
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
@@ -660,16 +679,17 @@ const TravelDetail = () => {
 
       <div className="mx-auto grid max-w-[1600px] grid-cols-12 gap-6 px-5 py-8 sm:px-8 lg:gap-8 lg:px-12 lg:py-10">
         <div className="col-span-12 lg:col-span-8 space-y-10">
-          <div className="bg-white rounded-2xl border border-outline-variant/10 shadow-sm font-mono text-sm leading-relaxed overflow-hidden">
+          {shouldShowNodeDescription && (
+            <div className="bg-white rounded-2xl border border-outline-variant/10 shadow-sm font-mono text-sm leading-relaxed overflow-hidden">
             <div className="flex items-center gap-2 px-8 py-5 border-b border-slate-50">
               <span className="w-2 h-2 rounded-full bg-primary" />
               <p className="text-primary font-bold uppercase tracking-tighter">node_description.log</p>
             </div>
             <div className="px-8 py-5">
               {common.overview ? (
-                festivalOverviewSections.length > 0 ? (
+                visibleFestivalOverviewSections.length > 0 ? (
                   <div className="space-y-6 text-slate-600 leading-loose">
-                    {festivalOverviewSections.map((section) => (
+                    {visibleFestivalOverviewSections.map((section) => (
                       <section key={section.title}>
                         <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
                           {section.title}
@@ -687,7 +707,8 @@ const TravelDetail = () => {
                 <p className="text-slate-400 italic">// No description available.</p>
               )}
             </div>
-          </div>
+            </div>
+          )}
 
           {festivalInfoRows.length > 0 && (
             <div className="bg-white rounded-2xl border border-primary/15 shadow-sm overflow-hidden">
@@ -696,8 +717,15 @@ const TravelDetail = () => {
                 <p className="text-primary font-bold uppercase tracking-tighter font-mono text-sm">festival_info.json</p>
               </div>
               <div className="grid sm:grid-cols-2 gap-px bg-slate-100">
-                {festivalInfoRows.map((row) => (
-                  <div key={row.label} className="bg-white px-6 py-5 flex gap-4">
+                {festivalInfoRows.map((row, index) => (
+                  <div
+                    key={row.label}
+                    className={`bg-white px-6 py-5 flex gap-4 ${
+                      festivalInfoRows.length % 2 === 1 && index === festivalInfoRows.length - 1
+                        ? 'sm:col-span-2'
+                        : ''
+                    }`}
+                  >
                     <span className="material-symbols-outlined text-primary text-xl mt-0.5">{row.icon}</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{row.label}</p>
@@ -736,7 +764,7 @@ const TravelDetail = () => {
                       <span className="text-[11px] font-mono font-bold text-slate-400 uppercase shrink-0 w-36 pt-0.5">
                         {item.infoname}
                       </span>
-                      <p className="text-sm text-slate-700 leading-relaxed font-body flex-1 whitespace-pre-line">
+                      <p className="text-sm text-slate-700 leading-loose font-body flex-1 whitespace-pre-line">
                         {renderTextWithLinks(stripHtml(item.infotext))}
                       </p>
                     </div>
