@@ -41,14 +41,10 @@ const formatFestivalInfoText = (value) => stripHtml(value)
   .replace(/\s*(※)/g, '\n$1')
   .trim();
 
-// URL 뒤에 붙는 한국어 조사·괄호는 링크 대상에서 제외합니다.
 const URL_PATTERN = /https?:\/\/[^\s<>"']+/giu;
 
 const toHttpUrl = (value) => {
-  let url = String(value || '').trim();
-  // "주소)를"처럼 문장 안에 붙은 한국어 조사는 URL 밖 텍스트로 남깁니다.
-  url = url.replace(/(?:을|를|은|는|이|가|와|과|에|의|로|으로|도|만|까지|부터|에서|에게|께|랑|하고)$/, '');
-  url = url.replace(/[.,!?;:)}\]]+$/, '');
+  const url = String(value || '').trim();
   try {
     const parsedUrl = new URL(url);
     return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:' ? url : '';
@@ -97,18 +93,15 @@ const extractHomepageLinks = (value) => {
     previousEnd = match.index + match[0].length;
   });
 
-  if (links.length > 0) return { text, links };
+  [...html.matchAll(/<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)].forEach((match) => {
+    const href = toHttpUrl(match[1]);
+    if (!href || links.some((link) => link.href === href)) return;
+    const anchorText = stripHtml(match[2]);
+    const type = getExternalLinkType(href, anchorText);
+    links.push({ href, type, label: getExternalLinkLabel(anchorText, type) });
+  });
 
-  return {
-    text,
-    links: [...html.matchAll(/href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi)]
-      .map((match) => {
-        const href = toHttpUrl(match[1]);
-        const type = getExternalLinkType(href, stripHtml(match[2]));
-        return href ? { href, type, label: getExternalLinkLabel(stripHtml(match[2]), type) } : null;
-      })
-      .filter(Boolean),
-  };
+  return { text, links };
 };
 
 const ExternalLinkIcon = ({ type }) => {
@@ -126,7 +119,7 @@ const ExternalLinkIcon = ({ type }) => {
 };
 
 const splitFestivalOverview = (value) => {
-  const text = stripHtml(value).replace(/\s*\n\s*/g, ' ').trim();
+  const text = String(value || '').replace(/<br\s*\/?>/gi, '\n').replace(/\s*\n\s*/g, ' ').trim();
   if (!text) return [];
 
   const sections = {
@@ -139,13 +132,14 @@ const splitFestivalOverview = (value) => {
 
   const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
   sentences.forEach((sentence, index) => {
-    if (/운영\s?(일정|시간)|휴무|소요 시간|회차|시작 시간/.test(sentence)) {
+    const plainSentence = stripHtml(sentence);
+    if (/운영\s?(일정|시간)|휴무|소요 시간|회차|시작 시간/.test(plainSentence)) {
       sections.operation.push(sentence);
-    } else if (/장소는|위치|주소/.test(sentence)) {
+    } else if (/장소는|위치|주소/.test(plainSentence)) {
       sections.location.push(sentence);
-    } else if (/참여\s?(대상|방법)|예약|접수|신청|입장|관람/.test(sentence)) {
+    } else if (/참여\s?(대상|방법)|예약|접수|신청|입장|관람/.test(plainSentence)) {
       sections.participation.push(sentence);
-    } else if (index === 0 || /축제|행사|프로그램|공연|투어/.test(sentence)) {
+    } else if (index === 0 || /축제|행사|프로그램|공연|투어/.test(plainSentence)) {
       sections.description.push(sentence);
     } else {
       sections.guide.push(sentence);
@@ -169,46 +163,52 @@ const summarizeFestivalOverview = (sections) => {
   const description = sections.find((section) => section.title === '축제 설명')?.text
     || sections.map((section) => section.text).join(' ');
   const summary = description.split(/(?<=[.!?])\s+/).filter(Boolean).slice(0, 2).join(' ');
-  return summary.length > 260 ? `${summary.slice(0, 257).trim()}...` : summary;
+  const plainSummary = stripHtml(summary);
+  return plainSummary.length > 260 ? `${plainSummary.slice(0, 257).trim()}...` : summary;
 };
 
 const renderTextWithLinks = (value) => {
-  const text = String(value || '');
   const parts = [];
-  let previousIndex = 0;
+  const appendPlainTextWithLinks = (rawText, keyPrefix) => {
+    const text = String(rawText || '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ');
+    let previousIndex = 0;
 
-  for (const match of text.matchAll(URL_PATTERN)) {
-    const url = match[0].replace(/[.,!?;:)}\]]+$/, '');
-    const trailingText = match[0].slice(url.length);
-    if (match.index > previousIndex) parts.push(text.slice(previousIndex, match.index));
-
-    try {
-      const parsedUrl = new URL(url);
-      if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
-        parts.push(
-          <a
-            key={`${url}-${match.index}`}
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="break-all font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary/80"
-          >
-            {url}
-            <span className="material-symbols-outlined ml-1 align-text-bottom text-sm">open_in_new</span>
-          </a>
-        );
-      } else {
-        parts.push(match[0]);
-      }
-    } catch {
-      parts.push(match[0]);
+    for (const match of text.matchAll(URL_PATTERN)) {
+      if (match.index > previousIndex) parts.push(text.slice(previousIndex, match.index));
+      const href = toHttpUrl(match[0]);
+      parts.push(href ? (
+        <a key={`${keyPrefix}-${match.index}`} href={href} target="_blank" rel="noreferrer" className="break-all font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary/80">
+          {match[0]}<span className="material-symbols-outlined ml-1 align-text-bottom text-sm">open_in_new</span>
+        </a>
+      ) : match[0]);
+      previousIndex = match.index + match[0].length;
     }
 
-    if (trailingText) parts.push(trailingText);
+    if (previousIndex < text.length) parts.push(text.slice(previousIndex));
+  };
+
+  const html = String(value || '').replace(/<br\s*\/?>/gi, '\n');
+  const anchorPattern = /<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let previousIndex = 0;
+  let anchorIndex = 0;
+
+  for (const match of html.matchAll(anchorPattern)) {
+    appendPlainTextWithLinks(html.slice(previousIndex, match.index), `text-${anchorIndex}`);
+    const href = toHttpUrl(match[1]);
+    const label = stripHtml(match[2]);
+    parts.push(href ? (
+      <a key={`anchor-${anchorIndex}`} href={href} target="_blank" rel="noreferrer" className="break-all font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary/80">
+        {label}<span className="material-symbols-outlined ml-1 align-text-bottom text-sm">open_in_new</span>
+      </a>
+    ) : label);
     previousIndex = match.index + match[0].length;
+    anchorIndex += 1;
   }
 
-  if (previousIndex < text.length) parts.push(text.slice(previousIndex));
+  appendPlainTextWithLinks(html.slice(previousIndex), `text-${anchorIndex}`);
   return parts;
 };
 
@@ -776,7 +776,7 @@ const TravelDetail = () => {
                   </div>
                 ) : (
                   <p className="text-slate-600 leading-loose whitespace-pre-line">
-                    {renderTextWithLinks(stripHtml(common.overview))}
+                    {renderTextWithLinks(common.overview)}
                   </p>
                 )
               ) : (
@@ -854,7 +854,7 @@ const TravelDetail = () => {
                         {item.infoname}
                       </span>
                       <p className="text-sm text-slate-700 leading-loose font-body flex-1 whitespace-pre-line">
-                        {renderTextWithLinks(stripHtml(item.infotext))}
+                        {renderTextWithLinks(item.infotext)}
                       </p>
                     </div>
                   ))}
