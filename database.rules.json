@@ -55,6 +55,7 @@
     },
     "boardPosts": {
       ".read": true,
+      ".indexOn": ["created_at"],
       "$postId": {
         ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
         "view_count": {

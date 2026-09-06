@@ -21,6 +21,10 @@ const Board = () => {
   const [searchInput, setSearchInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sort, setSort] = useState('created_at');
+  const [pageCursors, setPageCursors] = useState([null]);
+  const [paginationMode, setPaginationMode] = useState('cursor');
+  const [hasNext, setHasNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
 
   const SORT_OPTIONS = [
     { value: 'created_at', label: 'CREATED_AT' },
@@ -28,12 +32,15 @@ const Board = () => {
     { value: 'likes', label: 'MOST_LIKED' },
   ];
 
-  const fetchPosts = useCallback(async (page, kw, sortBy) => {
+  const fetchPosts = useCallback(async (page, cursor, kw, sortBy) => {
     setLoading(true);
     try {
-      const data = await getBoardPosts({ pageNo: page, numOfRows: NUM_OF_ROWS, keyword: kw, sort: sortBy });
+      const data = await getBoardPosts({ pageNo: page, numOfRows: NUM_OF_ROWS, cursor, keyword: kw, sort: sortBy });
       setPosts(data.posts || []);
       setTotalCount(data.totalCount || 0);
+      setPaginationMode(data.paginationMode || 'offset');
+      setHasNext(Boolean(data.hasNext));
+      setNextCursor(data.nextCursor || null);
     } catch (err) {
       console.error(err);
       showToast('게시글을 불러오는 데 실패했습니다.');
@@ -43,18 +50,34 @@ const Board = () => {
   }, [showToast]);
 
   useEffect(() => {
-    fetchPosts(currentPage, keyword, sort);
-  }, [currentPage, keyword, sort, fetchPosts]);
+    const cursor = !keyword && sort === 'created_at' ? pageCursors[currentPage - 1] : null;
+    fetchPosts(currentPage, cursor, keyword, sort);
+  }, [currentPage, keyword, sort, pageCursors, fetchPosts]);
 
   const handleSortChange = (newSort) => {
     setSort(newSort);
     setCurrentPage(1);
+    setPageCursors([null]);
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
     setCurrentPage(1);
     setKeyword(searchInput);
+    setPageCursors([null]);
+  };
+
+  const resetCursorPagination = () => {
+    setCurrentPage(1);
+    setPageCursors([null]);
+  };
+
+  const handleCursorNext = () => {
+    if (!hasNext || !nextCursor) return;
+    setPageCursors((previous) => (
+      previous[currentPage] ? previous : [...previous, nextCursor]
+    ));
+    setCurrentPage((page) => page + 1);
   };
 
   const handleNewPost = () => {
@@ -68,6 +91,7 @@ const Board = () => {
   };
 
   const totalPages = Math.ceil(totalCount / NUM_OF_ROWS);
+  const isCursorPagination = paginationMode === 'cursor';
 
   const formatDate = (dateStr) =>
     new Date(dateStr).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -107,7 +131,7 @@ const Board = () => {
                 className="flex-1 bg-transparent font-mono text-sm text-on-surface placeholder:text-outline outline-none"
               />
               {searchInput && (
-                <button type="button" onClick={() => { setSearchInput(''); setKeyword(''); setCurrentPage(1); }}>
+                <button type="button" onClick={() => { setSearchInput(''); setKeyword(''); resetCursorPagination(); }}>
                   <span className="material-symbols-outlined text-outline hover:text-on-surface text-lg transition-colors">close</span>
                 </button>
               )}
@@ -124,12 +148,16 @@ const Board = () => {
         {/* Post Count & Sort */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-mono text-outline">
-            <span className="text-primary">{totalCount}</span> posts_found
+            {isCursorPagination ? (
+              <><span className="text-primary">LATEST</span> posts_loaded</>
+            ) : (
+              <><span className="text-primary">{totalCount}</span> posts_found</>
+            )}
             {keyword && <span className="ml-2 text-tertiary">// query: "{keyword}"</span>}
           </p>
           <div className="flex items-center gap-3">
             <p className="text-xs font-mono text-outline">
-              page {currentPage} / {totalPages || 1}
+              page {currentPage}{isCursorPagination ? '' : ` / ${totalPages || 1}`}
             </p>
             <select
               value={sort}
@@ -227,7 +255,7 @@ const Board = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {((isCursorPagination && (currentPage > 1 || hasNext)) || (!isCursorPagination && totalPages > 1)) && (
           <div className="flex justify-center gap-1 mt-10">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -236,7 +264,11 @@ const Board = () => {
             >
               <span className="material-symbols-outlined text-sm">chevron_left</span>
             </button>
-            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            {isCursorPagination ? (
+              <span className="px-3 py-2 rounded-lg text-xs font-mono bg-primary text-white border border-primary font-bold">
+                {currentPage}
+              </span>
+            ) : Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
               let page;
               if (totalPages <= 7) page = i + 1;
               else if (currentPage <= 4) page = i + 1;
@@ -257,8 +289,8 @@ const Board = () => {
               );
             })}
             <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => (isCursorPagination ? handleCursorNext() : setCurrentPage((p) => Math.min(totalPages, p + 1)))}
+              disabled={isCursorPagination ? !hasNext : currentPage === totalPages}
               className="px-3 py-2 rounded-lg text-xs font-mono text-outline border border-outline-variant/20 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-sm">chevron_right</span>

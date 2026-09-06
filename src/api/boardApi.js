@@ -1,4 +1,4 @@
-import { get, push, ref, runTransaction, update } from 'firebase/database';
+import { endBefore, get, limitToLast, orderByChild, push, query, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import {
   getCurrentUser,
@@ -66,8 +66,47 @@ const sortPosts = (posts, sort) => {
   return sorted;
 };
 
-export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', sort = 'created_at' } = {}) => {
+const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => {
+  const pageSize = Math.max(1, Number(numOfRows) || 10);
+  const constraints = [orderByChild('created_at')];
+  if (cursor?.createdAt && cursor?.id) {
+    constraints.push(endBefore(cursor.createdAt, cursor.id));
+  }
+  constraints.push(limitToLast(pageSize + 1));
+
+  const pageCandidates = snapshotToArray(await get(query(ref(realtimeDb, 'boardPosts'), ...constraints)));
+  const hasNext = pageCandidates.length > pageSize;
+  const pagePosts = hasNext ? pageCandidates.slice(1) : pageCandidates;
+  const [commentCounts, likesByPostId] = await Promise.all([
+    getBoardCommentCounts(),
+    getLikesByIds('boardPosts', pagePosts.map(({ id }) => id)),
+  ]);
+  const posts = sortPosts(
+    pagePosts.map((post) => ({
+      ...normalizePost({ ...post, likeUserIds: likesByPostId[post.id] ?? post.likeUserIds }, currentUserId),
+      comment_count: commentCounts[post.id] || 0,
+    })),
+    'created_at'
+  );
+  const oldestPost = posts.at(-1);
+
+  return {
+    posts,
+    totalCount: null,
+    paginationMode: 'cursor',
+    hasNext,
+    nextCursor: hasNext && oldestPost
+      ? { createdAt: oldestPost.created_at, id: oldestPost.id }
+      : null,
+  };
+};
+
+export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', sort = 'created_at', cursor = null } = {}) => {
   const currentUserId = getStoredUser()?.id || null;
+  if (!keyword.trim() && sort === 'created_at') {
+    return getRecentBoardPostsPage({ cursor, numOfRows, currentUserId });
+  }
+
   const [posts, commentCounts] = await Promise.all([getAllPosts(), getBoardCommentCounts()]);
 
   const normalized = posts.map((post) => ({
@@ -88,6 +127,9 @@ export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', 
   return {
     posts: sorted.slice(start, start + numOfRows),
     totalCount: sorted.length,
+    paginationMode: 'offset',
+    hasNext: pageNo * numOfRows < sorted.length,
+    nextCursor: null,
   };
 };
 
