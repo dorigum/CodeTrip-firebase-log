@@ -46,6 +46,88 @@ const extractHomepageLink = (value) => {
   };
 };
 
+const URL_PATTERN = /https?:\/\/[^\s<>"']+/gi;
+
+const splitFestivalOverview = (value) => {
+  const text = stripHtml(value).replace(/\s*\n\s*/g, ' ').trim();
+  if (!text) return [];
+
+  const sections = {
+    description: [],
+    operation: [],
+    location: [],
+    participation: [],
+    guide: [],
+  };
+
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  sentences.forEach((sentence, index) => {
+    if (/운영\s?(일정|시간)|휴무|소요 시간|회차|시작 시간/.test(sentence)) {
+      sections.operation.push(sentence);
+    } else if (/장소는|위치|주소/.test(sentence)) {
+      sections.location.push(sentence);
+    } else if (/참여\s?(대상|방법)|예약|접수|신청|입장|관람/.test(sentence)) {
+      sections.participation.push(sentence);
+    } else if (index === 0 || /축제|행사|프로그램|공연|투어/.test(sentence)) {
+      sections.description.push(sentence);
+    } else {
+      sections.guide.push(sentence);
+    }
+  });
+
+  const sectionMeta = [
+    { key: 'description', title: '축제 설명' },
+    { key: 'operation', title: '운영 시간' },
+    { key: 'location', title: '장소' },
+    { key: 'participation', title: '참여 방법' },
+    { key: 'guide', title: '추가 안내' },
+  ];
+
+  return sectionMeta
+    .map(({ key, title }) => ({ title, text: sections[key].join(' ') }))
+    .filter(({ text: sectionText }) => sectionText);
+};
+
+const renderTextWithLinks = (value) => {
+  const text = String(value || '');
+  const parts = [];
+  let previousIndex = 0;
+
+  for (const match of text.matchAll(URL_PATTERN)) {
+    const url = match[0].replace(/[.,!?;:)}\]]+$/, '');
+    const trailingText = match[0].slice(url.length);
+    if (match.index > previousIndex) parts.push(text.slice(previousIndex, match.index));
+
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+        parts.push(
+          <a
+            key={`${url}-${match.index}`}
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="break-all font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary/80"
+          >
+            {url}
+            <span className="material-symbols-outlined ml-1 align-text-bottom text-sm">open_in_new</span>
+          </a>
+        );
+      } else {
+        parts.push(match[0]);
+      }
+    } catch {
+      parts.push(match[0]);
+    }
+
+    if (trailingText) parts.push(trailingText);
+    previousIndex = match.index + match[0].length;
+  }
+
+  if (previousIndex < text.length) parts.push(text.slice(previousIndex));
+  return parts;
+};
+
 const TravelDetail = () => {
   const { contentId } = useParams();
   const navigate = useNavigate();
@@ -494,6 +576,9 @@ const TravelDetail = () => {
   const nodeHeaderImage = state?.firstimage || common.firstimage || (images.length > 0 ? (images[0].originimgurl || images[0].firstimage) : null);
   const envFields = systemEnvFields();
   const festivalInfoRows = getFestivalInfoRows();
+  const festivalOverviewSections = String(common?.contenttypeid) === '15'
+    ? splitFestivalOverview(common.overview)
+    : [];
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
@@ -582,7 +667,22 @@ const TravelDetail = () => {
             </div>
             <div className="px-8 py-5">
               {common.overview ? (
-                <div className="text-slate-600 leading-loose" dangerouslySetInnerHTML={{ __html: common.overview }} />
+                festivalOverviewSections.length > 0 ? (
+                  <div className="space-y-6 text-slate-600 leading-loose">
+                    {festivalOverviewSections.map((section) => (
+                      <section key={section.title}>
+                        <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
+                          {section.title}
+                        </h2>
+                        <p>{renderTextWithLinks(section.text)}</p>
+                      </section>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-600 leading-loose whitespace-pre-line">
+                    {renderTextWithLinks(stripHtml(common.overview))}
+                  </p>
+                )
               ) : (
                 <p className="text-slate-400 italic">// No description available.</p>
               )}
@@ -636,10 +736,9 @@ const TravelDetail = () => {
                       <span className="text-[11px] font-mono font-bold text-slate-400 uppercase shrink-0 w-36 pt-0.5">
                         {item.infoname}
                       </span>
-                      <span
-                        className="text-sm text-slate-700 leading-relaxed font-body flex-1"
-                        dangerouslySetInnerHTML={{ __html: String(item.infotext) }}
-                      />
+                      <p className="text-sm text-slate-700 leading-relaxed font-body flex-1 whitespace-pre-line">
+                        {renderTextWithLinks(stripHtml(item.infotext))}
+                      </p>
                     </div>
                   ))}
               </div>
