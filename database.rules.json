@@ -59,7 +59,8 @@
       "$postId": {
         ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
         "view_count": {
-          ".write": "auth != null && data.exists() && newData.isNumber() && newData.val() >= data.val()"
+          ".write": "auth != null && newData.isNumber() && ((!data.exists() && (newData.val() === 0 || newData.val() === 1)) || (data.exists() && newData.val() === data.val() + 1))",
+          ".validate": "newData.isNumber() && ((!data.exists() && (newData.val() === 0 || newData.val() === 1)) || newData.val() === data.val() || newData.val() === data.val() + 1)"
         },
         "likeUserIds": {
           ".validate": "!newData.exists()",
@@ -73,9 +74,10 @@
       ".read": true,
       ".indexOn": ["created_at"],
       "$postId": {
-        ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() || newData.child('user_id').val() === auth.uid)))",
+        ".write": "auth != null && ((!data.exists() && newData.child('user_id').val() === auth.uid && newData.parent().parent().child('boardPosts').child($postId).exists() && newData.parent().parent().child('boardPosts').child($postId).child('user_id').val() === auth.uid && newData.parent().parent().child('boardPosts').child($postId).child('title').val() === newData.child('title').val()) || (data.exists() && data.child('user_id').val() === auth.uid && (!newData.exists() ? !newData.parent().parent().child('boardPosts').child($postId).exists() : (newData.child('user_id').val() === auth.uid && newData.parent().parent().child('boardPosts').child($postId).child('title').val() === newData.child('title').val()))))",
         "view_count": {
-          ".write": "auth != null && data.exists() && newData.isNumber() && newData.val() >= data.val()"
+          ".write": "auth != null && newData.isNumber() && ((!data.exists() && (newData.val() === 0 || newData.val() === 1)) || (data.exists() && newData.val() === data.val() + 1))",
+          ".validate": "newData.isNumber() && ((!data.exists() && (newData.val() === 0 || newData.val() === 1)) || newData.val() === data.val() || newData.val() === data.val() + 1)"
         },
         ".validate": "!newData.exists() || (newData.hasChildren(['user_id', 'nickname', 'title', 'content_preview', 'view_count', 'created_at', 'updated_at']) && newData.child('user_id').isString() && newData.child('nickname').isString() && newData.child('title').isString() && newData.child('content_preview').isString() && newData.child('view_count').isNumber() && newData.child('created_at').isString() && newData.child('updated_at').isString())"
       }

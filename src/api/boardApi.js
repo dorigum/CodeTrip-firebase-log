@@ -1,4 +1,4 @@
-import { endBefore, get, limitToLast, orderByChild, push, query, ref, runTransaction, update } from 'firebase/database';
+import { endBefore, get, increment, limitToLast, orderByChild, push, query, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import {
   getCurrentUser,
@@ -45,19 +45,19 @@ const getActivityIds = async (uid, child) => {
   return Object.keys(snap.val() || {});
 };
 
-const getBoardCommentCounts = async () => {
-  const snap = await get(ref(realtimeDb, 'boardCommentsByPost'));
-  const value = snap.val() || {};
-  return Object.fromEntries(
-    Object.entries(value).map(([postId, comments]) => [postId, Object.keys(comments || {}).length])
+const getBoardCommentCountsByPostIds = async (ids) => {
+  const uniqueIds = [...new Set(ids)];
+  const snapshots = await Promise.all(
+    uniqueIds.map(async (id) => [id, (await get(ref(realtimeDb, boardCommentIndexPath(id)))).size])
   );
+  return Object.fromEntries(snapshots);
 };
 
 const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
   if (!ids.length) return [];
   const [postSnaps, counts, likesByPostId] = await Promise.all([
     Promise.all(ids.map((id) => get(ref(realtimeDb, `boardPosts/${id}`)).then((snap) => ({ id, snap })))),
-    commentCounts ? Promise.resolve(commentCounts) : getBoardCommentCounts(),
+    commentCounts ? Promise.resolve(commentCounts) : getBoardCommentCountsByPostIds(ids),
     getLikesByIds('boardPosts', ids),
   ]);
   return sortPosts(
@@ -74,11 +74,11 @@ const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
 const sortPosts = (posts, sort) => {
   const sorted = [...posts];
   if (sort === 'likes') {
-    sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0) || new Date(b.created_at) - new Date(a.created_at));
+    sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0) || new Date(b.created_at) - new Date(a.created_at) || (b.id && a.id ? b.id.localeCompare(a.id) : 0));
   } else if (sort === 'updated_at') {
-    sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at) || (b.id && a.id ? b.id.localeCompare(a.id) : 0));
   } else {
-    sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || (b.id && a.id ? b.id.localeCompare(a.id) : 0));
   }
   return sorted;
 };
@@ -95,7 +95,7 @@ const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => 
   const hasNext = pageCandidates.length > pageSize;
   const pagePosts = hasNext ? pageCandidates.slice(1) : pageCandidates;
   const [commentCounts, likesByPostId] = await Promise.all([
-    getBoardCommentCounts(),
+    getBoardCommentCountsByPostIds(pagePosts.map(({ id }) => id)),
     getLikesByIds('boardPosts', pagePosts.map(({ id }) => id)),
   ]);
   const posts = sortPosts(
@@ -105,7 +105,7 @@ const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => 
     })),
     'created_at'
   );
-  const oldestPost = posts.at(-1);
+  const oldestPost = pagePosts[0];
 
   return {
     posts,
@@ -124,7 +124,8 @@ export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', 
     return getRecentBoardPostsPage({ cursor, numOfRows, currentUserId });
   }
 
-  const [posts, commentCounts] = await Promise.all([getAllPosts(), getBoardCommentCounts()]);
+  const posts = await getAllPosts();
+  const commentCounts = await getBoardCommentCountsByPostIds(posts.map(({ id }) => id));
 
   const normalized = posts.map((post) => ({
     ...normalizePost(post, currentUserId),
@@ -160,12 +161,11 @@ export const getBoardPost = async (id) => {
   if (!snap.exists()) throw { message: '게시글을 찾을 수 없습니다.' };
 
   const post = snap.val();
-  const nextViewCount = Number(post.view_count || 0) + 1;
   await update(ref(realtimeDb), {
-    [`boardPosts/${id}/view_count`]: nextViewCount,
-    [`${boardPostSummaryPath(id)}/view_count`]: nextViewCount,
+    [`boardPosts/${id}/view_count`]: increment(1),
+    [`${boardPostSummaryPath(id)}/view_count`]: increment(1),
   });
-  return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: nextViewCount }, currentUserId);
+  return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: Number(post.view_count || 0) + 1 }, currentUserId);
 };
 
 export const createBoardPost = async ({ title, content, tags = [] }) => {
