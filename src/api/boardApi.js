@@ -1,4 +1,4 @@
-import { get, push, ref, runTransaction, update } from 'firebase/database';
+import { endBefore, get, increment, limitToLast, orderByChild, push, query, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import {
   getCurrentUser,
@@ -20,6 +20,7 @@ const getAllPosts = async () => {
   }));
 };
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
+const boardPostSummaryPath = (postId = '') => `boardPostSummaries${postId ? `/${postId}` : ''}`;
 const boardCommentIndexPath = (postId, commentId = '') =>
   `boardCommentsByPost/${postId}${commentId ? `/${commentId}` : ''}`;
 
@@ -28,19 +29,19 @@ const getActivityIds = async (uid, child) => {
   return Object.keys(snap.val() || {});
 };
 
-const getBoardCommentCounts = async () => {
-  const snap = await get(ref(realtimeDb, 'boardCommentsByPost'));
-  const value = snap.val() || {};
-  return Object.fromEntries(
-    Object.entries(value).map(([postId, comments]) => [postId, Object.keys(comments || {}).length])
+const getBoardCommentCountsByPostIds = async (ids) => {
+  const uniqueIds = [...new Set(ids)];
+  const snapshots = await Promise.all(
+    uniqueIds.map(async (id) => [id, (await get(ref(realtimeDb, boardCommentIndexPath(id)))).size])
   );
+  return Object.fromEntries(snapshots);
 };
 
 const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
   if (!ids.length) return [];
   const [postSnaps, counts, likesByPostId] = await Promise.all([
     Promise.all(ids.map((id) => get(ref(realtimeDb, `boardPosts/${id}`)).then((snap) => ({ id, snap })))),
-    commentCounts ? Promise.resolve(commentCounts) : getBoardCommentCounts(),
+    commentCounts ? Promise.resolve(commentCounts) : getBoardCommentCountsByPostIds(ids),
     getLikesByIds('boardPosts', ids),
   ]);
   return sortPosts(
@@ -57,18 +58,58 @@ const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
 const sortPosts = (posts, sort) => {
   const sorted = [...posts];
   if (sort === 'likes') {
-    sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0) || new Date(b.created_at) - new Date(a.created_at));
+    sorted.sort((a, b) => (b.like_count || 0) - (a.like_count || 0) || new Date(b.created_at) - new Date(a.created_at) || (b.id && a.id ? b.id.localeCompare(a.id) : 0));
   } else if (sort === 'updated_at') {
-    sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at) || (b.id && a.id ? b.id.localeCompare(a.id) : 0));
   } else {
-    sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || (b.id && a.id ? b.id.localeCompare(a.id) : 0));
   }
   return sorted;
 };
 
-export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', sort = 'created_at' } = {}) => {
+const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => {
+  const pageSize = Math.max(1, Number(numOfRows) || 10);
+  const constraints = [orderByChild('created_at')];
+  if (cursor?.createdAt && cursor?.id) {
+    constraints.push(endBefore(cursor.createdAt, cursor.id));
+  }
+  constraints.push(limitToLast(pageSize + 1));
+
+  const pageCandidates = snapshotToArray(await get(query(ref(realtimeDb, boardPostSummaryPath()), ...constraints)));
+  const hasNext = pageCandidates.length > pageSize;
+  const pagePosts = hasNext ? pageCandidates.slice(1) : pageCandidates;
+  const [commentCounts, likesByPostId] = await Promise.all([
+    getBoardCommentCountsByPostIds(pagePosts.map(({ id }) => id)),
+    getLikesByIds('boardPosts', pagePosts.map(({ id }) => id)),
+  ]);
+  const posts = sortPosts(
+    pagePosts.map((post) => ({
+      ...normalizePost({ ...post, content: post.content_preview, likeUserIds: likesByPostId[post.id] ?? post.likeUserIds }, currentUserId),
+      comment_count: commentCounts[post.id] || 0,
+    })),
+    'created_at'
+  );
+  const oldestPost = pagePosts[0];
+
+  return {
+    posts,
+    totalCount: null,
+    paginationMode: 'cursor',
+    hasNext,
+    nextCursor: hasNext && oldestPost
+      ? { createdAt: oldestPost.created_at, id: oldestPost.id }
+      : null,
+  };
+};
+
+export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', sort = 'created_at', cursor = null } = {}) => {
   const currentUserId = getStoredUser()?.id || null;
-  const [posts, commentCounts] = await Promise.all([getAllPosts(), getBoardCommentCounts()]);
+  if (!keyword.trim() && sort === 'created_at') {
+    return getRecentBoardPostsPage({ cursor, numOfRows, currentUserId });
+  }
+
+  const posts = await getAllPosts();
+  const commentCounts = await getBoardCommentCountsByPostIds(posts.map(({ id }) => id));
 
   const normalized = posts.map((post) => ({
     ...normalizePost(post, currentUserId),
@@ -88,6 +129,9 @@ export const getBoardPosts = async ({ pageNo = 1, numOfRows = 10, keyword = '', 
   return {
     posts: sorted.slice(start, start + numOfRows),
     totalCount: sorted.length,
+    paginationMode: 'offset',
+    hasNext: pageNo * numOfRows < sorted.length,
+    nextCursor: null,
   };
 };
 
@@ -101,9 +145,10 @@ export const getBoardPost = async (id) => {
   if (!snap.exists()) throw { message: '게시글을 찾을 수 없습니다.' };
 
   const post = snap.val();
-  const nextViewCount = Number(post.view_count || 0) + 1;
-  await update(postRef, { view_count: nextViewCount });
-  return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: nextViewCount }, currentUserId);
+  await update(ref(realtimeDb), {
+    [`boardPosts/${id}/view_count`]: increment(1),
+  });
+  return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: Number(post.view_count || 0) + 1 }, currentUserId);
 };
 
 export const createBoardPost = async ({ title, content, tags = [] }) => {
@@ -139,17 +184,21 @@ export const updateBoardPost = async (id, { title, content, tags = [] }) => {
   if (snap.val().user_id !== user.id) throw { message: '수정 권한이 없습니다.' };
 
   const updated_at = nowIso();
-  await update(postRef, {
+  const nextPost = {
+    ...snap.val(),
     title,
     content,
     tags: tags.map((tag, index) => ({ id: tag.id || `${Date.now()}-${index}`, ...tag })),
     updated_at,
-  });
-  await update(ref(realtimeDb, userActivityPath(user.id, `boardPosts/${id}`)), {
-    post_id: id,
-    title,
-    created_at: snap.val().created_at || updated_at,
-    updated_at,
+  };
+  await update(ref(realtimeDb), {
+    [`boardPosts/${id}`]: nextPost,
+    [userActivityPath(user.id, `boardPosts/${id}`)]: {
+      post_id: id,
+      title,
+      created_at: snap.val().created_at || updated_at,
+      updated_at,
+    },
   });
   return { message: '수정했습니다.' };
 };
