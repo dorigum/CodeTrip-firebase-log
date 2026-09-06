@@ -36,6 +36,10 @@ const stripHtml = (value) => String(value || '')
   .replace(/&nbsp;/gi, ' ')
   .trim();
 
+const formatFestivalInfoText = (value) => stripHtml(value)
+  .replace(/\s*(※)/g, '\n$1')
+  .trim();
+
 // URL 뒤에 붙는 한국어 조사·괄호는 링크 대상에서 제외합니다.
 const URL_PATTERN = /https?:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]*/gi;
 
@@ -49,15 +53,72 @@ const toHttpUrl = (value) => {
   }
 };
 
-const extractHomepageLink = (value) => {
+const getExternalLinkType = (url, label = '') => {
+  const source = `${url} ${label}`.toLowerCase();
+  if (source.includes('instagram') || source.includes('인스타')) return 'instagram';
+  if (source.includes('facebook')) return 'facebook';
+  if (source.includes('youtube') || source.includes('youtu.be')) return 'youtube';
+  if (source.includes('tiktok')) return 'tiktok';
+  if (source.includes('twitter') || source.includes('x.com')) return 'x';
+  return /sns|소셜/.test(source) ? 'sns' : 'homepage';
+};
+
+const getExternalLinkLabel = (label, type) => {
+  const cleaned = String(label || '').replace(/^[\s/|,·-]+|[\s/|,·-]+$/g, '').trim();
+  if (cleaned) return cleaned;
+  if (type === 'instagram') return '공식 인스타그램';
+  if (type === 'facebook') return '공식 Facebook';
+  if (type === 'youtube') return '공식 YouTube';
+  if (type === 'tiktok') return '공식 TikTok';
+  if (type === 'x') return '공식 X';
+  return type === 'sns' ? '공식 SNS' : '공식 홈페이지';
+};
+
+const extractHomepageLinks = (value) => {
   const html = String(value || '');
   const text = stripHtml(html);
-  const href = toHttpUrl(html.match(/href=["']([^"']+)["']/i)?.[1])
-    || toHttpUrl(text.match(URL_PATTERN)?.[0]);
+  const directMatches = [...text.matchAll(URL_PATTERN)];
+  const links = [];
+  let previousEnd = 0;
+
+  directMatches.forEach((match) => {
+    const href = toHttpUrl(match[0]);
+    if (!href || links.some((link) => link.href === href)) return;
+    const type = getExternalLinkType(href, text.slice(previousEnd, match.index));
+    links.push({
+      href,
+      type,
+      label: getExternalLinkLabel(text.slice(previousEnd, match.index), type),
+    });
+    previousEnd = match.index + match[0].length;
+  });
+
+  if (links.length > 0) return { text, links };
+
   return {
-    href,
-    text: text || href || '',
+    text,
+    links: [...html.matchAll(/href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi)]
+      .map((match) => {
+        const href = toHttpUrl(match[1]);
+        const type = getExternalLinkType(href, stripHtml(match[2]));
+        return href ? { href, type, label: getExternalLinkLabel(stripHtml(match[2]), type) } : null;
+      })
+      .filter(Boolean),
   };
+};
+
+const ExternalLinkIcon = ({ type }) => {
+  if (type === 'instagram') {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+
+  return <span className="material-symbols-outlined text-base">{type === 'homepage' ? 'home' : 'share'}</span>;
 };
 
 const splitFestivalOverview = (value) => {
@@ -529,7 +590,7 @@ const TravelDetail = () => {
 
     const startDate = formatTourDate(intro?.eventstartdate || common?.eventstartdate);
     const endDate = formatTourDate(intro?.eventenddate || common?.eventenddate);
-    const homepage = extractHomepageLink(intro?.eventhomepage || intro?.homepage || common?.homepage);
+    const homepage = extractHomepageLinks(intro?.eventhomepage || intro?.homepage || common?.homepage);
     const rows = [
       {
         icon: 'calendar_month',
@@ -566,11 +627,14 @@ const TravelDetail = () => {
         label: 'HOMEPAGE',
         title: '홈페이지',
         value: homepage.text,
-        href: homepage.href,
+        links: homepage.links,
       },
     ];
 
-    return rows.filter((row) => row.value && String(row.value).trim() && row.value !== 'null');
+    return rows.filter((row) => (
+      (row.value && String(row.value).trim() && row.value !== 'null')
+      || row.links?.length > 0
+    ));
   };
 
   if (loading) {
@@ -738,18 +802,31 @@ const TravelDetail = () => {
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{row.label}</p>
                       <p className="mt-1 text-xs font-label text-slate-500">{row.title}</p>
-                      {row.href ? (
-                        <a
-                          href={row.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-flex max-w-full items-center gap-1 text-sm font-bold text-primary hover:text-primary/80 transition-colors break-all"
-                        >
-                          {row.value}
-                          <span className="material-symbols-outlined text-sm">open_in_new</span>
-                        </a>
+                      {row.links?.length > 0 ? (
+                        <div className="mt-3 space-y-3">
+                          {row.links.map((link) => (
+                            <a
+                              key={link.href}
+                              href={link.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block rounded-lg border border-primary/10 bg-primary/5 px-3 py-2.5 text-primary transition-colors hover:bg-primary/10"
+                            >
+                              <span className="flex items-center gap-1.5 text-xs font-bold">
+                                <ExternalLinkIcon type={link.type} />
+                                {link.label}
+                                <span className="material-symbols-outlined ml-auto text-sm">open_in_new</span>
+                              </span>
+                              <span className="mt-1 block break-all text-xs font-medium leading-relaxed underline decoration-primary/30 underline-offset-2">
+                                {link.href}
+                              </span>
+                            </a>
+                          ))}
+                        </div>
                       ) : (
-                        <p className="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-line">{stripHtml(row.value)}</p>
+                        <p className="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                          {row.label === 'TIME' ? formatFestivalInfoText(row.value) : stripHtml(row.value)}
+                        </p>
                       )}
                     </div>
                   </div>
