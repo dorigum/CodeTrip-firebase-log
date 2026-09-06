@@ -575,6 +575,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인 기준**: Trigger는 `newagent-9c2a8`의 `boardPosts/{postId}` 이벤트만 처리하고, 요약의 `updated_at`은 항상 문자열이어야 합니다.
 - **상세 기록**: [2026-09-06 개발 로그](project-log/2026-09-06.md)의 Trigger 범위·수정 시각 타입 방어 섹션 참고
 
+## 67. RTDB 이벤트 Trigger의 배포 리전이 데이터베이스 인스턴스와 다름
+
+- **발생일**: 2026-09-06
+- **영향 범위**: `syncBoardPostSummary` Functions 배포
+- **요약**: 기본 Realtime Database 인스턴스는 `us-central1`에 있지만, 공통 Functions 리전인 `asia-northeast3`으로 RTDB Trigger를 만들려 해 Cloud Functions 검증 단계에서 HTTP 400이 발생했습니다.
+- **처리**: RTDB Trigger 전용 `DATABASE_TRIGGER_REGION`을 `us-central1`으로 분리하고, 기존 Callable·스케줄 함수의 `asia-northeast3` 설정은 유지했습니다.
+- **확인 기준**: `npx firebase-tools deploy --only functions:syncBoardPostSummary`가 성공하고, 원본 게시글 변경 시 요약 Trigger가 실행되어야 합니다.
+- **상세 기록**: [2026-09-06 개발 로그](project-log/2026-09-06.md)의 RTDB Trigger 리전 일치 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
