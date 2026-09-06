@@ -21,7 +21,6 @@ const Explore = () => {
   const [regionOpen, setRegionOpen] = useState(true);
   const [themeOpen, setThemeOpen] = useState(true);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [activeAnimId, setActiveAnimId] = useState(null); // 강제 애니메이션 트리거용 ID
   const [favoriteRegions, setFavoriteRegions] = useState([]);
 
   const { isLoggedIn } = useAuthStore();
@@ -116,11 +115,9 @@ const Explore = () => {
     }
     
     const postId = String(post.contentid);
-    // 위시리스트에 없는 상태에서 더블 클릭 시 애니메이션 트리거 및 모달 오픈
+    // 위시리스트에 없는 상태에서 더블 클릭 시 폴더 선택 모달 오픈
     if (!wishlistIds.has(postId)) {
-      setActiveAnimId(postId);
       handleHeartToggle(post);
-      setTimeout(() => setActiveAnimId(null), 1500);
     } else {
       handleHeartToggle(post);
     }
@@ -419,57 +416,54 @@ const Explore = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4 md:gap-8 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 lg:gap-6">
                 {filteredPosts.map((post) => (
                   <article
                     key={post.contentid}
-                    className="group/card bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-outline-variant/10"
+                    className="group/card relative flex flex-col overflow-hidden rounded-2xl border border-outline-variant/10 bg-white shadow-sm transition-all duration-500 hover:shadow-xl"
                   >
+                    <button
+                      type="button"
+                      onClick={() => handleHeartToggle(post)}
+                      disabled={wishlistLoadingId === String(post.contentid)}
+                      aria-label={`${post.title} 위시리스트 ${wishlistIds.has(String(post.contentid)) ? '해제' : '추가'}`}
+                      className={`absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full shadow-lg transition-all active:scale-75 disabled:cursor-wait disabled:opacity-60 sm:h-9 sm:w-9 ${
+                        wishlistIds.has(String(post.contentid))
+                          ? 'bg-red-50 text-red-500'
+                          : 'bg-white/90 text-slate-400 hover:text-red-500'
+                      }`}
+                    >
+                      <span className={`material-symbols-outlined text-lg ${wishlistIds.has(String(post.contentid)) ? 'fill-1' : ''}`}>
+                        favorite
+                      </span>
+                    </button>
                     <div 
-                      className="relative h-32 overflow-hidden bg-surface-container-low cursor-pointer sm:h-52 md:h-64"
+                      className="relative aspect-[4/3] cursor-pointer overflow-hidden bg-slate-100"
                       onDoubleClick={() => handleImageDoubleClick(post)}
                     >
                       <img
                         src={post.firstimage || FALLBACK_IMAGE}
                         alt={post.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110"
                         onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                       />
                     </div>
-                    <div className="p-4 md:p-6">
-                      <h3 className="text-[14px] font-body font-bold text-on-surface mb-1 truncate tracking-tight sm:text-[16px] md:text-[18px]">{post.title}</h3>
-                      <div className="flex items-center gap-1 text-slate-400 text-[11px] font-body mb-3 md:text-[12px] md:mb-4">
-                        <span className="material-symbols-outlined text-[13px] md:text-[14px]">location_on</span>
-                        <span className="truncate font-bold">{post.addr1}</span>
+                    <Link to={`/explore/${post.contentid}`} state={{ firstimage: post.firstimage }} className="flex flex-1 flex-col justify-between space-y-3 p-4 sm:p-5">
+                      <div className="space-y-1">
+                        <h3 className="line-clamp-2 min-h-[2.5rem] font-headline text-sm font-bold leading-5 text-slate-900 transition-colors group-hover/card:text-primary sm:text-base">{post.title}</h3>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 sm:text-xs">
+                          <span className="material-symbols-outlined text-[13px] sm:text-sm">location_on</span>
+                          <p className="truncate font-body">{post.addr1 || '주소 정보 없음'}</p>
+                        </div>
                       </div>
-                      <div className="mt-4 flex justify-between items-center gap-2 md:mt-6">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleHeartToggle(post);
-                          }}
-                          className={`group/heart relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all shadow-sm active:scale-75 select-none outline-none cursor-pointer md:h-10 md:w-10 ${
-                            wishlistIds.has(String(post.contentid)) 
-                              ? 'bg-red-50 text-red-500' 
-                              : 'bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500'
-                          }`}
-                        >
-                          <span className={`material-symbols-outlined text-xl select-none ${wishlistIds.has(String(post.contentid)) ? 'fill-1 text-red-500' : ''}`}>
-                            favorite
-                          </span>
-                          {/* Classic Simple Bubbling Hearts */}
-                          <span className={`material-symbols-outlined heart-bubble heart-bubble-1 text-[10px] fill-1 select-none group-hover/heart:animate-[bubble-heart_1.5s_ease-out_infinite] ${activeAnimId === post.contentid ? 'animate-[bubble-heart_1.5s_ease-out_infinite]' : ''}`}>favorite</span>
-                          <span className={`material-symbols-outlined heart-bubble heart-bubble-2 text-[10px] fill-1 select-none group-hover/heart:animate-[bubble-heart_1.5s_ease-out_infinite_0.4s] ${activeAnimId === post.contentid ? 'animate-[bubble-heart_1.5s_ease-out_infinite_0.4s]' : ''}`}>favorite</span>
-                        </button>
-                        <Link
-                          to={`/explore/${post.contentid}`}
-                          state={{ firstimage: post.firstimage }}
-                          className="rounded-lg bg-primary px-3 py-2 text-[11px] font-body font-bold text-white shadow-md transition-all hover:brightness-110 md:px-5 md:text-[12px]"
-                        >
-                          상세보기
-                        </Link>
+                      <div className="flex items-center justify-between border-t border-slate-50 pt-2">
+                        <span className="hidden font-mono text-[10px] uppercase tracking-tighter text-slate-300 sm:inline">type: {post.contenttypeid || 'node'}</span>
+                        <span className="ml-auto flex items-center gap-1 font-label text-[10px] font-bold uppercase tracking-widest text-primary transition-all group-hover/card:gap-2">
+                          Explore
+                          <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                        </span>
                       </div>
-                    </div>
+                    </Link>
                   </article>
                 ))}
               </div>
