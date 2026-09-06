@@ -8,14 +8,12 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 
 프로젝트 헌장, 요구사항, 사용자 흐름, 아키텍처, 데이터·보안, 품질 계획, WBS, 운영, KPI, AI 하네스, 공모전 제출 문서는 [통합 프로젝트 문서](docs/README.md)에서 관리합니다.
 
-최근 작업 기록은 다음 문서에서 확인합니다.
-
-- [2026-08-25 작업 로그](CodeTrip_Firebase/project-log/2026-08-25.md)
-- [2026-08-16 작업 로그](CodeTrip_Firebase/project-log/2026-08-16.md)
+최근 작업 기록은 [전체 작업 로그](CodeTrip_Firebase/project-log/)에서 확인합니다.
 - [검증 보고서](docs/13-validation-report.md)
 - [기술 부채 등록부](docs/12-technical-debt-register.md)
 - [백로그](docs/14-backlog.md)
 - [트러블슈팅](CodeTrip_Firebase/TROUBLESHOOTING.md)
+- [의사결정 로그](docs/decision-log/)
 - [TourAPI 신규 여행지 알림 설계](docs/39-tourapi-update-notification-plan.md)
 
 ## 🚀 배포 정보
@@ -27,7 +25,7 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 - Realtime Database URL: `https://newagent-9c2a8.firebaseio.com`
 - 주요 브랜치: `main`
 
-현재 진행 중인 안정화 PR 작업은 별도 브랜치에서 진행하며, `output/` 산출물은 별도 지시 전까지 커밋 대상에서 제외합니다.
+안정화와 후속 작업은 별도 브랜치에서 진행하며, `output/` 산출물은 별도 지시 전까지 커밋 대상에서 제외합니다.
 
 ## 🧱 기술 스택
 
@@ -56,7 +54,7 @@ React / Vite
   -> TourAPI / Open-Meteo / Nominatim / Kakao Maps
 ```
 
-프론트엔드는 공공 관광 데이터와 날씨·지도 데이터를 사용자 화면에 연결하고, 개인 데이터와 커뮤니티 데이터는 Firebase Realtime Database로 관리합니다. Gemini 일정 생성은 더 이상 브라우저에서 API 키를 직접 사용하지 않고, `generateTripPlan` Callable Function을 통해 서버 측에서 처리합니다. 프로필 이미지와 게시글 첨부 이미지는 Firebase Storage에 업로드한 뒤 다운로드 URL만 저장합니다.
+프론트엔드는 공공 관광 데이터와 날씨·지도 데이터를 사용자 화면에 연결하고, 개인 데이터와 커뮤니티 데이터는 Firebase Realtime Database로 관리합니다. 이메일·비밀번호와 Google OAuth 로그인은 Firebase Authentication으로 처리하며, 인증 복원 중에는 세션 상태가 확정될 때까지 로딩 화면을 표시합니다. Gemini 일정 생성은 더 이상 브라우저에서 API 키를 직접 사용하지 않고, `generateTripPlan` Callable Function을 통해 서버 측에서 처리합니다. 프로필 이미지와 게시글 첨부 이미지는 Firebase Storage에 업로드한 뒤 다운로드 URL만 저장합니다.
 
 ## ✨ 주요 기능
 
@@ -106,6 +104,7 @@ React / Vite
 
 - Markdown 기반 게시글 작성·수정·삭제
 - 게시글 댓글, 좋아요, 조회수
+- 게시글·게시글 댓글·여행지 댓글 좋아요는 사용자 UID별로 저장·토글
 - 여행지 태그 기반 상세 페이지 이동
 - 사용자 활동 내역 확인
 - 게시글 첨부 이미지는 Firebase Storage에 업로드 후 다운로드 URL로 저장
@@ -113,11 +112,13 @@ React / Vite
 ### 👤 사용자 계정
 
 - Firebase Authentication 기반 이메일·비밀번호 회원가입과 로그인
+- Google OAuth 회원가입과 로그인
 - 비밀번호 재설정
+- Google-only 계정은 비밀번호 변경 폼 대신 Google 계정 관리 안내 표시
 - 프로필 수정
 - 프로필 이미지는 Firebase Storage의 사용자별 고정 경로에 덮어쓰기 방식으로 저장
 - 선호 지역 설정
-- Google OAuth는 현재 계획 문서만 작성되어 있으며, MVP 제출 필수 범위에는 포함하지 않습니다.
+- Google OAuth는 선택 로그인 수단으로 구현됐으며, 설정·검증 기준은 [Google OAuth 계획 및 검증 문서](docs/37-google-oauth-plan.md)에서 관리합니다.
 
 ### 🔔 TourAPI 신규 여행지 알림
 
@@ -303,7 +304,7 @@ Realtime Database Rules 배포:
 firebase deploy --only database
 ```
 
-Firebase CLI가 없으면 `npx firebase-tools`를 사용할 수 있습니다. 배포 후에는 공개 URL에서 홈, 탐색, 축제, 상세, 로그인, AI Planner, 마이페이지, 커뮤니티 smoke test를 수행하고 결과를 [검증 보고서](docs/13-validation-report.md)에 기록합니다.
+Firebase CLI가 없으면 `npx firebase-tools`를 사용할 수 있습니다. 배포 후에는 공개 URL에서 홈, 탐색, 축제, 상세, 로그인, AI Planner, 마이페이지, 커뮤니티 smoke test를 수행하고 결과를 [검증 보고서](docs/13-validation-report.md)에 기록합니다. Google OAuth를 배포한 경우에는 인증 복원 중 홈 깜빡임, 신규·기존 계정 분기, Google-only 비밀번호 안내, 게시글·댓글 좋아요 권한도 함께 확인합니다.
 
 ## 🧭 주요 라우트
 
@@ -320,7 +321,7 @@ Firebase CLI가 없으면 `npx firebase-tools`를 사용할 수 있습니다. �
 | `/board/tag-search` | TravelTagSearch | 게시글 여행지 태그 검색 |
 | `/mypage` | MyPage | 위시리스트, 폴더, 메모, 체크리스트, AI 코스 문서 |
 | `/my-activity` | MyActivity | 사용자 활동 내역 |
-| `/settings` | Settings | 프로필과 선호 지역 설정 |
+| `/settings` | Settings | 프로필·선호 지역 설정, 이메일/비밀번호 제공업체 계정의 비밀번호 변경 |
 | `/login` | Login | 로그인 |
 | `/signup` | SignUp | 회원가입 |
 | `/forgot-password` | ForgotPassword | 비밀번호 재설정 |
@@ -375,6 +376,7 @@ CodeTrip-firebase-log-work/
 - API 호출 최적화와 캐시 측정표 작성
 - 지도 fallback, 축제 반응형 표시, AI Planner 중복 실행 방지 보강
 - 모바일 Home, MyPage, MyActivity UI 안정화
+- Google OAuth 로그인·회원가입, 인증 복원 화면 안정화, 사용자별 좋아요 권한 보강
 
 남은 제출 전 확인 항목은 다음과 같습니다.
 
@@ -387,4 +389,4 @@ CodeTrip-firebase-log-work/
 
 ---
 
-_Last Updated: 2026-08-25_
+_Last Updated: 2026-09-04_

@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "test:date-key": "node src/utils/dateKey.test.js",
+    "test:database-rules": "firebase emulators:exec --only database --project codetrip-rules-test \"node --test test/database.rules.test.js\"",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.2.14",
@@ -32,6 +34,7 @@
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "firebase-tools": "^15.29.0",
     "globals": "^17.5.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",

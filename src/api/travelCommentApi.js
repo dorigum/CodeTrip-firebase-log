@@ -1,6 +1,6 @@
 import { get, push, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
-import { getCurrentUser, getStoredUser, likeMapToIds, normalizeComment, nowIso } from './firebaseHelpers';
+import { getCurrentUser, getLikesByIds, getStoredUser, likeMapToIds, normalizeComment, nowIso } from './firebaseHelpers';
 
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
 const travelCommentIndexPath = (contentId, commentId = '') =>
@@ -12,25 +12,27 @@ export const getTravelComments = async (contentId) => {
   const ids = Object.keys(indexSnap.val() || {});
   if (!ids.length) return [];
 
-  const commentSnaps = await Promise.all(
-    ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))
-  );
+  const [commentSnaps, likesByCommentId] = await Promise.all([
+    Promise.all(ids.map((id) => get(ref(realtimeDb, `travelComments/${id}`)).then((snap) => ({ id, snap })))),
+    getLikesByIds('travelComments', ids),
+  ]);
 
   return commentSnaps
     .filter(({ snap }) => snap.exists())
-    .map(({ id, snap }) => normalizeComment({ id, ...snap.val() }, currentUserId))
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, currentUserId))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
 export const toggleTravelCommentLike = async (commentId) => {
   const user = await getCurrentUser();
-  const likeUserRef = ref(realtimeDb, `travelComments/${commentId}/likeUserIds/${user.id}`);
+  const likePath = `likes/travelComments/${commentId}`;
+  const likeUserRef = ref(realtimeDb, `${likePath}/${user.id}`);
   const transaction = await runTransaction(likeUserRef, (current) => {
     const nextLiked = !current;
     return nextLiked ? true : null;
   });
   const liked = transaction.snapshot.val() === true;
-  const likeSnapshot = await get(ref(realtimeDb, `travelComments/${commentId}/likeUserIds`));
+  const likeSnapshot = await get(ref(realtimeDb, likePath));
   const likes = likeMapToIds(likeSnapshot.val()).length;
   return { liked, likes };
 };
@@ -44,7 +46,6 @@ export const postTravelComment = async ({ contentId, nickname, body }) => {
     user_id: user.id,
     nickname: nickname || user.name,
     body,
-    likeUserIds: {},
     created_at,
     updated_at: created_at,
   };

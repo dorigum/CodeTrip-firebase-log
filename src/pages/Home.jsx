@@ -474,8 +474,15 @@ const GuestHome = () => (
   </div>
 );
 
+const AuthLoading = () => (
+  <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-background p-6" role="status" aria-live="polite">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    <p className="text-xs font-mono text-outline animate-pulse">// restoring_authenticated_session...</p>
+  </div>
+);
+
 const Home = () => {
-  const { isLoggedIn, user } = useAuthStore();
+  const { isLoggedIn, user, isLoading: isAuthLoading } = useAuthStore();
   const {
     wishlistItems,
     folders,
@@ -603,6 +610,8 @@ const Home = () => {
   }, []); // 의존성 배열을 비워 함수 안정화 (Ref 사용)
 
   useEffect(() => {
+    if (isAuthLoading) return undefined;
+
     const userKey = user?.id || user?.uid || user?.email || '';
     let effectActive = true;
     const requestId = ++homeRequestIdRef.current;
@@ -661,12 +670,12 @@ const Home = () => {
       homeRequestIdRef.current += 1;
       if (geolocationDelayId) window.clearTimeout(geolocationDelayId);
     };
-  }, [fetchMainData, isLoggedIn, resetHomeState, user?.email, user?.id, user?.uid]);
+  }, [fetchMainData, isAuthLoading, isLoggedIn, resetHomeState, user?.email, user?.id, user?.uid]);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (isAuthLoading || !isLoggedIn) return;
     initWishlist();
-  }, [initWishlist, isLoggedIn]);
+  }, [initWishlist, isAuthLoading, isLoggedIn]);
 
   const handleSlotSpin = async () => {
     if (isSlotSpinning) return;
@@ -776,6 +785,10 @@ const Home = () => {
 
     return () => window.clearInterval(timer);
   }, [todayBriefing, isLoggedIn]);
+
+  if (isAuthLoading) {
+    return <AuthLoading />;
+  }
 
   if (!isLoggedIn) {
     return <GuestHome />;

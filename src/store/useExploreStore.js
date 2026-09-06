@@ -2,12 +2,15 @@ import { create } from 'zustand';
 import { getTravelList } from '../api/travelInfoApi';
 import { DEFAULT_REGIONS } from '../constants/regions';
 
-const DESKTOP_NUM_OF_ROWS = 10;
+const WIDE_DESKTOP_NUM_OF_ROWS = 12;
+const DESKTOP_NUM_OF_ROWS = 9;
 const MOBILE_NUM_OF_ROWS = 6;
 
 const getExploreItemsPerPage = () => {
   if (typeof window === 'undefined') return DESKTOP_NUM_OF_ROWS;
-  return window.innerWidth < 768 ? MOBILE_NUM_OF_ROWS : DESKTOP_NUM_OF_ROWS;
+  if (window.innerWidth >= 1536) return WIDE_DESKTOP_NUM_OF_ROWS;
+  if (window.innerWidth >= 1024) return DESKTOP_NUM_OF_ROWS;
+  return MOBILE_NUM_OF_ROWS;
 };
 
 let exploreScrollY = 0;
