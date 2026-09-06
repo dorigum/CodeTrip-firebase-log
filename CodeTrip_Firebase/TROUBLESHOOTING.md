@@ -566,6 +566,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인 기준**: 클라이언트의 요약 생성·수정·삭제는 모두 거부되고, 원본 게시글 변경·삭제 후 대응 요약이 Trigger로 갱신·삭제되어야 합니다.
 - **상세 기록**: [2026-09-06 개발 로그](project-log/2026-09-06.md)의 게시글 요약 경로의 클라이언트 직접 쓰기 완전 차단 섹션 참고
 
+## 66. 게시글 요약 Trigger가 다른 RTDB 인스턴스 이벤트 또는 비정상 수정 시각을 처리할 수 있음
+
+- **발생일**: 2026-09-06
+- **영향 범위**: `syncBoardPostSummary` Trigger 범위, 목록 요약의 `updated_at` 타입
+- **요약**: 2세대 RTDB Trigger에 인스턴스를 지정하지 않으면 같은 리전의 여러 데이터베이스 이벤트를 수신할 수 있으며, 원본의 비문자열 `updated_at`은 요약 Rules의 문자열 계약을 위반할 수 있었습니다.
+- **처리**: 실제 기본 인스턴스 `newagent-9c2a8`을 Trigger 옵션에 명시하고, `updated_at`이 유효한 문자열일 때만 사용하며 그렇지 않으면 필수 문자열 `created_at`으로 대체했습니다.
+- **확인 기준**: Trigger는 `newagent-9c2a8`의 `boardPosts/{postId}` 이벤트만 처리하고, 요약의 `updated_at`은 항상 문자열이어야 합니다.
+- **상세 기록**: [2026-09-06 개발 로그](project-log/2026-09-06.md)의 Trigger 범위·수정 시각 타입 방어 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
