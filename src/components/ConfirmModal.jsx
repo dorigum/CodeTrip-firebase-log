@@ -17,6 +17,11 @@ const ConfirmModal = ({
   const descriptionId = useId();
   const modalRef = useRef(null);
   const confirmButtonRef = useRef(null);
+  const onCancelRef = useRef(onCancel);
+  const onCloseRef = useRef(onClose);
+
+  onCancelRef.current = onCancel;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -27,7 +32,7 @@ const ConfirmModal = ({
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        (onClose || onCancel)?.();
+        (onCloseRef.current || onCancelRef.current)?.();
         return;
       }
 
@@ -57,7 +62,7 @@ const ConfirmModal = ({
       document.removeEventListener('keydown', handleKeyDown);
       previousActiveElement?.focus?.();
     };
-  }, [open, onCancel, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
