@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useEffect, useEffectEvent, useId, useRef } from 'react';
 
 const ConfirmModal = ({
   open,
@@ -8,6 +8,8 @@ const ConfirmModal = ({
   cancelText = '취소',
   icon = 'terminal',
   tone = 'danger',
+  confirmDisabled = false,
+  restoreFocus = true,
   onConfirm,
   onCancel,
   onClose,
@@ -16,6 +18,10 @@ const ConfirmModal = ({
   const descriptionId = useId();
   const modalRef = useRef(null);
   const confirmButtonRef = useRef(null);
+  const requestClose = useEffectEvent(() => {
+    (onClose || onCancel)?.();
+  });
+  const shouldRestoreFocus = useEffectEvent(() => restoreFocus);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -26,7 +32,7 @@ const ConfirmModal = ({
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        (onClose || onCancel)?.();
+        requestClose();
         return;
       }
 
@@ -54,9 +60,9 @@ const ConfirmModal = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      previousActiveElement?.focus?.();
+      if (shouldRestoreFocus()) previousActiveElement?.focus?.();
     };
-  }, [open, onCancel, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -114,7 +120,8 @@ const ConfirmModal = ({
             type="button"
             onClick={onConfirm}
             ref={confirmButtonRef}
-            className={`h-10 rounded-lg px-4 text-xs font-black uppercase tracking-wider transition-colors ${confirmClass}`}
+            disabled={confirmDisabled}
+            className={`h-10 rounded-lg px-4 text-xs font-black uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${confirmClass}`}
           >
             {confirmText}
           </button>

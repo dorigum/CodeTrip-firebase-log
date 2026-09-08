@@ -21,6 +21,7 @@ const GEMINI_RESPONSE_BODY_TIMEOUT_MS = 10000;
 const GEMINI_TOTAL_BUDGET_MS = 45000;
 const REGION = 'asia-northeast3';
 const DATABASE_INSTANCE = 'newagent-9c2a8';
+const DATABASE_TRIGGER_REGION = 'us-central1';
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 const MAX_CONCURRENT_REQUESTS_PER_UID = 2;
@@ -468,7 +469,7 @@ const hasBoardPostSummaryFields = (post) => (
 );
 
 exports.syncBoardPostSummary = onValueWritten(
-  { ref: '/boardPosts/{postId}', region: REGION, instance: DATABASE_INSTANCE },
+  { ref: '/boardPosts/{postId}', region: DATABASE_TRIGGER_REGION, instance: DATABASE_INSTANCE },
   async (event) => {
     const summaryRef = getDatabase().ref(`boardPostSummaries/${event.params.postId}`);
 

@@ -8,6 +8,7 @@ import {
 } from '../api/boardApi';
 import useAuthStore from '../store/useAuthStore';
 import useBoardWriteStore from '../store/useBoardWriteStore';
+import ConfirmModal from '../components/ConfirmModal';
 
 const BoardDetail = () => {
   const { id } = useParams();
@@ -18,6 +19,10 @@ const BoardDetail = () => {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [postDeleteConfirmOpen, setPostDeleteConfirmOpen] = useState(false);
+  const [postDeleting, setPostDeleting] = useState(false);
+  const [restorePostDeleteFocus, setRestorePostDeleteFocus] = useState(true);
+  const [deletedPostId, setDeletedPostId] = useState(null);
 
   const [boardComments, setBoardComments] = useState([]);
   const [boardCommentText, setBoardCommentText] = useState('');
@@ -45,6 +50,11 @@ const BoardDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
+  useEffect(() => {
+    if (!deletedPostId) return;
+    navigate('/board', { replace: true, state: { deletedPostId } });
+  }, [deletedPostId, navigate]);
+
   const handleEdit = () => {
     setEditId(post.id);
     setTitle(post.title);
@@ -53,14 +63,28 @@ const BoardDetail = () => {
     navigate('/board/write', { state: { edit: true } });
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
+  const handleDelete = () => {
+    setRestorePostDeleteFocus(true);
+    setPostDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (postDeleting) return;
     try {
+      setPostDeleting(true);
       await deleteBoardPost(id);
-      navigate('/board');
+      setRestorePostDeleteFocus(false);
+      setPostDeleteConfirmOpen(false);
+      setDeletedPostId(id);
     } catch (err) {
       console.error(err);
+    } finally {
+      setPostDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    if (!postDeleting) setPostDeleteConfirmOpen(false);
   };
 
   const handleBoardCommentFocus = (e) => {
@@ -186,6 +210,20 @@ const BoardDetail = () => {
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
+
+      <ConfirmModal
+        open={postDeleteConfirmOpen}
+        title="게시글을 삭제할까요?"
+        description="삭제한 게시글은 복구할 수 없습니다. 계속 진행하시겠습니까?"
+        confirmText={postDeleting ? '삭제 중...' : '삭제'}
+        cancelText="취소"
+        icon="delete_forever"
+        confirmDisabled={postDeleting}
+        restoreFocus={restorePostDeleteFocus}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        onClose={handleDeleteCancel}
+      />
 
       {/* Login Dialog */}
       {showLoginDialog && (
