@@ -141,7 +141,7 @@ const Info = () => {
             CodeTrip<span className="text-primary">.</span>
           </h1>
           <p className="text-sm leading-relaxed text-white/70 sm:text-lg">
-            대한민국 곳곳의 여행지를 탐색하고, 날씨와 위치 기반으로 지금 이 순간 최적의 여행지를 추천받으세요.
+            어디로 갈지부터 막막한 순간, 날씨·위치·관심 지역을 단서로 나에게 맞는 여행 선택을 시작하세요.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2 sm:gap-4">
             <Link
@@ -178,6 +178,36 @@ const Info = () => {
           </div>
         </div>
       </InfoReveal>
+
+      {/* Service Differentiation */}
+      <section className="border-b border-outline-variant/10 bg-white px-4 py-12 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-5xl space-y-8 sm:space-y-12">
+          <InfoReveal className="mx-auto max-w-2xl space-y-3 text-center">
+            <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">Why CodeTrip</p>
+            <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">여행지를 찾는 것을 넘어, 선택을 돕습니다</h2>
+            <p className="text-sm leading-relaxed text-slate-500 sm:text-base">정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고, 저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.</p>
+          </InfoReveal>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+            {[
+              { icon: 'explore', title: '막막한 시작을 위한 단서', desc: '지역·테마·키워드 검색뿐 아니라 날씨, 위치, 관심 지역을 바탕으로 탐색의 첫 후보를 찾습니다.' },
+              { icon: 'account_tree', title: '발견에서 계획까지', desc: '마음에 드는 장소를 폴더와 메모로 정리하고, AI 일정 초안으로 다음 선택을 이어갑니다.' },
+              { icon: 'psychology', title: '이유를 보여주는 AI 계획', desc: 'AI 플래너는 동행, 예산, 이동 부담과 추천 근거를 더 명확히 보여주는 방향으로 고도화 중입니다.' },
+            ].map((item, index) => (
+              <InfoReveal key={item.title} delay={index * 90}>
+                <div className="h-full space-y-4 rounded-2xl border border-outline-variant/10 bg-slate-50/70 p-5 sm:p-7">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
+                    <span className="material-symbols-outlined text-2xl text-primary">{item.icon}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-headline text-base font-bold text-on-surface">{item.title}</h3>
+                    <p className="text-sm leading-relaxed text-slate-500">{item.desc}</p>
+                  </div>
+                </div>
+              </InfoReveal>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Feature Navigator + Detail */}
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-6 sm:py-20 sm:space-y-16 lg:px-10">
