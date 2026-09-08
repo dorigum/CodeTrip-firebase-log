@@ -15,7 +15,7 @@ CodeTrip은 여행지 탐색, 위시리스트, AI 일정 생성 기능을 중심
 1. Firebase Scheduler가 하루 1회 `syncTourApiUpdates` 함수를 실행합니다.
 2. 함수가 한국관광공사 `KorService2.areaBasedList2`를 이미지가 있는 등록일 최신순 기준으로 조회합니다.
 3. 이미 저장된 `contentId`와 비교해 신규 여행지만 `tourApiUpdates/items/{contentId}`에 저장합니다.
-4. Header 알림 UI는 기존 `users/{uid}/notifications`와 공용 `tourApiUpdates/items`를 함께 조회합니다.
+4. Header 알림 UI는 기존 `users/{uid}/notifications`와 공용 `tourApiUpdates/items`를 함께 조회하고, TourAPI 항목은 사용자의 `favoriteRegions`와 `areaCode`가 일치할 때만 표시합니다.
 5. 사용자의 읽음·숨김 상태는 `users/{uid}/tourApiUpdateReads/{contentId}`에 저장합니다.
 
 ## 3. 데이터 모델
@@ -50,7 +50,7 @@ users/{uid}/tourApiUpdateReads/{contentId}
   hidden_at
 ```
 
-공용 신규 여행지 피드를 사용자별로 복제하지 않고, 사용자가 읽었거나 숨긴 상태만 개인 경로에 저장합니다. 이 방식은 사용자 수가 늘어나도 대량 fan-out 쓰기를 줄일 수 있습니다.
+공용 신규 여행지 피드를 사용자별로 복제하지 않고, 사용자가 읽었거나 숨긴 상태만 개인 경로에 저장합니다. Header는 `users/{uid}/favoriteRegions`와 각 항목의 `areaCode`를 비교해 관심 지역 알림만 필터링합니다. 관심 지역이 없는 사용자는 TourAPI 신규 알림을 받지 않습니다. 이 방식은 사용자 수가 늘어나도 대량 fan-out 쓰기를 줄일 수 있습니다.
 
 ## 4. 운영 기준
 
@@ -81,12 +81,12 @@ Secret에는 한국관광공사 TourAPI 서비스 키를 입력합니다. 신규
 - `syncTourApiUpdates`는 TourAPI `resultCode`가 `0000`이고 `response.body.items.item` 구조가 존재할 때만 성공으로 기록해야 합니다.
 - `syncTourApiUpdates`는 등록일 최신순 조회를 사용해 첫 페이지에 최근 등록 데이터가 포함되도록 해야 합니다.
 - `tourApiUpdates/items`는 로그인 사용자에게 읽히고, 클라이언트 직접 쓰기는 거부되어야 합니다.
-- Header 알림 목록에는 기존 사용자 알림과 TourAPI 신규 여행지 알림이 최신순으로 함께 표시되어야 합니다.
+- Header 알림 목록에는 기존 사용자 알림과, 관심 지역 `areaCode`가 일치하는 TourAPI 신규 여행지·축제/행사 알림이 최신순으로 함께 표시되어야 합니다.
 - TourAPI 신규 여행지 알림을 클릭하면 `/explore/{contentId}` 상세 화면으로 이동해야 합니다.
 - 신규 여행지 알림의 읽음 처리, 개별 숨김 처리, 읽은 알림 삭제가 동작해야 합니다.
 
 ## 7. 후속 고도화
 
-초기 구현은 모든 로그인 사용자에게 공용 신규 여행지 피드를 보여주는 방식입니다. 이후에는 사용자의 관심 지역, 위시리스트 폴더, 최근 탐색 지역을 기준으로 개인화 알림을 제공할 수 있습니다.
+관심 지역 기반 개인화는 공용 피드 조회 시점에 필터링하므로 사용자별 알림 복제 쓰기를 만들지 않습니다. 현재 `areaBasedList2` 최신 등록 목록에 포함된 `contentTypeId: 15` 항목은 축제·행사로 구분해 같은 지역 필터를 적용합니다.
 
-다만 개인화 알림은 사용자별 쓰기량이 늘어날 수 있으므로, 비용과 Realtime Database 쓰기량을 측정한 뒤 도입하는 것이 좋습니다.
+향후에는 축제 전용 `searchFestival2` 수집을 별도 설계해, 일반 최신 등록 목록에 포함되지 않는 축제까지 감지 범위를 넓힐 수 있습니다. 이 경우 호출량·중복 판별·보관 정책을 먼저 측정합니다.

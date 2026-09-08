@@ -69,6 +69,7 @@ const Header = () => {
   }, []);
 
   const handleOpenNoti = () => {
+    if (!notiOpen) fetchNotifications();
     setNotiOpen(prev => !prev);
   };
 

@@ -6,6 +6,16 @@ const TOUR_UPDATE_NOTIFICATION_PREFIX = 'tourapi-';
 const TOUR_UPDATE_LIMIT = 10;
 const NOTIFICATION_DISPLAY_LIMIT = 30;
 
+const normalizeFavoriteRegions = (value) => {
+  const regions = Array.isArray(value) ? value : Object.values(value || {});
+  return new Set(regions.map((region) => String(region || '').trim()).filter(Boolean));
+};
+
+const getFavoriteRegions = async (userId) => {
+  const snapshot = await get(ref(realtimeDb, `users/${userId}/favoriteRegions`));
+  return normalizeFavoriteRegions(snapshot.exists() ? snapshot.val() : []);
+};
+
 const getMyNotifications = async (userId, { limit = NOTIFICATION_DISPLAY_LIMIT } = {}) => {
   const constraints = [orderByChild('created_at')];
   if (limit !== null) constraints.push(limitToLast(limit));
@@ -15,7 +25,9 @@ const getMyNotifications = async (userId, { limit = NOTIFICATION_DISPLAY_LIMIT }
     .slice(0, limit || undefined);
 };
 
-const getTourApiUpdateNotifications = async (userId, { limit = TOUR_UPDATE_LIMIT } = {}) => {
+const getTourApiUpdateNotifications = async (userId, favoriteRegions, { limit = TOUR_UPDATE_LIMIT } = {}) => {
+  if (favoriteRegions.size === 0) return [];
+
   const [updatesSnapshot, readsSnapshot] = await Promise.all([
     get(ref(realtimeDb, 'tourApiUpdates/items')),
     get(ref(realtimeDb, `users/${userId}/tourApiUpdateReads`)),
@@ -23,16 +35,18 @@ const getTourApiUpdateNotifications = async (userId, { limit = TOUR_UPDATE_LIMIT
   const readMarkers = readsSnapshot.exists() ? readsSnapshot.val() || {} : {};
 
   return snapshotToArray(updatesSnapshot)
+    .filter((item) => favoriteRegions.has(String(item.areaCode || '').trim()))
     .sort((a, b) => new Date(toIso(b.detectedAt)) - new Date(toIso(a.detectedAt)))
     .map((item) => {
       const marker = readMarkers[item.id] || {};
       const regionLabel = item.addr1 ? ` · ${item.addr1}` : '';
+      const notificationType = String(item.contentTypeId) === '15' ? '신규 축제·행사' : '신규 여행지';
 
       return {
         id: `${TOUR_UPDATE_NOTIFICATION_PREFIX}${item.id}`,
         type: 'tourapi_new_destination',
         content_id: String(item.contentId || item.id),
-        message: `[신규 여행지] ${item.title}${regionLabel}`,
+        message: `[${notificationType}] ${item.title}${regionLabel}`,
         created_at: toIso(item.detectedAt),
         is_read: !!marker.is_read,
         hidden: !!marker.hidden,
@@ -50,10 +64,11 @@ const getTourApiUpdateId = (id) =>
 
 export const getNotifications = async () => {
   const user = await getCurrentUser();
-  const [notifications, tourApiNotifications] = await Promise.all([
+  const [notifications, favoriteRegions] = await Promise.all([
     getMyNotifications(user.id),
-    getTourApiUpdateNotifications(user.id, { limit: null }),
+    getFavoriteRegions(user.id),
   ]);
+  const tourApiNotifications = await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null });
   const mergedNotifications = [
     ...notifications.map((notification) => ({
       ...notification,
@@ -72,10 +87,11 @@ export const getNotifications = async () => {
 
 export const markAllRead = async () => {
   const user = await getCurrentUser();
-  const [notifications, tourApiNotifications] = await Promise.all([
+  const [notifications, favoriteRegions] = await Promise.all([
     getMyNotifications(user.id, { limit: null }),
-    getTourApiUpdateNotifications(user.id, { limit: null }),
+    getFavoriteRegions(user.id),
   ]);
+  const tourApiNotifications = await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null });
   const updates = {};
   notifications
     .filter((notification) => !notification.is_read)
@@ -120,10 +136,11 @@ export const deleteOneNotification = async (id) => {
 
 export const deleteReadNotifications = async () => {
   const user = await getCurrentUser();
-  const [notifications, tourApiNotifications] = await Promise.all([
+  const [notifications, favoriteRegions] = await Promise.all([
     getMyNotifications(user.id, { limit: null }),
-    getTourApiUpdateNotifications(user.id, { limit: null }),
+    getFavoriteRegions(user.id),
   ]);
+  const tourApiNotifications = await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null });
   const updates = {};
   notifications
     .filter((notification) => notification.is_read)
