@@ -31,8 +31,11 @@ const Header = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notiOpen, setNotiOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [deleteReadConfirmOpen, setDeleteReadConfirmOpen] = useState(false);
+  const [notificationAction, setNotificationAction] = useState(null);
   const notiRef = useRef(null);
   const loginReturnPath = `${location.pathname}${location.search}`;
+  const isNotificationActionPending = notificationAction !== null;
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -70,31 +73,67 @@ const Header = () => {
   };
 
   const handleMarkAllRead = async () => {
-    await markAllRead();
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
+    if (isNotificationActionPending) return;
+
+    setNotificationAction('mark-all-read');
+    try {
+      await markAllRead();
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch {
+      showToast('알림을 읽음 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setNotificationAction(null);
+    }
   };
 
   const handleDeleteOne = async (e, id) => {
     e.stopPropagation();
-    await deleteOneNotification(id);
-    setNotifications(prev => {
-      const removed = prev.find(n => n.id === id);
-      if (removed && !removed.is_read) setUnreadCount(c => Math.max(0, c - 1));
-      return prev.filter(n => n.id !== id);
-    });
+    if (isNotificationActionPending) return;
+
+    const removed = notifications.find(n => n.id === id);
+    setNotificationAction(`delete-${id}`);
+    try {
+      await deleteOneNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      if (removed && !removed.is_read) setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch {
+      showToast('알림을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setNotificationAction(null);
+    }
   };
 
   const handleDeleteRead = async () => {
-    await deleteReadNotifications();
-    setNotifications(prev => prev.filter(n => !n.is_read));
+    if (isNotificationActionPending) return;
+
+    setNotificationAction('delete-read');
+    try {
+      await deleteReadNotifications();
+      setNotifications(prev => prev.filter(n => !n.is_read));
+      setDeleteReadConfirmOpen(false);
+    } catch {
+      showToast('읽은 알림을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setNotificationAction(null);
+    }
   };
 
   const handleClickNoti = async (noti) => {
     if (!noti.is_read) {
-      await markOneRead(noti.id);
-      setNotifications(prev => prev.map(n => n.id === noti.id ? { ...n, is_read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      if (isNotificationActionPending) return;
+
+      setNotificationAction(`read-${noti.id}`);
+      try {
+        await markOneRead(noti.id);
+        setNotifications(prev => prev.map(n => n.id === noti.id ? { ...n, is_read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch {
+        showToast('알림을 읽음 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      } finally {
+        setNotificationAction(null);
+      }
     }
     setNotiOpen(false);
     if (noti.content_id) {
@@ -225,15 +264,17 @@ const Header = () => {
                         {unreadCount > 0 && (
                           <button
                             onClick={handleMarkAllRead}
-                            className="text-[10px] font-mono text-primary hover:underline"
+                            disabled={isNotificationActionPending}
+                            className="text-[10px] font-mono text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            모두 읽음
+                            {notificationAction === 'mark-all-read' ? '처리 중...' : '모두 읽음'}
                           </button>
                         )}
                         {notifications.some(n => n.is_read) && (
                           <button
-                            onClick={handleDeleteRead}
-                            className="text-[10px] font-mono text-slate-400 hover:text-red-400 transition-colors"
+                            onClick={() => setDeleteReadConfirmOpen(true)}
+                            disabled={isNotificationActionPending}
+                            className="text-[10px] font-mono text-slate-400 hover:text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             읽은 알림 삭제
                           </button>
@@ -256,7 +297,8 @@ const Header = () => {
                           >
                             <button
                               onClick={() => handleClickNoti(noti)}
-                              className="flex items-start gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+                              disabled={isNotificationActionPending}
+                              className="flex items-start gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               <span className={`material-symbols-outlined text-sm mt-0.5 shrink-0 ${!noti.is_read ? 'text-primary' : 'text-slate-300'}`}>
                                 location_on
@@ -274,7 +316,8 @@ const Header = () => {
                               )}
                               <button
                                 onClick={(e) => handleDeleteOne(e, noti.id)}
-                                className="material-symbols-outlined text-sm text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover/noti:opacity-100"
+                                disabled={isNotificationActionPending}
+                                className="material-symbols-outlined text-sm text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover/noti:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
                                 title="알림 삭제"
                               >close</button>
                             </div>
@@ -334,6 +377,23 @@ const Header = () => {
       tone="danger"
       onConfirm={handleLogout}
       onCancel={() => setLogoutConfirmOpen(false)}
+    />
+    <ConfirmModal
+      open={deleteReadConfirmOpen}
+      title="읽은 알림 삭제"
+      description="읽은 개인 알림은 삭제되며, 신규 여행지 알림은 목록에서 숨김 처리됩니다."
+      confirmText={notificationAction === 'delete-read' ? 'DELETING...' : 'DELETE'}
+      cancelText="CANCEL"
+      icon="delete_forever"
+      tone="danger"
+      confirmDisabled={isNotificationActionPending}
+      onConfirm={handleDeleteRead}
+      onCancel={() => {
+        if (!isNotificationActionPending) setDeleteReadConfirmOpen(false);
+      }}
+      onClose={() => {
+        if (!isNotificationActionPending) setDeleteReadConfirmOpen(false);
+      }}
     />
     </>
   );
