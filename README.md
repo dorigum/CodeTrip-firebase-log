@@ -15,6 +15,7 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 - [트러블슈팅](CodeTrip_Firebase/TROUBLESHOOTING.md)
 - [의사결정 로그](docs/decision-log/)
 - [TourAPI 신규 여행지 알림 설계](docs/39-tourapi-update-notification-plan.md)
+- [CodeTrip 서비스 차별점과 AI 플래너 로드맵](docs/40-service-differentiation.md)
 
 ## 🚀 배포 정보
 
@@ -55,6 +56,17 @@ React / Vite
 ```
 
 프론트엔드는 공공 관광 데이터와 날씨·지도 데이터를 사용자 화면에 연결하고, 개인 데이터와 커뮤니티 데이터는 Firebase Realtime Database로 관리합니다. 이메일·비밀번호와 Google OAuth 로그인은 Firebase Authentication으로 처리하며, 인증 복원 중에는 세션 상태가 확정될 때까지 로딩 화면을 표시합니다. Gemini 일정 생성은 더 이상 브라우저에서 API 키를 직접 사용하지 않고, `generateTripPlan` Callable Function을 통해 서버 측에서 처리합니다. 프로필 이미지와 게시글 첨부 이미지는 Firebase Storage에 업로드한 뒤 다운로드 URL만 저장합니다.
+
+## 💡 CodeTrip이 집중하는 문제
+
+CodeTrip은 여행지를 많이 나열하는 데서 그치지 않고, **어디로 갈지부터 막막한 사용자가 자신의 상황에 맞는 여행 선택을 시작하도록 돕는 서비스**를 지향합니다.
+
+- 날씨·위치·관심 지역을 단서로 여행 후보 탐색을 시작합니다.
+- 발견한 후보는 위시리스트·폴더·메모·체크리스트로 비교하고 여행 계획으로 발전시킵니다.
+- AI 플래너는 조건 또는 저장한 후보를 바탕으로 일정 초안을 만들며, 향후 동행 관계·예산·이동 부담과 추천 근거까지 보여주는 방향으로 고도화합니다.
+- 관심 지역의 신규 여행지·축제/행사 정보는 다시 알림으로 연결해 다음 탐색을 돕습니다.
+
+현재 구현 범위와 AI 플래너 고도화 로드맵은 [서비스 차별점 문서](docs/40-service-differentiation.md)에서 구분해 확인할 수 있습니다.
 
 ## ✨ 주요 기능
 
@@ -124,7 +136,8 @@ React / Vite
 
 - Firebase Scheduled Function으로 한국관광공사 TourAPI 최신 여행지 데이터를 주기적으로 확인
 - 새 여행지 후보를 감지하면 Realtime Database의 공용 업데이트 피드에 기록
-- 초기 구현은 공용 알림 피드 방식이며, 향후 관심 지역·최근 탐색 지역·위시리스트 기반 개인화 알림으로 확장 예정
+- 관심 지역과 일치하는 신규 여행지·축제/행사 정보를 Header에서 확인
+- 축제 전용 수집, 수신 설정, 최근 탐색 지역·위시리스트 연계는 후속 고도화 범위
 
 ## ⚡ API 호출과 캐시 정책
 

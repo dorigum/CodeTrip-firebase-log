@@ -20,6 +20,7 @@
           }
         },
         "notifications": {
+          ".indexOn": ["created_at"],
           "$notificationId": {
             ".validate": "!newData.exists() || (newData.hasChildren(['user_id', 'message', 'is_read', 'created_at']) && newData.child('user_id').val() === $uid)"
           }

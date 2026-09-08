@@ -44,6 +44,7 @@ CodeTrip은 여행지 탐색, 여행 정보 확인, 찜·폴더 관리, AI 여�
 38. [Google OAuth 추가 계획](37-google-oauth-plan.md)
 39. [API 캐시 측정표](38-cache-measurement-sheet.md)
 40. [TourAPI 신규 여행지 알림 구현 계획](39-tourapi-update-notification-plan.md)
+41. [CodeTrip 서비스 차별점](40-service-differentiation.md)
 
 ## 공모전 제출 준비 빠른 사용 순서
 
