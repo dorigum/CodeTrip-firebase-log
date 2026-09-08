@@ -21,6 +21,8 @@ const BoardDetail = () => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [postDeleteConfirmOpen, setPostDeleteConfirmOpen] = useState(false);
   const [postDeleting, setPostDeleting] = useState(false);
+  const [restorePostDeleteFocus, setRestorePostDeleteFocus] = useState(true);
+  const [deletedPostId, setDeletedPostId] = useState(null);
 
   const [boardComments, setBoardComments] = useState([]);
   const [boardCommentText, setBoardCommentText] = useState('');
@@ -48,6 +50,11 @@ const BoardDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
+  useEffect(() => {
+    if (!deletedPostId) return;
+    navigate('/board', { replace: true, state: { deletedPostId } });
+  }, [deletedPostId, navigate]);
+
   const handleEdit = () => {
     setEditId(post.id);
     setTitle(post.title);
@@ -57,6 +64,7 @@ const BoardDetail = () => {
   };
 
   const handleDelete = () => {
+    setRestorePostDeleteFocus(true);
     setPostDeleteConfirmOpen(true);
   };
 
@@ -65,7 +73,9 @@ const BoardDetail = () => {
     try {
       setPostDeleting(true);
       await deleteBoardPost(id);
-      navigate('/board', { replace: true, state: { deletedPostId: id } });
+      setRestorePostDeleteFocus(false);
+      setPostDeleteConfirmOpen(false);
+      setDeletedPostId(id);
     } catch (err) {
       console.error(err);
     } finally {
@@ -209,6 +219,7 @@ const BoardDetail = () => {
         cancelText="취소"
         icon="delete_forever"
         confirmDisabled={postDeleting}
+        restoreFocus={restorePostDeleteFocus}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         onClose={handleDeleteCancel}

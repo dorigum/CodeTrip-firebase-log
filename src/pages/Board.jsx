@@ -38,8 +38,16 @@ const Board = () => {
     setLoading(true);
     try {
       const data = await getBoardPosts({ pageNo: page, numOfRows: NUM_OF_ROWS, cursor, keyword: kw, sort: sortBy });
-      setPosts((data.posts || []).filter((post) => post.id !== deletedPostId));
-      setTotalCount(data.totalCount || 0);
+      const responsePosts = data.posts || [];
+      const visiblePosts = responsePosts.filter((post) => post.id !== deletedPostId);
+      const removedPostCount = responsePosts.length - visiblePosts.length;
+
+      setPosts(visiblePosts);
+      setTotalCount(
+        typeof data.totalCount === 'number'
+          ? Math.max(0, data.totalCount - removedPostCount)
+          : null,
+      );
       setPaginationMode(data.paginationMode || 'offset');
       setHasNext(Boolean(data.hasNext));
       setNextCursor(data.nextCursor || null);

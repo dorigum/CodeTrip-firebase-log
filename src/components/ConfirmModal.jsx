@@ -9,6 +9,7 @@ const ConfirmModal = ({
   icon = 'terminal',
   tone = 'danger',
   confirmDisabled = false,
+  restoreFocus = true,
   onConfirm,
   onCancel,
   onClose,
@@ -20,6 +21,7 @@ const ConfirmModal = ({
   const requestClose = useEffectEvent(() => {
     (onClose || onCancel)?.();
   });
+  const shouldRestoreFocus = useEffectEvent(() => restoreFocus);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -58,7 +60,7 @@ const ConfirmModal = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      previousActiveElement?.focus?.();
+      if (shouldRestoreFocus()) previousActiveElement?.focus?.();
     };
   }, [open]);
 
