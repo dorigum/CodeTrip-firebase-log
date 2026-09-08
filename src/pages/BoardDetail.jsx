@@ -65,7 +65,7 @@ const BoardDetail = () => {
     try {
       setPostDeleting(true);
       await deleteBoardPost(id);
-      navigate('/board');
+      navigate('/board', { replace: true, state: { deletedPostId: id } });
     } catch (err) {
       console.error(err);
     } finally {

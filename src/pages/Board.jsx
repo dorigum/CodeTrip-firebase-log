@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getBoardPosts } from '../api/boardApi';
 import useAuthStore from '../store/useAuthStore';
 import useBoardWriteStore from '../store/useBoardWriteStore';
@@ -10,6 +10,7 @@ const NUM_OF_ROWS = 10;
 
 const Board = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn } = useAuthStore();
   const resetForm = useBoardWriteStore((s) => s.resetForm);
   const showToast = useToast();
@@ -25,6 +26,7 @@ const Board = () => {
   const [paginationMode, setPaginationMode] = useState('cursor');
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
+  const deletedPostId = location.state?.deletedPostId || null;
 
   const SORT_OPTIONS = [
     { value: 'created_at', label: 'CREATED_AT' },
@@ -36,7 +38,7 @@ const Board = () => {
     setLoading(true);
     try {
       const data = await getBoardPosts({ pageNo: page, numOfRows: NUM_OF_ROWS, cursor, keyword: kw, sort: sortBy });
-      setPosts(data.posts || []);
+      setPosts((data.posts || []).filter((post) => post.id !== deletedPostId));
       setTotalCount(data.totalCount || 0);
       setPaginationMode(data.paginationMode || 'offset');
       setHasNext(Boolean(data.hasNext));
@@ -47,7 +49,7 @@ const Board = () => {
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, deletedPostId]);
 
   useEffect(() => {
     const cursor = !keyword && sort === 'created_at' ? pageCursors[currentPage - 1] : null;

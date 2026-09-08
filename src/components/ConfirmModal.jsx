@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useEffect, useEffectEvent, useId, useRef } from 'react';
 
 const ConfirmModal = ({
   open,
@@ -17,11 +17,9 @@ const ConfirmModal = ({
   const descriptionId = useId();
   const modalRef = useRef(null);
   const confirmButtonRef = useRef(null);
-  const onCancelRef = useRef(onCancel);
-  const onCloseRef = useRef(onClose);
-
-  onCancelRef.current = onCancel;
-  onCloseRef.current = onClose;
+  const requestClose = useEffectEvent(() => {
+    (onClose || onCancel)?.();
+  });
 
   useEffect(() => {
     if (!open) return undefined;
@@ -32,7 +30,7 @@ const ConfirmModal = ({
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        (onCloseRef.current || onCancelRef.current)?.();
+        requestClose();
         return;
       }
 
