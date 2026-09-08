@@ -1,19 +1,15 @@
 import { get, limitToLast, orderByChild, query, ref, remove, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso, snapshotToArray, toIso } from './firebaseHelpers';
+import { toTourApiAreaCodeSet } from '../utils/tourApiAreaCode';
 
 const TOUR_UPDATE_NOTIFICATION_PREFIX = 'tourapi-';
 const TOUR_UPDATE_LIMIT = 10;
 const NOTIFICATION_DISPLAY_LIMIT = 30;
 
-const normalizeFavoriteRegions = (value) => {
-  const regions = Array.isArray(value) ? value : Object.values(value || {});
-  return new Set(regions.map((region) => String(region || '').trim()).filter(Boolean));
-};
-
 const getFavoriteRegions = async (userId) => {
   const snapshot = await get(ref(realtimeDb, `users/${userId}/favoriteRegions`));
-  return normalizeFavoriteRegions(snapshot.exists() ? snapshot.val() : []);
+  return toTourApiAreaCodeSet(snapshot.exists() ? snapshot.val() : []);
 };
 
 const getMyNotifications = async (userId, { limit = NOTIFICATION_DISPLAY_LIMIT } = {}) => {

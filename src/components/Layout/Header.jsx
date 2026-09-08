@@ -32,17 +32,25 @@ const Header = () => {
   const [notiOpen, setNotiOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [deleteReadConfirmOpen, setDeleteReadConfirmOpen] = useState(false);
+  const [deleteReadRestoreFocus, setDeleteReadRestoreFocus] = useState(true);
   const [notificationAction, setNotificationAction] = useState(null);
   const notiRef = useRef(null);
+  const notificationBellRef = useRef(null);
+  const notificationRequestVersionRef = useRef(0);
   const loginReturnPath = `${location.pathname}${location.search}`;
   const isNotificationActionPending = notificationAction !== null;
 
   const fetchNotifications = useCallback(async () => {
+    const requestVersion = notificationRequestVersionRef.current + 1;
+    notificationRequestVersionRef.current = requestVersion;
+
     try {
       const data = await getNotifications();
+      if (requestVersion !== notificationRequestVersionRef.current) return;
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
     } catch (error) {
+      if (requestVersion !== notificationRequestVersionRef.current) return;
       const authBoundaryError = /permission|auth|login|로그인/i.test(`${error?.code || ''} ${error?.message || ''}`);
       if (authBoundaryError) {
         setNotifications([]);
@@ -79,6 +87,7 @@ const Header = () => {
     setNotificationAction('mark-all-read');
     try {
       await markAllRead();
+      notificationRequestVersionRef.current += 1;
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch {
@@ -96,6 +105,7 @@ const Header = () => {
     setNotificationAction(`delete-${id}`);
     try {
       await deleteOneNotification(id);
+      notificationRequestVersionRef.current += 1;
       setNotifications(prev => prev.filter(n => n.id !== id));
       if (removed && !removed.is_read) setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {
@@ -111,8 +121,11 @@ const Header = () => {
     setNotificationAction('delete-read');
     try {
       await deleteReadNotifications();
+      notificationRequestVersionRef.current += 1;
+      setDeleteReadRestoreFocus(false);
       setNotifications(prev => prev.filter(n => !n.is_read));
       setDeleteReadConfirmOpen(false);
+      window.requestAnimationFrame(() => notificationBellRef.current?.focus());
     } catch {
       showToast('읽은 알림을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
@@ -127,6 +140,7 @@ const Header = () => {
       setNotificationAction(`read-${noti.id}`);
       try {
         await markOneRead(noti.id);
+        notificationRequestVersionRef.current += 1;
         setNotifications(prev => prev.map(n => n.id === noti.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
       } catch {
@@ -239,6 +253,7 @@ const Header = () => {
               {/* 알림 벨 */}
               <div className="relative" ref={notiRef}>
                 <button
+                  ref={notificationBellRef}
                   onClick={handleOpenNoti}
                   className="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
                   title="알림"
@@ -273,7 +288,10 @@ const Header = () => {
                         )}
                         {notifications.some(n => n.is_read) && (
                           <button
-                            onClick={() => setDeleteReadConfirmOpen(true)}
+                            onClick={() => {
+                              setDeleteReadRestoreFocus(true);
+                              setDeleteReadConfirmOpen(true);
+                            }}
                             disabled={isNotificationActionPending}
                             className="text-[10px] font-mono text-slate-400 hover:text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                           >
@@ -388,12 +406,19 @@ const Header = () => {
       icon="delete_forever"
       tone="danger"
       confirmDisabled={isNotificationActionPending}
+      restoreFocus={deleteReadRestoreFocus}
       onConfirm={handleDeleteRead}
       onCancel={() => {
-        if (!isNotificationActionPending) setDeleteReadConfirmOpen(false);
+        if (!isNotificationActionPending) {
+          setDeleteReadRestoreFocus(true);
+          setDeleteReadConfirmOpen(false);
+        }
       }}
       onClose={() => {
-        if (!isNotificationActionPending) setDeleteReadConfirmOpen(false);
+        if (!isNotificationActionPending) {
+          setDeleteReadRestoreFocus(true);
+          setDeleteReadConfirmOpen(false);
+        }
       }}
     />
     </>

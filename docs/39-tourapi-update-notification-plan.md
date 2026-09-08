@@ -50,7 +50,7 @@ users/{uid}/tourApiUpdateReads/{contentId}
   hidden_at
 ```
 
-공용 신규 여행지 피드를 사용자별로 복제하지 않고, 사용자가 읽었거나 숨긴 상태만 개인 경로에 저장합니다. Header는 `users/{uid}/favoriteRegions`와 각 항목의 `areaCode`를 비교해 관심 지역 알림만 필터링합니다. 관심 지역이 없는 사용자는 TourAPI 신규 알림을 받지 않습니다. 이 방식은 사용자 수가 늘어나도 대량 fan-out 쓰기를 줄일 수 있습니다.
+공용 신규 여행지 피드를 사용자별로 복제하지 않고, 사용자가 읽었거나 숨긴 상태만 개인 경로에 저장합니다. Header는 `users/{uid}/favoriteRegions`의 행정구역 코드(예: 서울 `11`, 부산 `26`)를 TourAPI `areaCode`(예: 서울 `1`, 부산 `6`)로 변환한 뒤 각 항목과 비교해 관심 지역 알림만 필터링합니다. 관심 지역이 없는 사용자는 TourAPI 신규 알림을 받지 않습니다. 이 방식은 사용자 수가 늘어나도 대량 fan-out 쓰기를 줄일 수 있습니다.
 
 ## 4. 운영 기준
 
