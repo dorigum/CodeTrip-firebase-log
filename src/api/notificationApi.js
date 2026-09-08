@@ -1,15 +1,18 @@
-import { get, ref, remove, update } from 'firebase/database';
+import { get, limitToLast, orderByChild, query, ref, remove, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso, snapshotToArray, toIso } from './firebaseHelpers';
 
 const TOUR_UPDATE_NOTIFICATION_PREFIX = 'tourapi-';
 const TOUR_UPDATE_LIMIT = 10;
+const NOTIFICATION_DISPLAY_LIMIT = 30;
 
-const getMyNotifications = async () => {
-  const user = await getCurrentUser();
-  return snapshotToArray(await get(ref(realtimeDb, `users/${user.id}/notifications`)))
+const getMyNotifications = async (userId, { limit = NOTIFICATION_DISPLAY_LIMIT } = {}) => {
+  const constraints = [orderByChild('created_at')];
+  if (limit !== null) constraints.push(limitToLast(limit));
+
+  return snapshotToArray(await get(query(ref(realtimeDb, `users/${userId}/notifications`), ...constraints)))
     .sort((a, b) => new Date(toIso(b.created_at)) - new Date(toIso(a.created_at)))
-    .slice(0, 30);
+    .slice(0, limit || undefined);
 };
 
 const getTourApiUpdateNotifications = async (userId, { limit = TOUR_UPDATE_LIMIT } = {}) => {
@@ -48,7 +51,7 @@ const getTourApiUpdateId = (id) =>
 export const getNotifications = async () => {
   const user = await getCurrentUser();
   const [notifications, tourApiNotifications] = await Promise.all([
-    getMyNotifications(),
+    getMyNotifications(user.id),
     getTourApiUpdateNotifications(user.id, { limit: null }),
   ]);
   const mergedNotifications = [
@@ -70,7 +73,7 @@ export const getNotifications = async () => {
 export const markAllRead = async () => {
   const user = await getCurrentUser();
   const [notifications, tourApiNotifications] = await Promise.all([
-    getMyNotifications(),
+    getMyNotifications(user.id, { limit: null }),
     getTourApiUpdateNotifications(user.id, { limit: null }),
   ]);
   const updates = {};
@@ -118,7 +121,7 @@ export const deleteOneNotification = async (id) => {
 export const deleteReadNotifications = async () => {
   const user = await getCurrentUser();
   const [notifications, tourApiNotifications] = await Promise.all([
-    getMyNotifications(),
+    getMyNotifications(user.id, { limit: null }),
     getTourApiUpdateNotifications(user.id, { limit: null }),
   ]);
   const updates = {};
