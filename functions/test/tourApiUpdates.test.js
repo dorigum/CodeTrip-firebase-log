@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { parseRecentTourApiItemsResponse } = require('../tourApiUpdates');
+const { dedupeTourApiItems, parseRecentTourApiItemsResponse } = require('../tourApiUpdates');
 
 const silentLogger = {
   warn: () => {},
@@ -88,4 +88,12 @@ test('missing TourAPI area code is inferred from the Korean address', () => {
   }, silentLogger);
 
   assert.deepEqual(result.map((item) => item.areaCode), ['3', '31']);
+});
+
+test('festival source takes precedence when the same content ID is returned twice', () => {
+  const festival = { contentId: 'festival-1', contentTypeId: '15', source: 'KorService2.searchFestival2' };
+  const general = { contentId: 'festival-1', contentTypeId: '15', source: 'KorService2.areaBasedList2' };
+  const destination = { contentId: 'destination-1', contentTypeId: '12', source: 'KorService2.areaBasedList2' };
+
+  assert.deepEqual(dedupeTourApiItems([festival, general, destination]), [festival, destination]);
 });

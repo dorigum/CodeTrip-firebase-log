@@ -33,6 +33,14 @@ const normalizeTourApiItems = (items) => {
 
 const normalizeTourApiImage = (value) => String(value || '').replace('http://', 'https://');
 
+const dedupeTourApiItems = (items) => {
+  const uniqueItems = new Map();
+  items.forEach((item) => {
+    if (item?.contentId && !uniqueItems.has(item.contentId)) uniqueItems.set(item.contentId, item);
+  });
+  return [...uniqueItems.values()];
+};
+
 const resolveTourApiAreaCode = (areaCode, address) => {
   const normalizedAreaCode = sanitizeString(areaCode, '', 20);
   if (normalizedAreaCode) return normalizedAreaCode;
@@ -82,6 +90,7 @@ const parseRecentTourApiItemsResponse = (data, logger = console) => {
 };
 
 module.exports = {
+  dedupeTourApiItems,
   normalizeTourApiItems,
   parseRecentTourApiItemsResponse,
   resolveTourApiAreaCode,

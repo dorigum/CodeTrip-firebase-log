@@ -5,7 +5,7 @@ const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
-const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
+const { dedupeTourApiItems, parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
 
 initializeApp();
 
@@ -490,7 +490,7 @@ exports.syncBoardPostSummary = onValueWritten(
   }
 );
 
-const buildTourApiUrl = () => {
+const buildTourApiUrl = (endpoint, extraParams = {}) => {
   const params = new URLSearchParams({
     serviceKey: decodeURIComponent(TOUR_API_SERVICE_KEY.value() || ''),
     MobileOS: 'ETC',
@@ -499,13 +499,14 @@ const buildTourApiUrl = () => {
     arrange: 'R',
     pageNo: '1',
     numOfRows: String(TOUR_UPDATE_LOOKBACK_ROWS),
+    ...extraParams,
   });
 
-  return `${TOUR_API_BASE_URL}/areaBasedList2?${params.toString()}`;
+  return `${TOUR_API_BASE_URL}/${endpoint}?${params.toString()}`;
 };
 
-const fetchRecentTourApiItems = async () => {
-  const url = buildTourApiUrl();
+const fetchTourApiItems = async (endpoint, extraParams = {}) => {
+  const url = buildTourApiUrl(endpoint, extraParams);
   let response;
 
   for (let attempt = 0; attempt <= TOUR_API_MAX_RETRIES; attempt += 1) {
@@ -559,6 +560,13 @@ const fetchRecentTourApiItems = async () => {
 
   const data = await response.json();
   return parseRecentTourApiItemsResponse(data, logger);
+};
+
+const fetchRecentTourApiItems = async () => fetchTourApiItems('areaBasedList2');
+
+const fetchRecentTourApiFestivalItems = async () => {
+  const year = new Date().getFullYear();
+  return fetchTourApiItems('searchFestival2', { eventStartDate: `${year}0101` });
 };
 
 const readExistingTourApiUpdates = async (itemsRef) => {
@@ -650,15 +658,20 @@ exports.syncTourApiUpdates = onSchedule(
     const db = getDatabase();
     const itemsRef = db.ref('tourApiUpdates/items');
     const now = new Date().toISOString();
-    const [recentItems, existingItems] = await Promise.all([
+    const [recentDestinationItems, recentFestivalItems, existingItems] = await Promise.all([
       fetchRecentTourApiItems(),
+      fetchRecentTourApiFestivalItems(),
       readExistingTourApiUpdates(itemsRef),
+    ]);
+    const recentItems = dedupeTourApiItems([
+      ...recentFestivalItems.map((item) => ({ ...item, source: 'KorService2.searchFestival2' })),
+      ...recentDestinationItems.map((item) => ({ ...item, source: 'KorService2.areaBasedList2' })),
     ]);
     const existingItemsById = new Map(existingItems.map((item) => [item.key, item]));
     const nextItemsForRetention = [...existingItems];
     const updates = {
       'tourApiUpdates/state/lastRunAt': now,
-      'tourApiUpdates/state/source': 'KorService2.areaBasedList2',
+      'tourApiUpdates/state/source': 'KorService2.areaBasedList2, KorService2.searchFestival2',
     };
     let newItemCount = 0;
     let backfilledAreaCodeCount = 0;
@@ -678,7 +691,6 @@ exports.syncTourApiUpdates = onSchedule(
       updates[`tourApiUpdates/items/${item.contentId}`] = {
         ...item,
         detectedAt: now,
-        source: 'KorService2.areaBasedList2',
       };
     });
 
@@ -689,6 +701,7 @@ exports.syncTourApiUpdates = onSchedule(
 
     logger.info('TourAPI update sync completed', {
       checkedCount: recentItems.length,
+      checkedFestivalCount: recentFestivalItems.length,
       newItemCount,
       backfilledAreaCodeCount,
     });

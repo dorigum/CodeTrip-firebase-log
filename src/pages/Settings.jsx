@@ -33,12 +33,19 @@ const Settings = () => {
   const [selectedRegions, setSelectedRegions] = useState([]);
   const [regionsLoading, setRegionsLoading] = useState(false);
   const [regionsMessage, setRegionsMessage] = useState({ type: '', text: '' });
+  const [tourApiNotificationEnabled, setTourApiNotificationEnabled] = useState(true);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const codes = await authApi.getFavoriteRegions();
+        const [codes, enabled] = await Promise.all([
+          authApi.getFavoriteRegions(),
+          authApi.getTourApiNotificationSetting(),
+        ]);
         setSelectedRegions(codes);
+        setTourApiNotificationEnabled(enabled);
       } catch {
         showToast('관심지역을 불러오는 데 실패했습니다.');
       }
@@ -52,6 +59,19 @@ const Settings = () => {
       if (prev.length >= 3) return prev;
       return [...prev, code];
     });
+  };
+
+  const handleSaveTourApiNotification = async () => {
+    setNotificationLoading(true);
+    setNotificationMessage({ type: '', text: '' });
+    try {
+      const result = await authApi.updateTourApiNotificationSetting(tourApiNotificationEnabled);
+      setNotificationMessage({ type: 'success', text: result.message });
+    } catch (err) {
+      setNotificationMessage({ type: 'error', text: err.message || '알림 설정 저장에 실패했습니다.' });
+    } finally {
+      setNotificationLoading(false);
+    }
   };
 
   const handleSaveRegions = async () => {
@@ -333,6 +353,37 @@ const Settings = () => {
                   <span className="material-symbols-outlined text-sm">save</span>
                 )}
                 SAVE_REGIONS
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-low shadow-sm">
+          <div className="flex flex-col gap-2 border-b border-outline-variant/10 bg-surface-container-lowest p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">notifications</span>
+              <h2 className="font-headline font-bold text-on-surface">신규 정보 알림</h2>
+            </div>
+            <span className="break-all font-mono text-[10px] uppercase tracking-widest text-outline">// tourapi_updates</span>
+          </div>
+          <div className="space-y-5 p-5 sm:p-8">
+            <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/15 bg-background p-4">
+              <input
+                type="checkbox"
+                checked={tourApiNotificationEnabled}
+                onChange={(event) => setTourApiNotificationEnabled(event.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-primary"
+              />
+              <span className="space-y-1">
+                <span className="block text-sm font-bold text-on-surface">관심 지역의 신규 여행지·축제 알림 받기</span>
+                <span className="block text-xs leading-relaxed text-on-secondary-container">관심 지역을 설정한 경우에만 표시됩니다. 게시글·댓글 등 개인 알림에는 영향을 주지 않습니다.</span>
+                {selectedRegions.length === 0 && <span className="block text-xs font-bold text-primary">관심 지역을 먼저 저장하면 맞춤 알림을 받을 수 있습니다.</span>}
+              </span>
+            </label>
+            <div className="flex flex-col gap-4 border-t border-outline-variant/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>{notificationMessage.text && <div className={`text-[11px] font-bold ${notificationMessage.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>{notificationMessage.text}</div>}</div>
+              <button type="button" onClick={handleSaveTourApiNotification} disabled={notificationLoading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-label text-xs font-bold tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 disabled:opacity-60 sm:w-auto sm:px-8">
+                {notificationLoading ? 'SAVING...' : 'SAVE_NOTIFICATION'}
               </button>
             </div>
           </div>

@@ -217,6 +217,21 @@ const authApi = {
     return { message: '관심 지역이 저장되었습니다.' };
   },
 
+  getTourApiNotificationSetting: async () => {
+    const user = await getCurrentUser();
+    const settingSnap = await get(ref(realtimeDb, `users/${user.id}/notificationSettings/tourApiUpdatesEnabled`));
+    return !settingSnap.exists() || settingSnap.val() !== false;
+  },
+
+  updateTourApiNotificationSetting: async (enabled) => {
+    const user = await getCurrentUser();
+    await update(ref(realtimeDb, `users/${user.id}/notificationSettings`), {
+      tourApiUpdatesEnabled: enabled === true,
+      updated_at: nowIso(),
+    });
+    return { message: enabled ? '신규 여행지·축제 알림을 받습니다.' : '신규 여행지·축제 알림을 끕니다.' };
+  },
+
   forgotPassword: async ({ email }) => {
     await sendPasswordResetEmail(firebaseAuth, email);
     return { message: '비밀번호 재설정 메일을 보냈습니다. 메일함을 확인해 주세요.' };
