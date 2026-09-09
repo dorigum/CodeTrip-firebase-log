@@ -30,6 +30,9 @@ const MAX_TEXT_LENGTH = 120;
 const MAX_DURATION_DAYS = 5;
 const TOUR_UPDATE_LOOKBACK_ROWS = 30;
 const TOUR_UPDATE_RETENTION_LIMIT = 100;
+const TOUR_API_MAX_RETRIES = 2;
+const TOUR_API_RETRY_BASE_DELAY_MS = 1000;
+const TOUR_API_REQUEST_TIMEOUT_MS = 15000;
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -502,7 +505,50 @@ const buildTourApiUrl = () => {
 };
 
 const fetchRecentTourApiItems = async () => {
-  const response = await fetch(buildTourApiUrl());
+  const url = buildTourApiUrl();
+  let response;
+
+  for (let attempt = 0; attempt <= TOUR_API_MAX_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TOUR_API_REQUEST_TIMEOUT_MS);
+
+    try {
+      response = await fetch(url, { signal: controller.signal });
+      if (response.ok || !isRetryableStatus(response.status) || attempt === TOUR_API_MAX_RETRIES) {
+        break;
+      }
+
+      logger.warn('TourAPI update sync received retryable response', {
+        attempt: attempt + 1,
+        status: response.status,
+        statusText: response.statusText,
+      });
+      await response.body?.cancel().catch(() => {});
+    } catch (error) {
+      const isLastAttempt = attempt === TOUR_API_MAX_RETRIES;
+      logger.warn('TourAPI update request failed', {
+        attempt: attempt + 1,
+        retrying: !isLastAttempt && isRetryableFetchError(error),
+        errorName: error?.name,
+        errorMessage: error?.message,
+        causeCode: error?.cause?.code,
+        causeMessage: error?.cause?.message,
+      });
+
+      if (!isRetryableFetchError(error) || isLastAttempt) {
+        throw new Error('TourAPI 신규 여행지 서버에 연결하지 못했습니다.', { cause: error });
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    await sleep(TOUR_API_RETRY_BASE_DELAY_MS * (attempt + 1));
+  }
+
+  if (!response) {
+    throw new Error('TourAPI 신규 여행지 서버에 연결하지 못했습니다.');
+  }
+
   if (!response.ok) {
     logger.warn('TourAPI update sync failed', {
       status: response.status,

@@ -674,6 +674,15 @@ Firebase 및 서비스 개발 과정에서 발생한 주요 문제와 해결 기
 - **확인 기준**: 동기화 성공 후 `tourApiUpdates/items/{contentId}/areaCode`가 대전 `3`, 경기 `31`처럼 채워지고, 해당 지역을 관심 지역으로 설정한 사용자에게만 Header 알림이 표시되어야 합니다.
 - **상세 기록**: [2026-09-08 개발 로그](project-log/2026-09-08.md)의 TourAPI 주소 기반 지역 코드 보완 및 기존 알림 백필 섹션 참고
 
+## 78. TourAPI HTTP 응답 전 연결 실패로 Scheduler 실행이 500이 됨
+
+- **발생일**: 2026-09-09
+- **영향 범위**: Cloud Scheduler, Functions `syncTourApiUpdates`, TourAPI 신규 정보 동기화
+- **요약**: Cloud Run 로그에 `Error: fetch failed`가 기록되고 Scheduler 호출은 HTTP 500으로 끝났습니다. 이는 `403`처럼 TourAPI가 반환한 상태 코드가 아니라, Cloud Run에서 TourAPI 서버로의 요청이 응답 전 실패한 네트워크·시간 초과 계열 오류입니다.
+- **처리**: TourAPI 호출에 15초 제한과 최대 2회 재시도를 추가하고, 오류 이름·메시지·하위 원인 코드(`causeCode`)를 구조화 로그로 남겼습니다. HTTP 408·5xx와 연결 오류만 재시도하고 4xx는 즉시 실패합니다.
+- **확인 기준**: 다음 강제 실행에서 일시 장애가 해소되면 Scheduler가 성공으로 표시되어야 합니다. 계속 실패하면 `TourAPI update request failed` 로그의 `causeCode`로 DNS·연결·시간 초과 원인을 분류합니다.
+- **상세 기록**: [2026-09-08 개발 로그](project-log/2026-09-08.md)의 TourAPI 연결 실패 재시도 및 원인 로그 보강 섹션 참고
+
 ## 참고 사항
 
 - 로컬 및 배포 관련 환경은 [CodeTrip 실행 가이드](guides/Guide.md) 혹은 [Firebase 배포 가이드](guides/Project_Firebase_배포.md)를 참고하세요.
