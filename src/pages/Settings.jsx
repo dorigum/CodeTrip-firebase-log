@@ -34,7 +34,7 @@ const Settings = () => {
   const [regionsLoading, setRegionsLoading] = useState(false);
   const [regionsMessage, setRegionsMessage] = useState({ type: '', text: '' });
   const [tourApiNotificationEnabled, setTourApiNotificationEnabled] = useState(true);
-  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(true);
   const [notificationMessage, setNotificationMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -48,6 +48,8 @@ const Settings = () => {
         setTourApiNotificationEnabled(enabled);
       } catch {
         showToast('관심지역을 불러오는 데 실패했습니다.');
+      } finally {
+        setNotificationLoading(false);
       }
     };
     load();
@@ -372,6 +374,7 @@ const Settings = () => {
                 type="checkbox"
                 checked={tourApiNotificationEnabled}
                 onChange={(event) => setTourApiNotificationEnabled(event.target.checked)}
+                disabled={notificationLoading}
                 className="mt-0.5 h-4 w-4 accent-primary"
               />
               <span className="space-y-1">

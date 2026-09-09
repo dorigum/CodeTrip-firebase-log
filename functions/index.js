@@ -515,7 +515,11 @@ const fetchTourApiItems = async (endpoint, extraParams = {}) => {
 
     try {
       response = await fetch(url, { signal: controller.signal });
-      if (response.ok || !isRetryableStatus(response.status) || attempt === TOUR_API_MAX_RETRIES) {
+      if (response.ok) {
+        const data = await response.json();
+        return parseRecentTourApiItemsResponse(data, logger);
+      }
+      if (!isRetryableStatus(response.status) || attempt === TOUR_API_MAX_RETRIES) {
         break;
       }
 
@@ -537,6 +541,7 @@ const fetchTourApiItems = async (endpoint, extraParams = {}) => {
       });
 
       if (!isRetryableFetchError(error) || isLastAttempt) {
+        if (!isRetryableFetchError(error)) throw error;
         throw new Error('TourAPI 신규 여행지 서버에 연결하지 못했습니다.', { cause: error });
       }
     } finally {
@@ -558,8 +563,6 @@ const fetchTourApiItems = async (endpoint, extraParams = {}) => {
     throw new Error('TourAPI 신규 여행지 조회에 실패했습니다.');
   }
 
-  const data = await response.json();
-  return parseRecentTourApiItemsResponse(data, logger);
 };
 
 const fetchRecentTourApiItems = async () => fetchTourApiItems('areaBasedList2');

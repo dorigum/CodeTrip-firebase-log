@@ -225,11 +225,12 @@ const authApi = {
 
   updateTourApiNotificationSetting: async (enabled) => {
     const user = await getCurrentUser();
+    const tourApiUpdatesEnabled = enabled === true;
     await update(ref(realtimeDb, `users/${user.id}/notificationSettings`), {
-      tourApiUpdatesEnabled: enabled === true,
+      tourApiUpdatesEnabled,
       updated_at: nowIso(),
     });
-    return { message: enabled ? '신규 여행지·축제 알림을 받습니다.' : '신규 여행지·축제 알림을 끕니다.' };
+    return { message: tourApiUpdatesEnabled ? '신규 여행지·축제 알림을 받습니다.' : '신규 여행지·축제 알림을 끕니다.' };
   },
 
   forgotPassword: async ({ email }) => {
