@@ -837,7 +837,7 @@ const AiPlanner = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
+    <div className="ai-planner-page mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
       <PageHeader
         label="ai_trip.planner"
         title="AI 여행 플래너"
