@@ -11,6 +11,7 @@ import { getPlanSourceBadge } from '../utils/aiPlanSource';
 
 const STYLE_OPTIONS = ['실내', '문화', '맛집', '자연', '힐링', '카페', '사진', '역사'];
 const AVOID_OPTIONS = ['장거리 이동', '등산', '혼잡한 장소', '야외 위주', '비싼 코스'];
+const PRIORITY_OPTIONS = ['예산', '휴식', '맛집', '체험', '사진', '문화'];
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -1101,6 +1102,13 @@ const AiPlanner = () => {
           </div>
 
           <div>
+            <FieldLabel>Transportation</FieldLabel>
+            <select value={form.transportation} onChange={(e) => updateForm('transportation', e.target.value)} disabled={plannerBusy} className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white">
+              {['대중교통', '자차', '도보'].map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </div>
+
+          <div>
             <FieldLabel>Weather</FieldLabel>
             <input
               value={form.weatherKeyword}
@@ -1127,6 +1135,17 @@ const AiPlanner = () => {
                   }`}
                 >
                   {style}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Priority</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              {PRIORITY_OPTIONS.map((item) => (
+                <button key={item} type="button" disabled={plannerBusy} onClick={() => updateForm('priorities', toggleValue(form.priorities, item))} className={`px-3 h-9 rounded-lg border text-xs font-bold transition-colors ${form.priorities.includes(item) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-500 border-outline-variant/40 hover:border-primary/50'}`}>
+                  {item}
                 </button>
               ))}
             </div>
@@ -1197,6 +1216,14 @@ const AiPlanner = () => {
                 </button>
               </div>
 
+              <section className="rounded-xl border border-primary/15 bg-primary/5 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Why this course</p>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-slate-700">
+                  {[`${form.companionType} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...(form.priorities || [])].map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
+                </div>
+                <p className="mt-3 text-xs leading-5 text-slate-600">각 장소 카드의 추천 이유는 선택한 조건과 날씨·이동 부담을 반영해 생성됩니다.</p>
+              </section>
+
               <div className="space-y-5">
                 {(plan.days || []).map((day) => (
                   <article key={day.day} className="border border-outline-variant/30 rounded-xl overflow-hidden">
@@ -1223,7 +1250,8 @@ const AiPlanner = () => {
                                 </span>
                               </div>
                               {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}
-                              <p className="text-sm text-slate-600 mt-3 leading-6">{item.reason}</p>
+                              <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-primary">Recommendation reason</p>
+                              <p className="text-sm text-slate-600 mt-1 leading-6">{item.reason}</p>
                               {item.tip && <p className="text-xs text-slate-400 mt-2 font-mono">// {item.tip}</p>}
                             </div>
                           </div>
