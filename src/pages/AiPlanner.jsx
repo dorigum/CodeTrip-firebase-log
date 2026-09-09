@@ -35,6 +35,13 @@ const DEFAULT_FORM = {
   avoidKeywords: [],
 };
 
+const createDefaultForm = () => ({
+  ...DEFAULT_FORM,
+  priorities: [...DEFAULT_FORM.priorities],
+  travelStyle: [...DEFAULT_FORM.travelStyle],
+  avoidKeywords: [],
+});
+
 const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
 
 const BROAD_REGION_TOUR_CODES = {
@@ -574,13 +581,23 @@ const AiPlanner = () => {
 
   const handlePlanningModeChange = (mode) => {
     if (plannerBusy) return;
+    folderSelectionRequestRef.current += 1;
     setPlanningMode(mode);
     invalidateCurrentPlan();
+    setForm(createDefaultForm());
     setSelectedContentIds(new Set());
-    if (mode === PLAN_MODE.CUSTOM) {
-      folderSelectionRequestRef.current += 1;
-      setSelectedFolderId('');
-    }
+    setSelectedFolderId('');
+  };
+
+  const handleResetPlanner = () => {
+    if (plannerBusy) return;
+    folderSelectionRequestRef.current += 1;
+    setPlanningMode(PLAN_MODE.CUSTOM);
+    invalidateCurrentPlan();
+    setForm(createDefaultForm());
+    setSelectedFolderId('');
+    setSelectedContentIds(new Set());
+    showToast('입력 조건과 위시리스트 선택을 기본값으로 초기화했습니다.', 'info');
   };
 
   const handleFolderChange = useCallback(async (folderId) => {
@@ -857,7 +874,13 @@ const AiPlanner = () => {
       <div className="grid grid-cols-1 xl:grid-cols-[500px_minmax(0,1fr)] gap-6">
         <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
           <div>
-            <FieldLabel>Plan Mode</FieldLabel>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <FieldLabel>Plan Mode</FieldLabel>
+              <button type="button" onClick={handleResetPlanner} disabled={plannerBusy} className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-primary disabled:opacity-50">
+                <span className="material-symbols-outlined text-sm">restart_alt</span>
+                RESET
+              </button>
+            </div>
             <div className="grid grid-cols-1 gap-2 rounded-xl border border-outline-variant/30 bg-slate-50 p-1 sm:grid-cols-2">
               <button
                 type="button"
