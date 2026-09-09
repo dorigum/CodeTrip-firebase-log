@@ -1,5 +1,25 @@
 const MAX_TEXT_LENGTH = 200;
 
+const TOUR_API_AREA_CODE_BY_ADDRESS = [
+  [/^서울(?:특별시)?/, '1'],
+  [/^인천(?:광역시)?/, '2'],
+  [/^대전(?:광역시)?/, '3'],
+  [/^대구(?:광역시)?/, '4'],
+  [/^광주(?:광역시)?/, '5'],
+  [/^부산(?:광역시)?/, '6'],
+  [/^울산(?:광역시)?/, '7'],
+  [/^세종(?:특별자치시)?/, '8'],
+  [/^(?:경기도|경기)/, '31'],
+  [/^(?:강원특별자치도|강원도|강원)/, '32'],
+  [/^(?:충청북도|충북)/, '33'],
+  [/^(?:충청남도|충남)/, '34'],
+  [/^(?:경상북도|경북)/, '35'],
+  [/^(?:경상남도|경남)/, '36'],
+  [/^(?:전북특별자치도|전라북도|전북)/, '37'],
+  [/^(?:전라남도|전남)/, '38'],
+  [/^(?:제주특별자치도|제주도|제주)/, '39'],
+];
+
 const sanitizeString = (value, fallback = '', maxLength = MAX_TEXT_LENGTH) =>
   String(value || fallback)
     .replace(/[<>]/g, '')
@@ -12,6 +32,15 @@ const normalizeTourApiItems = (items) => {
 };
 
 const normalizeTourApiImage = (value) => String(value || '').replace('http://', 'https://');
+
+const resolveTourApiAreaCode = (areaCode, address) => {
+  const normalizedAreaCode = sanitizeString(areaCode, '', 20);
+  if (normalizedAreaCode) return normalizedAreaCode;
+
+  const normalizedAddress = sanitizeString(address, '', MAX_TEXT_LENGTH);
+  const matchedArea = TOUR_API_AREA_CODE_BY_ADDRESS.find(([pattern]) => pattern.test(normalizedAddress));
+  return matchedArea ? matchedArea[1] : '';
+};
 
 const parseRecentTourApiItemsResponse = (data, logger = console) => {
   const resultCode = String(data?.response?.header?.resultCode || '');
@@ -43,7 +72,7 @@ const parseRecentTourApiItemsResponse = (data, logger = console) => {
       title: sanitizeString(item.title, '신규 여행지', 120),
       addr1: sanitizeString(item.addr1, '', 160),
       addr2: sanitizeString(item.addr2, '', 160),
-      areaCode: sanitizeString(item.areacode, '', 20),
+      areaCode: resolveTourApiAreaCode(item.areacode, item.addr1),
       sigunguCode: sanitizeString(item.sigungucode, '', 20),
       firstimage: normalizeTourApiImage(item.firstimage),
       createdtime: sanitizeString(item.createdtime, '', 30),
@@ -55,4 +84,5 @@ const parseRecentTourApiItemsResponse = (data, logger = console) => {
 module.exports = {
   normalizeTourApiItems,
   parseRecentTourApiItemsResponse,
+  resolveTourApiAreaCode,
 };

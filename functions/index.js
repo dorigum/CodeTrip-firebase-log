@@ -519,7 +519,11 @@ const readExistingTourApiUpdates = async (itemsRef) => {
   const snapshot = await itemsRef.once('value');
   const items = [];
   snapshot.forEach((child) => {
-    items.push({ key: child.key, detectedAt: child.child('detectedAt').val() || '' });
+    items.push({
+      key: child.key,
+      detectedAt: child.child('detectedAt').val() || '',
+      areaCode: child.child('areaCode').val() || '',
+    });
   });
   return items;
 };
@@ -604,16 +608,24 @@ exports.syncTourApiUpdates = onSchedule(
       fetchRecentTourApiItems(),
       readExistingTourApiUpdates(itemsRef),
     ]);
-    const existingIds = new Set(existingItems.map((item) => item.key));
+    const existingItemsById = new Map(existingItems.map((item) => [item.key, item]));
     const nextItemsForRetention = [...existingItems];
     const updates = {
       'tourApiUpdates/state/lastRunAt': now,
       'tourApiUpdates/state/source': 'KorService2.areaBasedList2',
     };
     let newItemCount = 0;
+    let backfilledAreaCodeCount = 0;
 
     recentItems.forEach((item) => {
-      if (existingIds.has(item.contentId)) return;
+      const existingItem = existingItemsById.get(item.contentId);
+      if (existingItem) {
+        if (item.areaCode && String(existingItem.areaCode) !== item.areaCode) {
+          updates[`tourApiUpdates/items/${item.contentId}/areaCode`] = item.areaCode;
+          backfilledAreaCodeCount += 1;
+        }
+        return;
+      }
 
       newItemCount += 1;
       nextItemsForRetention.push({ key: item.contentId, detectedAt: now });
@@ -632,6 +644,7 @@ exports.syncTourApiUpdates = onSchedule(
     logger.info('TourAPI update sync completed', {
       checkedCount: recentItems.length,
       newItemCount,
+      backfilledAreaCodeCount,
     });
   }
 );
