@@ -784,6 +784,8 @@ const AiPlanner = () => {
           startTime: form.startTime,
           endTime: form.endTime,
           travelStyle: form.travelStyle,
+          transportation: form.transportation,
+          priorities: form.priorities,
           avoidKeywords: form.avoidKeywords,
         },
       });
