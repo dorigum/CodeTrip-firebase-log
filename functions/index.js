@@ -151,6 +151,8 @@ const sanitizeInput = (input = {}) => {
     travelStyle: sanitizeStringList(input.travelStyle, 10),
     companionType: sanitizeString(input.companionType, '미정', 30),
     peopleCount: sanitizeNumber(input.peopleCount, 1, 1, 10),
+    transportation: sanitizeString(input.transportation, '대중교통', 30),
+    priorities: sanitizeStringList(input.priorities, 5),
     budgetLevel: sanitizeString(input.budgetLevel, '보통', 20),
     totalBudgetLabel: sanitizeString(input.totalBudgetLabel, '미정', 80),
     pace: sanitizeString(input.pace, '보통', 20),
@@ -211,6 +213,8 @@ const buildTripPrompt = (input) => `${SYSTEM_PROMPT}
 - 여행 스타일: ${toListText(input.travelStyle)}
 - 동행 유형: ${input.companionType || '미정'}
 - 인원 수: ${input.peopleCount || 1}명
+- 이동수단: ${input.transportation || '대중교통'}
+- 여행 우선순위: ${toListText(input.priorities)}
 - 예산 수준: ${input.budgetLevel || '보통'}
 - 예산 기준: ${BUDGET_GUIDE[input.budgetLevel] || BUDGET_GUIDE.보통}
 - 예상 총예산 범위: ${input.totalBudgetLabel || '미정'}
@@ -239,7 +243,11 @@ ${getRegionDiversityGuide(input.regionName)}
 10. 이동이 과도하게 많지 않도록 같은 지역 중심으로 구성하세요.
 11. 날씨 키워드가 있으면 실내/실외 비중에 반영하세요.
 12. 예산은 1일 1인 기준과 예상 총예산 범위를 함께 고려하여 식사, 카페, 유료 체험 수준을 조절하세요.
-13. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
+13. 비·폭염·한파 등 날씨 키워드는 실내/실외 비중과 대체 장소에 반영하세요.
+14. 아이·부모님 동반은 이동 구간과 일정 수를 줄이고 휴식 시간을 포함하세요. 친구·연인은 선택한 여행 스타일과 체험·식사 비중을 우선하세요.
+15. 대중교통은 환승과 장거리 이동을 줄이고, 자차는 주차·접근성을 고려하세요. 도보는 가까운 권역에 집중하세요.
+16. 여행 우선순위(예산, 휴식, 맛집, 체험, 사진, 문화)는 장소 선정과 일정 배치의 충돌 시 우선 반영하세요.
+17. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
 
 [응답 JSON 스키마]
 {

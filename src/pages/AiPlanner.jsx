@@ -23,6 +23,8 @@ const DEFAULT_FORM = {
   travelEndDate: '',
   companionType: '친구',
   peopleCount: 2,
+  transportation: '대중교통',
+  priorities: ['휴식'],
   budgetLevel: '보통',
   pace: '여유',
   weatherKeyword: '',
