@@ -945,17 +945,17 @@ const Home = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
       <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-5">
-        <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-4 sm:p-6 lg:p-7 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-5 sm:p-6 lg:p-7 overflow-hidden">
           <div className="flex flex-col gap-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-primary font-label">
                 <span className="w-2 h-2 rounded-full bg-primary-container"></span>
                 my_travel.dashboard
               </p>
-              <h2 className="font-headline text-2xl lg:text-3xl font-bold text-slate-950 break-keep">
+              <h2 className="font-headline text-xl font-bold text-slate-950 break-keep sm:text-2xl lg:text-3xl">
                 {user?.name || 'traveler'}님의 여행 데이터를 한눈에 확인하세요.
               </h2>
-              <p className="text-sm text-slate-500 leading-relaxed break-keep">
+              <p className="text-xs leading-6 text-slate-500 break-keep sm:text-sm sm:leading-relaxed">
                 저장한 여행지와 폴더를 기준으로 다음 여행 준비 상태를 빠르게 확인할 수 있습니다.
               </p>
             </div>
@@ -1099,17 +1099,17 @@ const Home = () => {
       {/* 2. 카드 그리드 */}
       <div className="grid auto-cols-[88%] grid-flow-col gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar xl:grid-cols-3 xl:grid-flow-row xl:gap-5 xl:overflow-visible xl:pb-0">
         {/* Card 1: Regional (Near Me) */}
-        <div className="snap-start bg-white p-5 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-6">
+        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 xl:p-6">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-4">
-              <div className="flex min-h-[86px] justify-between items-start">
+              <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] xl:min-h-[86px]">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">location_on</span><p className="text-[10px] uppercase tracking-widest font-label whitespace-nowrap">NEAR ME ({province} {weather.location})</p></div>
                   <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">🛫지역 기반 추천: {province}</h3>
                 </div>
                 <button onClick={() => setNearbyIndex(i => (i+1) % (nearbyPlaces.length || 1))} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-900 rounded-xl hover:bg-primary hover:text-white transition-all shadow-md"><span className="material-symbols-outlined">navigate_next</span></button>
               </div>
-              <div className="h-52 w-full rounded-2xl overflow-hidden bg-slate-100 shadow-inner">
+              <div className="h-44 w-full rounded-2xl overflow-hidden bg-slate-100 shadow-inner sm:h-48 xl:h-52">
                 <img src={nearbyPlaces[nearbyIndex]?.firstimage || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070'} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="n" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070'; }} />
               </div>
               <div>
@@ -1123,9 +1123,9 @@ const Home = () => {
         </div>
 
         {/* Card 2: Slot Machine */}
-        <div className="snap-start bg-white p-5 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-6">
+        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 xl:p-6">
             <div className="flex-1 flex flex-col space-y-4">
-              <div className="flex min-h-[86px] justify-between items-start">
+              <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] xl:min-h-[86px]">
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">casino</span><p className="text-[9px] uppercase tracking-widest font-label">{slotModeLabel}</p></div>
                   <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">{slotTitle}</h3>
@@ -1139,7 +1139,7 @@ const Home = () => {
                 </div>
                 <button onClick={handleSlotSpin} disabled={isSlotSpinning} className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all shadow-md ${isSlotSpinning ? 'bg-primary text-white animate-pulse' : 'bg-slate-50 text-slate-900 hover:bg-primary hover:text-white'}`}><span className={`material-symbols-outlined ${isSlotSpinning ? 'animate-bounce' : ''}`}>casino</span></button>
               </div>
-              <div className={`h-52 w-full rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner ${isSlotSpinning ? 'scale-[1.02]' : ''}`}>
+              <div className={`h-44 w-full rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner sm:h-48 xl:h-52 ${isSlotSpinning ? 'scale-[1.02]' : ''}`}>
                 <img 
                   src={slotImg} 
                   className={`w-full h-full object-cover transition-all duration-1000 ${isSlotSpinning ? 'blur-sm brightness-75' : (!hasPicked ? 'blur-[2px] brightness-90 group-hover:blur-0 group-hover:brightness-100' : 'blur-0 brightness-100 group-hover:scale-110')}`} 
@@ -1202,7 +1202,7 @@ const Home = () => {
         </div>
 
         {/* Card 3: Trending */}
-        <div className="snap-start bg-white p-5 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group sm:p-6">
+        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group sm:p-5 xl:p-6">
           <div className="flex justify-between items-start mb-4 shrink-0">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold">
