@@ -19,8 +19,15 @@ const getCalendarDate = (value) => {
   const match = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return null;
   const [, year, month, day] = match;
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  return Number.isNaN(date.getTime()) ? null : date;
+  const parsedYear = Number(year);
+  const parsedMonth = Number(month);
+  const parsedDay = Number(day);
+  const date = new Date(parsedYear, parsedMonth - 1, parsedDay);
+  const isValidDate = !Number.isNaN(date.getTime())
+    && date.getFullYear() === parsedYear
+    && date.getMonth() === parsedMonth - 1
+    && date.getDate() === parsedDay;
+  return isValidDate ? date : null;
 };
 
 const getCalendarKey = (date) => (

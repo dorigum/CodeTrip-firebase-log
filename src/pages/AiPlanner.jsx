@@ -1078,7 +1078,7 @@ const AiPlanner = () => {
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
-            <p className="col-span-2 -mt-2 text-[10px] leading-4 text-slate-400">
+            <p className="-mt-2 text-[10px] leading-4 text-slate-400 min-[420px]:col-span-2">
               여행 날짜를 입력하면 저장 폴더의 일정에도 함께 반영됩니다.
               {form.travelStartDate && (
                 <span className="block text-primary font-bold">

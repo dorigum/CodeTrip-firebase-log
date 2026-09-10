@@ -158,6 +158,9 @@ const useWishlistStore = create((set, get) => ({
   deleteAiTripPlan: async (planId) => {
     try {
       await wishlistApi.deleteAiTripPlan(planId);
+      set((state) => ({
+        aiTripPlans: state.aiTripPlans.filter((plan) => String(plan.id) !== String(planId)),
+      }));
       return true;
     } catch (err) {
       console.error('Delete AI trip plan failed:', err);
