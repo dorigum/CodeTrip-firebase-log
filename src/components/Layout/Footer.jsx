@@ -6,7 +6,7 @@ const footerLinkClass = 'font-label text-[9px] uppercase tracking-[0.12em] text-
 const Footer = () => (
   <footer className="w-full border-t border-outline-variant/15 bg-background px-5 py-5 pb-20 text-center md:px-10 md:py-6 md:pb-6 md:text-left">
     <div className="relative mx-auto max-w-6xl">
-      <nav aria-label="푸터 바로가기" className="mb-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:absolute md:right-0 md:top-0 md:mb-0 md:justify-end">
+      <nav aria-label="푸터 바로가기" className="mb-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 xl:absolute xl:right-0 xl:top-0 xl:mb-0 xl:justify-end">
         <a className={footerLinkClass} href="https://www.wififree.kr/index.do" target="_blank" rel="noopener noreferrer">Public_Wifi</a>
         <a className={footerLinkClass} href="https://safestay.visitkorea.or.kr/usr/main/mainSelectList.kto" target="_blank" rel="noopener noreferrer">Safestay</a>
         <Link to="/info" className={footerLinkClass}>Info</Link>
