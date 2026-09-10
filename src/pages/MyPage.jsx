@@ -566,7 +566,6 @@ const MyPage = () => {
     navigate('/ai-planner', {
       state: {
         regeneratePlan: selectedAiPlan,
-        folderId: selectedFolderId,
       },
     });
   };

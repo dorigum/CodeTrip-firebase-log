@@ -414,7 +414,11 @@ const AiPlanner = () => {
   const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
   const regeneratePlan = location.state?.regeneratePlan || null;
   const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
-  const regenerateFolderId = location.state?.folderId || regenerationContext.sourceFolderId || '';
+  const regenerateFolderId = (
+    regenerationContext.planningMode === PLAN_MODE.FOLDER
+      ? regenerationContext.sourceFolderId || ''
+      : ''
+  );
   const [form, setForm] = useState(() => {
     const initialForm = {
       ...DEFAULT_FORM,
@@ -428,7 +432,7 @@ const AiPlanner = () => {
     };
   });
   const [planningMode, setPlanningMode] = useState(
-    regenerateFolderId ? PLAN_MODE.FOLDER : (regenerationContext.planningMode || PLAN_MODE.CUSTOM)
+    regenerateFolderId ? PLAN_MODE.FOLDER : PLAN_MODE.CUSTOM
   );
   const [selectedFolderId, setSelectedFolderId] = useState(
     regenerateFolderId ? String(regenerateFolderId) : ''
@@ -657,7 +661,7 @@ const AiPlanner = () => {
     if (!regenerateFolderId) {
       regenerationHydratedRef.current = true;
       navigate('/ai-planner', { replace: true, state: null });
-      showToast('기존 코스의 생성 조건을 불러왔습니다. 조건을 확인한 뒤 다시 생성해주세요.', 'info');
+      showToast('기존 코스의 생성 조건을 불러왔습니다. 조건을 바꾸면 새 코스로 다시 생성됩니다.', 'info');
       return;
     }
 
@@ -670,7 +674,7 @@ const AiPlanner = () => {
       handleFolderChange(String(regenerateFolderId));
     });
     navigate('/ai-planner', { replace: true, state: null });
-    showToast('기존 코스와 위시리스트 폴더 조건을 불러왔습니다.', 'info');
+    showToast('기존 코스의 생성 조건과 원래 위시리스트 폴더를 불러왔습니다.', 'info');
   }, [
     folders,
     handleFolderChange,
