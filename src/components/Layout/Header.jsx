@@ -331,12 +331,12 @@ const Header = () => {
                             </button>
                             <div className="relative mt-0.5 h-4 w-4 shrink-0">
                               {!noti.is_read && (
-                                <span className="absolute inset-0 m-auto h-1.5 w-1.5 rounded-full bg-primary transition-opacity group-hover/noti:opacity-0" />
+                                <span className="absolute inset-0 m-auto h-1.5 w-1.5 rounded-full bg-primary transition-opacity group-hover/noti:opacity-0 group-focus-within/noti:opacity-0" />
                               )}
                               <button
                                 onClick={(e) => handleDeleteOne(e, noti.id)}
                                 disabled={isNotificationActionPending}
-                                className="material-symbols-outlined absolute inset-0 text-sm text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover/noti:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="material-symbols-outlined absolute inset-0 text-sm text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover/noti:opacity-100 group-focus-within/noti:opacity-100 focus-visible:rounded focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
                                 title="알림 삭제"
                               >close</button>
                             </div>
