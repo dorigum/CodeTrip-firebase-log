@@ -414,28 +414,28 @@ const GuestHome = () => (
       </div>
     </section>
 
-    <section className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:gap-5 xl:grid-cols-4">
+    <section className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-5 xl:grid-cols-4">
       {GUEST_FEATURES.map((feature, index) => (
         <GuestReveal key={feature.label} delay={index * 90}>
           <Link
             to={feature.to}
-            className={`guest-feature-card group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-5 shadow-sm sm:p-6`}
+            className={`guest-feature-card group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-3 shadow-sm sm:p-6`}
           >
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <span className={`guest-emoji-badge flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl ${feature.accent}`}>
+            <div className="mb-3 flex items-center justify-between gap-2 sm:mb-5 sm:gap-3">
+              <span className={`guest-emoji-badge flex h-10 w-10 items-center justify-center rounded-xl border text-2xl sm:h-14 sm:w-14 sm:rounded-2xl sm:text-3xl ${feature.accent}`}>
                 {feature.emoji}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-label">{feature.label}</span>
+              <span className="max-w-[56%] truncate text-right text-[8px] font-bold uppercase tracking-[0.08em] text-slate-500 font-label sm:max-w-none sm:text-[10px] sm:tracking-widest">{feature.label}</span>
             </div>
-            <h3 className="break-keep text-xl font-black leading-snug text-on-surface font-headline">{feature.title}</h3>
-            <p className="mt-3 break-keep text-sm leading-6 text-slate-600">{feature.desc}</p>
-            <div className="mt-5 rounded-xl border border-slate-900/5 bg-white/70 p-3 font-mono text-[11px] leading-5 text-slate-500">
+            <h3 className="break-keep text-base font-black leading-snug text-on-surface font-headline sm:text-xl">{feature.title}</h3>
+            <p className="mt-2 break-keep text-[11px] leading-5 text-slate-600 sm:mt-3 sm:text-sm sm:leading-6">{feature.desc}</p>
+            <div className="mt-3 hidden rounded-xl border border-slate-900/5 bg-white/70 p-3 font-mono text-[11px] leading-5 text-slate-500 sm:mt-5 sm:block">
               <p className="font-bold text-primary">## {feature.label.toLowerCase()}</p>
               {feature.snippet.map((line) => (
                 <p key={line} className="truncate">- {line}</p>
               ))}
             </div>
-            <div className="mt-auto flex items-center gap-2 pt-5 text-[11px] font-black uppercase tracking-widest text-primary font-label">
+            <div className="mt-auto flex items-center gap-1 pt-3 text-[9px] font-black uppercase tracking-[0.08em] text-primary font-label sm:gap-2 sm:pt-5 sm:text-[11px] sm:tracking-widest">
               launch_node
               <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">arrow_forward</span>
             </div>
@@ -459,17 +459,17 @@ const GuestHome = () => (
             둘러보기에서 시작해 저장과 AI 코스까지 자연스럽게 이어지는 흐름입니다.
           </p>
         </div>
-        <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
+        <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch md:gap-4">
           {GUEST_STEPS.map((item, index) => (
             <React.Fragment key={item.step}>
-              <div className="guest-step-card rounded-2xl border border-outline-variant/10 bg-gradient-to-br from-white to-surface-container-high p-5">
+              <div className="guest-step-card rounded-2xl border border-outline-variant/10 bg-gradient-to-br from-white to-surface-container-high p-3 sm:p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl">{item.emoji}</span>
-                  <p className="font-mono text-xs font-black text-primary">{item.step}</p>
+                  <span className="text-2xl sm:text-3xl">{item.emoji}</span>
+                  <p className="font-mono text-[10px] font-black text-primary sm:text-xs">{item.step}</p>
                 </div>
-                <p className="mt-4 rounded-lg border border-outline-variant/15 bg-slate-50 px-3 py-2 font-mono text-[11px] font-bold text-primary">{item.command}</p>
-                <h3 className="mt-5 text-lg font-black text-on-surface font-headline">{item.title}</h3>
-                <p className="mt-2 break-keep text-sm leading-6 text-outline">{item.desc}</p>
+                <p className="mt-3 hidden rounded-lg border border-outline-variant/15 bg-slate-50 px-3 py-2 font-mono text-[11px] font-bold text-primary sm:mt-4 sm:block">{item.command}</p>
+                <h3 className="mt-3 text-sm font-black text-on-surface font-headline sm:mt-5 sm:text-lg">{item.title}</h3>
+                <p className="mt-1.5 break-keep text-[11px] leading-5 text-outline sm:mt-2 sm:text-sm sm:leading-6">{item.desc}</p>
               </div>
               {index < GUEST_STEPS.length - 1 && (
                 <div className="hidden items-center justify-center text-primary/50 md:flex">
