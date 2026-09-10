@@ -68,7 +68,7 @@ const App = () => {
           <Header toggleSidebar={toggleSidebar} />
 
           {/* Dynamic Content Area */}
-          <div id="main-scroll" className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-16 md:pb-0" style={{ overflowAnchor: 'none' }}>
+          <div id="main-scroll" className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0" style={{ overflowAnchor: 'none' }}>
             <Outlet />
 
             {/* 푸터 복구 */}

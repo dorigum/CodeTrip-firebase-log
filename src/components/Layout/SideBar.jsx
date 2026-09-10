@@ -337,7 +337,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             className="fixed inset-0 z-[54] md:hidden"
             onClick={() => setMobileMyPageOpen(false)}
           />
-          <div className="fixed bottom-16 right-0 z-[56] md:hidden w-48 bg-white border border-outline-variant/20 rounded-tl-2xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+          <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-0 z-[56] w-48 overflow-hidden rounded-tl-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200 md:hidden">
             {MY_PAGE_SUB_ITEMS.map((sub) => (
               <Link
                 key={sub.label}
@@ -364,7 +364,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             className="fixed inset-0 z-[54] md:hidden"
             onClick={() => setMobileInfoOpen(false)}
           />
-          <div className="fixed bottom-16 right-12 z-[56] md:hidden max-h-[70vh] w-56 overflow-y-auto rounded-t-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200">
+          <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-12 z-[56] max-h-[70vh] w-56 overflow-y-auto rounded-t-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200 md:hidden">
             {INFO_SUB_ITEMS.map((sub) =>
               sub.external ? (
                 <a
@@ -400,13 +400,13 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-[55] grid h-16 grid-cols-7 items-center border-t border-outline-variant/30 bg-white md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-[55] grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-7 items-center border-t border-outline-variant/30 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
             to={item.path}
             onClick={(e) => handleNavClick(e, item)}
-            className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 transition-all group ${
+            className={`group flex h-full min-w-0 flex-col items-center justify-center gap-1 py-1 transition-all ${
               isActive(item.path) ? 'text-primary' : 'text-slate-400'
             }`}
           >
@@ -416,7 +416,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
               </span>
               {item.extra}
             </span>
-            <span className="max-w-full truncate text-[9px] font-bold uppercase tracking-tighter">{item.mobileLabel || item.label}</span>
+            <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-tighter">{item.mobileLabel || item.label}</span>
           </Link>
         ))}
         <button
@@ -426,7 +426,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             setMobileInfoOpen(prev => !prev);
             setMobileMyPageOpen(false);
           }}
-          className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 transition-all group ${
+          className={`group flex h-full min-w-0 flex-col items-center justify-center gap-1 py-1 transition-all ${
             isActive(INFO_ITEM.path) || mobileInfoOpen ? 'text-primary' : 'text-slate-400'
           }`}
         >
@@ -436,14 +436,14 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             </span>
             {INFO_ITEM.extra}
           </span>
-          <span className="max-w-full truncate text-[9px] font-bold uppercase tracking-tighter">{INFO_ITEM.label}</span>
+          <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-tighter">{INFO_ITEM.label}</span>
         </button>
         <button
           onClick={() => {
             setMobileMyPageOpen(prev => !prev);
             setMobileInfoOpen(false);
           }}
-          className={`group flex h-full min-w-0 flex-col items-center justify-center gap-0.5 transition-all ${
+          className={`group flex h-full min-w-0 flex-col items-center justify-center gap-1 py-1 transition-all ${
             MY_PAGE_ITEM.paths.some(p => pathname.startsWith(p)) ? 'text-primary' : 'text-slate-400'
           } ${mobileMyPageOpen ? 'is-mobile-open text-primary' : ''}`}
         >
@@ -453,7 +453,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             </span>
             {MY_PAGE_ITEM.extra}
           </span>
-          <span className="max-w-full truncate text-[9px] font-bold uppercase tracking-tighter">My Page</span>
+          <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-tighter">My Page</span>
         </button>
       </nav>
 
