@@ -17,10 +17,21 @@ import { firebaseAuth, realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso } from './firebaseHelpers';
 import { uploadProfileImage } from './storageApi';
 
+const normalizeUserName = (value) => String(value || '').trim();
+
+const fallbackUserName = (authUser) => {
+  const emailPrefix = String(authUser?.email || '').split('@')[0].trim();
+  return normalizeUserName(authUser?.displayName) || emailPrefix || 'CodeTrip 사용자';
+};
+
+const resolveUserName = (authUser, profile = {}) => (
+  normalizeUserName(profile.name) || fallbackUserName(authUser)
+);
+
 const userPayload = (authUser, profile = {}) => ({
   id: authUser.uid,
   email: authUser.email,
-  name: profile.name || authUser.displayName || 'CodeTrip 사용자',
+  name: resolveUserName(authUser, profile),
   profileImg: profile.profileImg || authUser.photoURL || '',
 });
 
@@ -93,7 +104,10 @@ const authApi = {
   signup: async ({ email, password, name }) => {
     try {
       const normalizedEmail = email.trim();
-      const normalizedName = name.trim();
+      const normalizedName = normalizeUserName(name);
+      if (!normalizedName) {
+        throw { message: '이름 또는 닉네임을 입력해 주세요.' };
+      }
       const credential = await createUserWithEmailAndPassword(firebaseAuth, normalizedEmail, password);
       await updateFirebaseProfile(credential.user, { displayName: normalizedName });
       await set(ref(realtimeDb, `users/${credential.user.uid}`), {
@@ -118,6 +132,12 @@ const authApi = {
       const profileSnap = await get(ref(realtimeDb, `users/${credential.user.uid}`));
       const profile = profileSnap.exists() ? profileSnap.val() : {};
       const user = userPayload(credential.user, profile);
+      if (normalizeUserName(profile.name) !== user.name) {
+        await update(ref(realtimeDb, `users/${credential.user.uid}`), {
+          name: user.name,
+          updated_at: nowIso(),
+        });
+      }
 
       return { user };
     } catch (error) {
@@ -127,12 +147,16 @@ const authApi = {
 
   updateProfile: async ({ name, profileImg }) => {
     const user = await getCurrentUser();
+    const normalizedName = normalizeUserName(name);
+    if (!normalizedName) {
+      throw { message: '이름 또는 닉네임을 입력해 주세요.' };
+    }
     await updateFirebaseProfile(firebaseAuth.currentUser, {
-      displayName: name,
+      displayName: normalizedName,
       photoURL: profileImg || '',
     });
     await update(ref(realtimeDb, `users/${user.id}`), {
-      name,
+      name: normalizedName,
       profileImg: profileImg || '',
       updated_at: nowIso(),
     });
@@ -163,22 +187,34 @@ const authApi = {
         () => get(profileRef),
       );
       const profile = profileSnap.exists() ? profileSnap.val() : {};
+      const resolvedName = resolveUserName(credential.user, profile);
 
       if (!profileSnap.exists()) {
+        if (!normalizeUserName(credential.user.displayName)) {
+          await updateFirebaseProfile(credential.user, { displayName: resolvedName });
+        }
         await runOAuthDatabaseOperation(credential.user, () => set(profileRef, {
           email: credential.user.email || '',
-          name: credential.user.displayName || 'CodeTrip 사용자',
+          name: resolvedName,
           profileImg: credential.user.photoURL || '',
           favoriteRegions: [],
           created_at: nowIso(),
           updated_at: nowIso(),
           authProvider: 'google',
         }));
-      } else if (profile.authProvider !== 'google') {
-        await update(profileRef, { authProvider: 'google', updated_at: nowIso() });
+      } else {
+        const profileUpdates = {};
+        if (normalizeUserName(profile.name) !== resolvedName) profileUpdates.name = resolvedName;
+        if (profile.authProvider !== 'google') profileUpdates.authProvider = 'google';
+        if (Object.keys(profileUpdates).length) {
+          await runOAuthDatabaseOperation(credential.user, () => update(profileRef, {
+            ...profileUpdates,
+            updated_at: nowIso(),
+          }));
+        }
       }
 
-      const user = userPayload(credential.user, profile);
+      const user = userPayload(credential.user, { ...profile, name: resolvedName });
       return { user, isNewUser };
     } catch (error) {
       throw { message: authErrorMessage(error, 'Google 로그인에 실패했습니다.') };

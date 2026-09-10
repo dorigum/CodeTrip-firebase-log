@@ -129,7 +129,7 @@ const Login = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form id="login-form" onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary ml-1 uppercase tracking-tighter">Email Address</label>
             <div className="flex h-14 items-center gap-3 rounded-2xl bg-surface-container-low px-4 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary">
@@ -175,33 +175,30 @@ const Login = () => {
             <Link to="/forgot-password" data-testid="forgot-password" className="text-primary hover:underline">Forgot Password?</Link>
           </div>
 
+        </form>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
           <button
             type="submit"
+            form="login-form"
             disabled={isLoading}
-            className="w-full py-4 bg-primary text-white font-headline font-bold rounded-2xl shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:cursor-wait disabled:opacity-70 disabled:active:scale-100"
+            className="flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-4 font-headline text-sm font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 disabled:cursor-wait disabled:opacity-70 disabled:active:scale-100"
           >
             <span className={`material-symbols-outlined text-xl ${isLoading ? 'animate-spin' : ''}`}>
               {isLoading ? 'progress_activity' : 'login'}
             </span>
-            {isLoading ? 'Authenticating...' : 'Sign In'}
+            <span className="truncate">{isLoading ? 'Authenticating...' : 'Sign In'}</span>
           </button>
-        </form>
-
-        <div className="my-6 flex items-center gap-3 text-xs text-outline">
-          <span className="h-px flex-1 bg-outline/20" />
-          <span>OR</span>
-          <span className="h-px flex-1 bg-outline/20" />
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-outline/20 bg-white px-3 py-4 font-headline text-sm font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
+          >
+            <GoogleIcon />
+            <span className="truncate">Continue with Google</span>
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={isLoading}
-          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-outline/20 bg-white py-4 font-headline font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
-        >
-          <GoogleIcon />
-          Continue with Google
-        </button>
 
         <div className="mt-8 text-center text-sm">
           <span className="text-on-secondary-container">Don't have an account? </span>

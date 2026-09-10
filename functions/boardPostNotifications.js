@@ -11,6 +11,12 @@ const compactCommentBody = (value) => String(value || '')
   .trim()
   .slice(0, 80);
 
+const getProfileDisplayName = (profile = {}) => {
+  const name = String(profile.name || profile.nickname || '').trim();
+  if (name) return name;
+  return String(profile.email || '').split('@')[0].trim() || 'CodeTrip 사용자';
+};
+
 const buildBoardPostNotification = ({ postOwnerId, actorId, actorNickname, interaction, postId, commentBody, createdAt }) => {
   if (!isExternalPostInteraction(postOwnerId, actorId)) return null;
 
@@ -33,5 +39,6 @@ const buildBoardPostNotification = ({ postOwnerId, actorId, actorNickname, inter
 module.exports = {
   buildBoardPostNotification,
   compactCommentBody,
+  getProfileDisplayName,
   isExternalPostInteraction,
 };
