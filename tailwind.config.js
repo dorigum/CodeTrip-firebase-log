@@ -62,9 +62,9 @@ export default {
         full: "0.75rem",
       },
       fontFamily: {
-        headline: ["Space Grotesk", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-        label: ["Space Grotesk", "sans-serif"]
+        headline: ["Pretendard Variable", "Pretendard", "sans-serif"],
+        body: ["Pretendard Variable", "Pretendard", "sans-serif"],
+        label: ["Pretendard Variable", "Pretendard", "sans-serif"]
       }
     },
   },

@@ -112,7 +112,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-160px)] flex items-center justify-center p-6 bg-background">
+    <div className="auth-page min-h-[calc(100vh-160px)] flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-md glass-panel p-10 rounded-3xl shadow-2xl border border-white/50">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 text-primary rounded-2xl mb-4">
