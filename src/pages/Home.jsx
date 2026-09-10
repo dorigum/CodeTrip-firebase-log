@@ -365,6 +365,19 @@ const GuestHome = () => (
               여행지 둘러보기
             </Link>
           </div>
+          <div className="guest-fade-up mt-4 overflow-hidden rounded-xl border border-white/20 bg-slate-950/55 px-3 py-2.5 backdrop-blur-md lg:hidden" style={{ animationDelay: '.32s' }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-red-400/80" />
+                <span className="h-2 w-2 rounded-full bg-yellow-300/80" />
+                <span className="h-2 w-2 rounded-full bg-primary-container" />
+              </div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/55 font-label">trip.config.js</p>
+            </div>
+            <p className="mt-2 truncate font-mono text-[10px] leading-5 text-white/75">
+              <span className="text-primary-container">const</span> trip = <span className="text-primary-container">CodeTrip</span>.generate({'{'} source: [<span className="text-emerald-200">"TourAPI"</span>, <span className="text-emerald-200">"Wishlist"</span>] {'}'});
+            </p>
+          </div>
         </div>
 
         <div className="guest-fade-up guest-floating hidden overflow-hidden rounded-2xl border border-white/20 bg-slate-950/55 shadow-2xl backdrop-blur-xl lg:block" style={{ animationDelay: '.32s' }}>
@@ -1076,7 +1089,7 @@ const Home = () => {
             <p className="text-white/80 text-sm sm:text-base font-body max-w-lg leading-relaxed break-keep">대한민국 곳곳의 숨겨진 데이터 노드들을 탐험하세요.</p>
             <div className="pt-1"><Link to="/explore" className="bg-white/50 backdrop-blur-md text-slate-900 px-7 py-2.5 rounded-full font-bold hover:bg-white/70 transition-all flex items-center justify-center gap-2 w-fit min-w-[170px] text-sm shadow-lg font-label border border-white/20 whitespace-nowrap"><span>GET STARTED</span><span className="material-symbols-outlined text-sm font-bold">arrow_right_alt</span></Link></div>
           </div>
-          <div className="self-end rounded-xl border border-white/30 bg-white/75 p-3 text-slate-900 shadow-xl backdrop-blur-2xl sm:absolute sm:right-8 sm:top-1/2 sm:min-w-[132px] sm:-translate-y-1/2 sm:p-4">
+          <div className="absolute bottom-4 right-4 rounded-xl border border-white/30 bg-white/75 p-2.5 text-slate-900 shadow-xl backdrop-blur-2xl sm:right-8 sm:top-1/2 sm:bottom-auto sm:min-w-[132px] sm:-translate-y-1/2 sm:p-4">
             <p className="text-slate-500 text-[9px] uppercase mb-0.5 font-bold tracking-widest font-label whitespace-nowrap">{province} {weather.location}</p>
             <div className="flex items-center gap-2 whitespace-nowrap sm:gap-3"><span className="text-2xl font-headline font-bold text-primary sm:text-3xl">{weather.temp}°C</span><span className="material-symbols-outlined text-xl text-primary sm:text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
           </div>
