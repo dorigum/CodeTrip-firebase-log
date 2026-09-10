@@ -193,7 +193,7 @@ const Info = () => {
               여행지를 찾는 것을 넘어, 선택을 돕습니다<span className="text-primary">.</span>
             </h2>
             <p className="text-sm leading-relaxed text-slate-500 sm:text-base">
-              정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고,<br className="hidden sm:block" /> 저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.
+              정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고,<br />저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.
             </p>
           </InfoReveal>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
