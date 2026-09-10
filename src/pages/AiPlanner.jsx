@@ -49,6 +49,19 @@ const normalizePeopleCount = (companionType, value) => {
   return Math.min(10, Math.max(minimum, Number(value) || minimum));
 };
 
+const isValidTripTimeRange = (startTime, endTime) => {
+  const toMinutes = (value) => {
+    const [hours, minutes] = String(value || '').split(':').map(Number);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+    return (hours * 60) + minutes;
+  };
+  const startMinutes = toMinutes(startTime);
+  const endMinutes = toMinutes(endTime);
+  return startMinutes != null && endMinutes != null && endMinutes > startMinutes;
+};
+
 const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
 
 const BROAD_REGION_TOUR_CODES = {
@@ -721,6 +734,11 @@ const AiPlanner = () => {
       return;
     }
 
+    if (!isValidTripTimeRange(form.startTime, form.endTime)) {
+      showToast('일정 종료 시간은 시작 시간보다 늦게 설정해주세요.');
+      return;
+    }
+
     if (!isValidTripDate(form.travelStartDate) || !isValidTripDate(form.travelEndDate)) {
       showToast('여행 날짜는 YYYY-MM-DD 형식으로 입력해주세요.');
       return;
@@ -1148,8 +1166,16 @@ const AiPlanner = () => {
                 value={form.endTime}
                 onChange={(e) => updateForm('endTime', e.target.value)}
                 disabled={plannerBusy}
-                className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                aria-invalid={!isValidTripTimeRange(form.startTime, form.endTime)}
+                className={`w-full min-w-0 h-11 px-3 rounded-lg border focus:outline-none text-sm ${
+                  isValidTripTimeRange(form.startTime, form.endTime)
+                    ? 'border-outline-variant/40 focus:border-primary'
+                    : 'border-red-400 focus:border-red-500'
+                }`}
               />
+              {!isValidTripTimeRange(form.startTime, form.endTime) && (
+                <p className="mt-1.5 text-[10px] leading-4 text-red-500">종료 시간은 시작 시간보다 늦어야 합니다.</p>
+              )}
             </div>
           </div>
 

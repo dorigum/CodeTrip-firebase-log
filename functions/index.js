@@ -7,6 +7,7 @@ const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
 const { applyCompanionConsistency, applyTransportationChecklist } = require('./tripPlanChecklist');
+const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
 
 initializeApp();
 
@@ -104,6 +105,14 @@ const sanitizeTripDate = (value, fieldName) => {
   return date;
 };
 
+const sanitizeTripTime = (value, fieldName) => {
+  const time = sanitizeString(value, '', 10);
+  if (!isValidTripTime(time)) {
+    throw new HttpsError('invalid-argument', `${fieldName} 형식이 올바르지 않습니다.`);
+  }
+  return time;
+};
+
 const getInclusiveDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate) return null;
   const start = parseLocalDate(startDate);
@@ -144,6 +153,11 @@ const sanitizeInput = (input = {}) => {
 
   const companionType = sanitizeString(input.companionType, '미정', 30);
   const minimumPeopleCount = companionType === '혼자' ? 1 : 2;
+  const startTime = sanitizeTripTime(input.startTime || '10:00', '일정 시작 시간');
+  const endTime = sanitizeTripTime(input.endTime || '18:00', '일정 종료 시간');
+  if (!isValidTripTimeRange(startTime, endTime)) {
+    throw new HttpsError('invalid-argument', '일정 종료 시간은 시작 시간보다 늦어야 합니다.');
+  }
 
   return {
     planningMode: sanitizeString(input.planningMode, 'custom', 20),
@@ -161,8 +175,8 @@ const sanitizeInput = (input = {}) => {
     totalBudgetLabel: sanitizeString(input.totalBudgetLabel, '미정', 80),
     pace: sanitizeString(input.pace, '보통', 20),
     weatherKeyword: sanitizeString(input.weatherKeyword, '', 80),
-    startTime: sanitizeString(input.startTime, '10:00', 10),
-    endTime: sanitizeString(input.endTime, '18:00', 10),
+    startTime,
+    endTime,
     avoidKeywords: sanitizeStringList(input.avoidKeywords, 10),
     preferredPlaces: Array.isArray(input.preferredPlaces)
       ? input.preferredPlaces.map(normalizePlace).slice(0, MAX_PREFERRED_PLACES)
