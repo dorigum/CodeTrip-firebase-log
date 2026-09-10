@@ -315,16 +315,20 @@ export const getFolderNotes = async (folderId) => {
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
-export const getAiTripPlans = async (folderId) => {
+export const getAllAiTripPlans = async () => {
   const user = await getCurrentUser();
   return snapshotToArray(await get(ref(realtimeDb, userPath(user.id, 'aiTripPlans'))))
-    .filter((plan) => plan.folder_id === String(folderId))
     .map((plan) => ({
       ...plan,
       created_at: toIso(plan.created_at),
       days: Array.isArray(plan.days) ? plan.days : [],
     }))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+};
+
+export const getAiTripPlans = async (folderId) => {
+  const plans = await getAllAiTripPlans();
+  return plans.filter((plan) => plan.folder_id === String(folderId));
 };
 
 export const updateAiTripPlan = async (planId, values = {}) => {

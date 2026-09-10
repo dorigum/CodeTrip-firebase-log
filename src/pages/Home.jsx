@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getWeather, getLocationName } from '../api/weatherApi';
 import { getPhotoList, getFestivalList, getCityBasedPlaces, searchKeywordPlaces, getSpontaneousTravel } from '../api/travelApi';
@@ -12,6 +12,142 @@ const MOCK_NODE_HEADER = [
 ];
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
+
+const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+const getCalendarDate = (value) => {
+  const match = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  const parsedYear = Number(year);
+  const parsedMonth = Number(month);
+  const parsedDay = Number(day);
+  const date = new Date(parsedYear, parsedMonth - 1, parsedDay);
+  const isValidDate = !Number.isNaN(date.getTime())
+    && date.getFullYear() === parsedYear
+    && date.getMonth() === parsedMonth - 1
+    && date.getDate() === parsedDay;
+  return isValidDate ? date : null;
+};
+
+const getCalendarKey = (date) => (
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+);
+
+const getCalendarDateLabel = (dateKey) => {
+  const date = getCalendarDate(dateKey);
+  return date ? `${date.getMonth() + 1}월 ${date.getDate()}일` : '';
+};
+
+const buildAiPlanCalendarEvents = (plans, folders) => {
+  const folderMap = new Map(folders.map((folder) => [String(folder?.id ?? folder?.folder_id ?? ''), folder]));
+
+  return plans.flatMap((plan) => {
+    const folder = folderMap.get(String(plan?.folder_id ?? ''));
+    const start = String(folder?.startDate ?? folder?.start_date ?? folder?.start ?? '').slice(0, 10);
+    const end = String(folder?.endDate ?? folder?.end_date ?? folder?.end ?? start).slice(0, 10);
+    const startDate = getCalendarDate(start);
+    const endDate = getCalendarDate(end);
+    if (!folder || !startDate || !endDate) return [];
+
+    return [{
+      id: String(plan?.id ?? `${plan?.folder_id}-${plan?.created_at ?? ''}`),
+      folderId: String(plan.folder_id),
+      title: plan?.title || folder?.name || 'AI 여행 코스',
+      start: getCalendarKey(startDate),
+      end: getCalendarKey(endDate < startDate ? startDate : endDate),
+    }];
+  });
+};
+
+const MiniPlanCalendar = ({ events, loading }) => {
+  const [viewMonth, setViewMonth] = useState(() => new Date());
+  const [selectedDateKey, setSelectedDateKey] = useState(() => getCalendarKey(new Date()));
+  const monthStart = useMemo(() => new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1), [viewMonth]);
+  const gridStart = useMemo(() => new Date(monthStart.getFullYear(), monthStart.getMonth(), 1 - monthStart.getDay()), [monthStart]);
+  const todayKey = getCalendarKey(new Date());
+  const calendarDays = useMemo(() => Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    const key = getCalendarKey(date);
+    return {
+      date,
+      key,
+      isCurrentMonth: date.getMonth() === monthStart.getMonth(),
+      eventCount: events.filter((event) => event.start <= key && event.end >= key).length,
+    };
+  }), [events, gridStart, monthStart]);
+  const selectedEvents = events.filter((event) => event.start <= selectedDateKey && event.end >= selectedDateKey);
+  const moveMonth = (offset) => {
+    const nextMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + offset, 1);
+    setViewMonth(nextMonth);
+    setSelectedDateKey(getCalendarKey(nextMonth));
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-container font-label">ai_plan.calendar</p>
+          <p className="mt-1 text-sm font-bold text-white">{viewMonth.getFullYear()}년 {viewMonth.getMonth() + 1}월</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => moveMonth(-1)} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white" aria-label="이전 달 보기">
+            <span className="material-symbols-outlined text-base">chevron_left</span>
+          </button>
+          <button type="button" onClick={() => moveMonth(1)} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white" aria-label="다음 달 보기">
+            <span className="material-symbols-outlined text-base">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-7 text-center text-[10px] font-bold text-white/40 sm:mt-4">
+        {CALENDAR_WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-y-0.5 sm:gap-y-1">
+        {calendarDays.map(({ date, key, isCurrentMonth, eventCount }) => {
+          const isSelected = key === selectedDateKey;
+          const isToday = key === todayKey;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSelectedDateKey(key)}
+              className={`relative mx-auto flex h-7 w-7 flex-col items-center justify-center rounded-full text-[11px] transition sm:h-8 sm:w-8 ${isCurrentMonth ? 'text-white' : 'text-white/25'} ${isSelected ? 'bg-primary text-slate-950 font-black' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-primary-container/70' : ''}`}
+              aria-label={`${getCalendarDateLabel(key)}${eventCount ? `, AI 여행 플랜 ${eventCount}개` : ''}`}
+            >
+              <span>{date.getDate()}</span>
+              {eventCount > 0 && <span className={`absolute bottom-0.5 h-1 w-1 rounded-full ${isSelected ? 'bg-slate-950' : 'bg-primary-container'}`} />}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-2 min-h-8 border-t border-white/10 pt-2 sm:mt-3 sm:min-h-11 sm:pt-3">
+        {loading ? (
+          <div className="h-4 w-3/4 animate-pulse rounded bg-white/10" />
+        ) : selectedEvents.length > 0 ? (
+          <div className="space-y-1.5">
+            {selectedEvents.slice(0, 2).map((event) => (
+              <Link key={event.id} to="/mypage" state={{ folderId: event.folderId }} className="flex items-center gap-2 rounded-lg px-1 py-0.5 text-left transition hover:bg-white/10">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-container" />
+                <span className="truncate text-[11px] font-bold text-white sm:text-xs">{event.title}</span>
+              </Link>
+            ))}
+            {selectedEvents.length > 2 && <p className="px-1 text-[10px] text-white/45">+ {selectedEvents.length - 2}개 일정</p>}
+          </div>
+        ) : events.length > 0 ? (
+          <p className="text-xs text-white/45">{getCalendarDateLabel(selectedDateKey)}에는 AI 플랜 일정이 없습니다.</p>
+        ) : (
+          <Link to="/ai-planner" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-container hover:underline">
+            <span className="material-symbols-outlined text-sm">auto_awesome</span>
+            저장된 AI 여행 플랜이 없습니다.
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const getDateKey = (item, key) => {
   const alternateKey = key === 'eventstartdate'
@@ -146,7 +282,7 @@ const GuestReveal = ({ children, delay = 0, className = '' }) => {
 };
 
 const GuestHome = () => (
-  <div className="relative flex-1 overflow-y-auto bg-background p-6 lg:p-10">
+  <div className="relative flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-10">
     <style>{`
       @keyframes codetrip-hero-pan {
         0%, 100% { transform: scale(1.02) translate3d(0, 0, 0); }
@@ -202,7 +338,7 @@ const GuestHome = () => (
       }
     `}</style>
 
-    <section className="relative min-h-[460px] overflow-hidden rounded-2xl bg-slate-950 shadow-2xl">
+    <section className="relative min-h-[400px] overflow-hidden rounded-2xl bg-slate-950 shadow-2xl sm:min-h-[460px]">
       <img
         src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2070"
         alt="CodeTrip service preview"
@@ -213,7 +349,7 @@ const GuestHome = () => (
         <div className="guest-scan-line h-px w-1/2 bg-primary-container/90" />
       </div>
 
-      <div className="relative z-10 grid min-h-[460px] grid-cols-1 items-center gap-8 px-7 py-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
+      <div className="relative z-10 grid min-h-[400px] grid-cols-1 items-center gap-8 px-6 py-8 sm:min-h-[460px] sm:px-7 sm:py-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
         <div className="max-w-3xl">
           <div className="guest-fade-up inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-md font-label">
             <span className="guest-pulse-dot h-2 w-2 rounded-full bg-primary-container" />
@@ -226,15 +362,28 @@ const GuestHome = () => (
           <p className="guest-fade-up mt-5 max-w-2xl break-keep text-base leading-8 text-white/80 sm:text-lg" style={{ animationDelay: '.16s' }}>
             CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 플래너, 여행 게시판을 하나의 흐름으로 연결하는 개발자 감성의 여행 큐레이션 서비스입니다.
           </p>
-          <div className="guest-fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: '.24s' }}>
-            <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label">
+          <div className="guest-fade-up mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row" style={{ animationDelay: '.24s' }}>
+            <Link to="/login" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label sm:w-auto">
               <span className="material-symbols-outlined text-lg">login</span>
               로그인하고 시작하기
             </Link>
-            <Link to="/explore" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/15 px-7 py-3 text-sm font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/25 font-label">
+            <Link to="/explore" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/15 px-7 py-3 text-sm font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/25 font-label sm:w-auto">
               <span className="material-symbols-outlined text-lg">travel_explore</span>
               여행지 둘러보기
             </Link>
+          </div>
+          <div className="guest-fade-up mt-4 overflow-hidden rounded-xl border border-white/20 bg-slate-950/55 px-3 py-2.5 backdrop-blur-md lg:hidden" style={{ animationDelay: '.32s' }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-red-400/80" />
+                <span className="h-2 w-2 rounded-full bg-yellow-300/80" />
+                <span className="h-2 w-2 rounded-full bg-primary-container" />
+              </div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/55 font-label">trip.config.js</p>
+            </div>
+            <p className="mt-2 truncate font-mono text-[10px] leading-5 text-white/75">
+              <span className="text-primary-container">const</span> trip = <span className="text-primary-container">CodeTrip</span>.generate({'{'} source: [<span className="text-emerald-200">"TourAPI"</span>, <span className="text-emerald-200">"Wishlist"</span>] {'}'});
+            </p>
           </div>
         </div>
 
@@ -272,28 +421,28 @@ const GuestHome = () => (
       </div>
     </section>
 
-    <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-4">
+    <section className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-5 xl:grid-cols-4">
       {GUEST_FEATURES.map((feature, index) => (
         <GuestReveal key={feature.label} delay={index * 90}>
           <Link
             to={feature.to}
-            className={`guest-feature-card group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-6 shadow-sm`}
+            className={`guest-feature-card group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-3 shadow-sm sm:p-6`}
           >
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <span className={`guest-emoji-badge flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl ${feature.accent}`}>
+            <div className="mb-3 flex items-center justify-between gap-2 sm:mb-5 sm:gap-3">
+              <span className={`guest-emoji-badge flex h-10 w-10 items-center justify-center rounded-xl border text-2xl sm:h-14 sm:w-14 sm:rounded-2xl sm:text-3xl ${feature.accent}`}>
                 {feature.emoji}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-label">{feature.label}</span>
+              <span className="max-w-[56%] truncate text-right text-[8px] font-bold uppercase tracking-[0.08em] text-slate-500 font-label sm:max-w-none sm:text-[10px] sm:tracking-widest">{feature.label}</span>
             </div>
-            <h3 className="break-keep text-xl font-black leading-snug text-on-surface font-headline">{feature.title}</h3>
-            <p className="mt-3 break-keep text-sm leading-6 text-slate-600">{feature.desc}</p>
-            <div className="mt-5 rounded-xl border border-slate-900/5 bg-white/70 p-3 font-mono text-[11px] leading-5 text-slate-500">
+            <h3 className="break-keep text-base font-black leading-snug text-on-surface font-headline sm:text-xl">{feature.title}</h3>
+            <p className="mt-2 break-keep text-[11px] leading-5 text-slate-600 sm:mt-3 sm:text-sm sm:leading-6">{feature.desc}</p>
+            <div className="mt-3 hidden rounded-xl border border-slate-900/5 bg-white/70 p-3 font-mono text-[11px] leading-5 text-slate-500 sm:mt-5 sm:block">
               <p className="font-bold text-primary">## {feature.label.toLowerCase()}</p>
               {feature.snippet.map((line) => (
                 <p key={line} className="truncate">- {line}</p>
               ))}
             </div>
-            <div className="mt-auto flex items-center gap-2 pt-5 text-[11px] font-black uppercase tracking-widest text-primary font-label">
+            <div className="mt-auto flex items-center gap-1 pt-3 text-[9px] font-black uppercase tracking-[0.08em] text-primary font-label sm:gap-2 sm:pt-5 sm:text-[11px] sm:tracking-widest">
               launch_node
               <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">arrow_forward</span>
             </div>
@@ -317,17 +466,17 @@ const GuestHome = () => (
             둘러보기에서 시작해 저장과 AI 코스까지 자연스럽게 이어지는 흐름입니다.
           </p>
         </div>
-        <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
+        <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch md:gap-4">
           {GUEST_STEPS.map((item, index) => (
             <React.Fragment key={item.step}>
-              <div className="guest-step-card rounded-2xl border border-outline-variant/10 bg-gradient-to-br from-white to-surface-container-high p-5">
+              <div className="guest-step-card rounded-2xl border border-outline-variant/10 bg-gradient-to-br from-white to-surface-container-high p-3 sm:p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl">{item.emoji}</span>
-                  <p className="font-mono text-xs font-black text-primary">{item.step}</p>
+                  <span className="text-2xl sm:text-3xl">{item.emoji}</span>
+                  <p className="font-mono text-[10px] font-black text-primary sm:text-xs">{item.step}</p>
                 </div>
-                <p className="mt-4 rounded-lg border border-outline-variant/15 bg-slate-50 px-3 py-2 font-mono text-[11px] font-bold text-primary">{item.command}</p>
-                <h3 className="mt-5 text-lg font-black text-on-surface font-headline">{item.title}</h3>
-                <p className="mt-2 break-keep text-sm leading-6 text-outline">{item.desc}</p>
+                <p className="mt-3 hidden rounded-lg border border-outline-variant/15 bg-slate-50 px-3 py-2 font-mono text-[11px] font-bold text-primary sm:mt-4 sm:block">{item.command}</p>
+                <h3 className="mt-3 text-sm font-black text-on-surface font-headline sm:mt-5 sm:text-lg">{item.title}</h3>
+                <p className="mt-1.5 break-keep text-[11px] leading-5 text-outline sm:mt-2 sm:text-sm sm:leading-6">{item.desc}</p>
               </div>
               {index < GUEST_STEPS.length - 1 && (
                 <div className="hidden items-center justify-center text-primary/50 md:flex">
@@ -486,8 +635,10 @@ const Home = () => {
   const {
     wishlistItems,
     folders,
+    aiTripPlans,
     initWishlist,
-    loading: wishlistLoading
+    loading: wishlistLoading,
+    initialized: wishlistInitialized
   } = useWishlistStore();
   const [weather, setWeather] = useState({ temp: 24, label: 'Sunny', icon: 'sunny', keywords: ['여행'], location: '서울' });
   const [province, setProvince] = useState('서울');
@@ -769,6 +920,10 @@ const Home = () => {
   const dashboardFolders = sortedFolders.slice(0, 3);
   const scheduledFolders = sortedFolders.filter(folder => folder.startDate || folder.start_date || folder.endDate || folder.end_date).slice(0, 3);
   const primaryFolder = scheduledFolders[0] || dashboardFolders[0];
+  const aiPlanCalendarEvents = useMemo(
+    () => buildAiPlanCalendarEvents(aiTripPlans, folders),
+    [aiTripPlans, folders]
+  );
   const uncategorizedCount = wishlistItems.filter(item => !item.folder_id && !item.folderId).length;
   const weatherSummary = weather.korLabel || weather.label || '여행하기 좋은 날씨';
   const todayBriefing = `${user?.name || 'traveler'}님, 오늘 ${province} ${weather.location}의 날씨는 ${weatherSummary}, ${weather.temp}°C입니다. 저장한 여행지 ${wishlistItems.length}개와 폴더 ${folders.length}개를 이어서 가볍게 다음 코스를 준비해보세요.`;
@@ -795,19 +950,19 @@ const Home = () => {
   }
 
   return (
-    <div className="p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
+    <div className="p-4 sm:p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
       <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-5">
-        <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-6 lg:p-7 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-5 sm:p-6 lg:p-7 overflow-hidden">
           <div className="flex flex-col gap-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-primary font-label">
                 <span className="w-2 h-2 rounded-full bg-primary-container"></span>
                 my_travel.dashboard
               </p>
-              <h2 className="font-headline text-2xl lg:text-3xl font-bold text-slate-950 break-keep">
+              <h2 className="font-headline text-xl font-bold text-slate-950 break-keep sm:text-2xl lg:text-3xl">
                 {user?.name || 'traveler'}님의 여행 데이터를 한눈에 확인하세요.
               </h2>
-              <p className="text-sm text-slate-500 leading-relaxed break-keep">
+              <p className="text-xs leading-6 text-slate-500 break-keep sm:text-sm sm:leading-relaxed">
                 저장한 여행지와 폴더를 기준으로 다음 여행 준비 상태를 빠르게 확인할 수 있습니다.
               </p>
             </div>
@@ -846,30 +1001,30 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
             {[
               { icon: 'favorite', label: 'SAVED_NODES', value: wishlistItems.length, helper: '저장 여행지' },
               { icon: 'folder', label: 'FOLDERS', value: folders.length, helper: '여행 폴더' },
               { icon: 'inventory_2', label: 'UNCATEGORIZED', value: uncategorizedCount, helper: '미분류' }
             ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+              <div key={stat.label} className="rounded-2xl bg-slate-50 border border-slate-100 p-3 sm:p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="material-symbols-outlined text-primary text-xl">{stat.icon}</span>
                   <span className="font-headline text-2xl font-bold text-slate-950">{wishlistLoading ? '-' : stat.value}</span>
                 </div>
-                <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 font-label">{stat.label}</p>
-                <p className="mt-1 text-xs text-slate-500">{stat.helper}</p>
+                <p className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 font-label sm:mt-3 sm:text-[10px] sm:tracking-[0.18em]">{stat.label}</p>
+                <p className="mt-1 text-[11px] text-slate-500 sm:text-xs">{stat.helper}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="mt-5 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid-cols-3 md:grid-flow-row md:overflow-visible md:pb-0">
             {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
               <Link
                 key={getFolderId(folder)}
                 to="/mypage"
                 state={{ folderId: getFolderId(folder) }}
-                className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                className="group snap-start rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -888,7 +1043,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm p-6 lg:p-7 text-white overflow-hidden relative">
+        <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm p-4 sm:p-6 lg:p-7 text-white overflow-hidden relative">
           <div className="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-primary/20 blur-3xl"></div>
           <div className="relative flex items-start justify-between gap-4">
             <div>
@@ -898,7 +1053,9 @@ const Home = () => {
             <span className="material-symbols-outlined text-primary-container">event_available</span>
           </div>
 
-          <div className="relative mt-6 space-y-3">
+          <div className="relative mt-4 space-y-3 sm:mt-6">
+            <MiniPlanCalendar events={aiPlanCalendarEvents} loading={wishlistLoading || !wishlistInitialized} />
+            <div className="hidden space-y-3 sm:block">
             {primaryFolder ? (
               <>
                 <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
@@ -922,12 +1079,13 @@ const Home = () => {
                 <p className="mt-3 text-sm font-bold text-white/70">// 여행 폴더를 만들면 일정 대시보드가 채워집니다.</p>
               </div>
             )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* 1. 상단 Node_Header 섹션 */}
-      <section className="relative w-full min-h-[320px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0 sm:min-h-[260px]">
+      <section className="relative w-full min-h-[250px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0 sm:min-h-[260px]">
         <img src={currentNodeHeader.galWebImageUrl || currentNodeHeader.image} key={currentNodeHeader.galContentId || currentNodeHeader.id} className="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" alt="bg" />
         <div className="absolute inset-0 flex flex-col justify-between gap-5 bg-gradient-to-b from-slate-900/82 via-slate-900/56 to-slate-900/28 px-5 py-6 sm:flex-row sm:items-center sm:bg-gradient-to-r sm:from-slate-900/80 sm:via-slate-900/45 sm:to-slate-900/10 sm:px-10 lg:px-12">
           <div className="max-w-xl space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
@@ -938,7 +1096,7 @@ const Home = () => {
             <p className="text-white/80 text-sm sm:text-base font-body max-w-lg leading-relaxed break-keep">대한민국 곳곳의 숨겨진 데이터 노드들을 탐험하세요.</p>
             <div className="pt-1"><Link to="/explore" className="bg-white/50 backdrop-blur-md text-slate-900 px-7 py-2.5 rounded-full font-bold hover:bg-white/70 transition-all flex items-center justify-center gap-2 w-fit min-w-[170px] text-sm shadow-lg font-label border border-white/20 whitespace-nowrap"><span>GET STARTED</span><span className="material-symbols-outlined text-sm font-bold">arrow_right_alt</span></Link></div>
           </div>
-          <div className="self-end rounded-xl border border-white/30 bg-white/75 p-3 text-slate-900 shadow-xl backdrop-blur-2xl sm:absolute sm:right-8 sm:top-1/2 sm:min-w-[132px] sm:-translate-y-1/2 sm:p-4">
+          <div className="absolute bottom-4 right-4 rounded-xl border border-white/30 bg-white/75 p-2.5 text-slate-900 shadow-xl backdrop-blur-2xl sm:right-8 sm:top-1/2 sm:bottom-auto sm:min-w-[132px] sm:-translate-y-1/2 sm:p-4">
             <p className="text-slate-500 text-[9px] uppercase mb-0.5 font-bold tracking-widest font-label whitespace-nowrap">{province} {weather.location}</p>
             <div className="flex items-center gap-2 whitespace-nowrap sm:gap-3"><span className="text-2xl font-headline font-bold text-primary sm:text-3xl">{weather.temp}°C</span><span className="material-symbols-outlined text-xl text-primary sm:text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{weather.icon}</span></div>
           </div>
@@ -946,19 +1104,19 @@ const Home = () => {
       </section>
 
       {/* 2. 카드 그리드 */}
-      <div className="grid grid-cols-1 gap-5 flex-1 min-h-0 xl:grid-cols-3">
+      <div className="grid auto-cols-[88%] grid-flow-col gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar xl:grid-cols-3 xl:grid-flow-row xl:gap-5 xl:overflow-visible xl:pb-0">
         {/* Card 1: Regional (Near Me) */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 xl:p-6">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-4">
-              <div className="flex min-h-[86px] justify-between items-start">
+              <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] xl:min-h-[86px]">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">location_on</span><p className="text-[10px] uppercase tracking-widest font-label whitespace-nowrap">NEAR ME ({province} {weather.location})</p></div>
                   <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">🛫지역 기반 추천: {province}</h3>
                 </div>
                 <button onClick={() => setNearbyIndex(i => (i+1) % (nearbyPlaces.length || 1))} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-900 rounded-xl hover:bg-primary hover:text-white transition-all shadow-md"><span className="material-symbols-outlined">navigate_next</span></button>
               </div>
-              <div className="h-52 w-full rounded-2xl overflow-hidden bg-slate-100 shadow-inner">
+              <div className="h-44 w-full rounded-2xl overflow-hidden bg-slate-100 shadow-inner sm:h-48 xl:h-52">
                 <img src={nearbyPlaces[nearbyIndex]?.firstimage || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070'} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="n" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070'; }} />
               </div>
               <div>
@@ -972,9 +1130,9 @@ const Home = () => {
         </div>
 
         {/* Card 2: Slot Machine */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 xl:p-6">
             <div className="flex-1 flex flex-col space-y-4">
-              <div className="flex min-h-[86px] justify-between items-start">
+              <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] xl:min-h-[86px]">
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">casino</span><p className="text-[9px] uppercase tracking-widest font-label">{slotModeLabel}</p></div>
                   <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">{slotTitle}</h3>
@@ -988,7 +1146,7 @@ const Home = () => {
                 </div>
                 <button onClick={handleSlotSpin} disabled={isSlotSpinning} className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all shadow-md ${isSlotSpinning ? 'bg-primary text-white animate-pulse' : 'bg-slate-50 text-slate-900 hover:bg-primary hover:text-white'}`}><span className={`material-symbols-outlined ${isSlotSpinning ? 'animate-bounce' : ''}`}>casino</span></button>
               </div>
-              <div className={`h-52 w-full rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner ${isSlotSpinning ? 'scale-[1.02]' : ''}`}>
+              <div className={`h-44 w-full rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner sm:h-48 xl:h-52 ${isSlotSpinning ? 'scale-[1.02]' : ''}`}>
                 <img 
                   src={slotImg} 
                   className={`w-full h-full object-cover transition-all duration-1000 ${isSlotSpinning ? 'blur-sm brightness-75' : (!hasPicked ? 'blur-[2px] brightness-90 group-hover:blur-0 group-hover:brightness-100' : 'blur-0 brightness-100 group-hover:scale-110')}`} 
@@ -1051,7 +1209,7 @@ const Home = () => {
         </div>
 
         {/* Card 3: Trending */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group">
+        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group sm:p-5 xl:p-6">
           <div className="flex justify-between items-start mb-4 shrink-0">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold">

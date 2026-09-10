@@ -140,8 +140,13 @@ const Info = () => {
           <h1 className="font-headline text-4xl font-extrabold leading-tight tracking-tighter text-white sm:text-5xl lg:text-6xl">
             CodeTrip<span className="text-primary">.</span>
           </h1>
-          <p className="text-sm leading-relaxed text-white/70 sm:text-lg">
-            어디로 갈지부터 막막한 순간, 날씨·위치·관심 지역을 단서로 나에게 맞는 여행 선택을 시작하세요.
+          <p className="text-sm leading-relaxed text-white/70 sm:text-base md:text-lg">
+            <span className="md:hidden">
+              어디로 갈지부터 막막한 순간, 날씨·위치·관심 지역을 단서로<br />나에게 맞는 여행 선택을 시작하세요.
+            </span>
+            <span className="hidden md:inline">
+              어디로 갈지부터 막막한 순간, 날씨·위치·관심 지역을 단서로 나에게 맞는 여행 선택을 시작하세요.
+            </span>
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2 sm:gap-4">
             <Link
@@ -188,7 +193,7 @@ const Info = () => {
               여행지를 찾는 것을 넘어, 선택을 돕습니다<span className="text-primary">.</span>
             </h2>
             <p className="text-sm leading-relaxed text-slate-500 sm:text-base">
-              정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고,<br className="hidden sm:block" /> 저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.
+              정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고,<br className="sm:hidden" />저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.
             </p>
           </InfoReveal>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
