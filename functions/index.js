@@ -521,7 +521,7 @@ exports.syncBoardPostSummary = onValueWritten(
   }
 );
 
-const createBoardPostOwnerNotification = async ({ postId, actorId, actorNickname, interaction, notificationId }) => {
+const createBoardPostOwnerNotification = async ({ postId, actorId, actorNickname, interaction, commentBody, notificationId }) => {
   const db = getDatabase();
   const postSnapshot = await db.ref(`boardPosts/${postId}`).once('value');
   if (!postSnapshot.exists()) return null;
@@ -531,6 +531,8 @@ const createBoardPostOwnerNotification = async ({ postId, actorId, actorNickname
     actorId,
     actorNickname,
     interaction,
+    postId,
+    commentBody,
     createdAt: new Date().toISOString(),
   });
   if (!notification) return null;
@@ -557,6 +559,37 @@ exports.notifyBoardPostComment = onValueWritten(
       interaction: 'comment',
       notificationId: `board-comment-${event.params.commentId}`,
     });
+  },
+);
+
+exports.notifyBoardCommentLike = onValueWritten(
+  { ref: '/likes/boardComments/{commentId}/{actorId}', region: DATABASE_TRIGGER_REGION, instance: DATABASE_INSTANCE },
+  async (event) => {
+    if (event.data.before.val() === true || event.data.after.val() !== true) return null;
+
+    const db = getDatabase();
+    const [commentSnapshot, userSnapshot] = await Promise.all([
+      db.ref(`boardComments/${event.params.commentId}`).once('value'),
+      db.ref(`users/${event.params.actorId}`).once('value'),
+    ]);
+    if (!commentSnapshot.exists()) return null;
+
+    const comment = commentSnapshot.val() || {};
+    const postId = String(comment.post_id || '').trim();
+    const notification = buildBoardPostNotification({
+      postOwnerId: comment.user_id,
+      actorId: event.params.actorId,
+      actorNickname: userSnapshot.child('name').val() || userSnapshot.child('nickname').val(),
+      interaction: 'comment_like',
+      postId,
+      commentBody: comment.body,
+      createdAt: new Date().toISOString(),
+    });
+    if (!postId || !notification) return null;
+
+    await db.ref(`users/${notification.user_id}/notifications/board-comment-like-${event.params.commentId}-${event.params.actorId}`).set(notification);
+    logger.info('Created board comment like notification', { commentId: event.params.commentId, actorId: event.params.actorId });
+    return null;
   },
 );
 
