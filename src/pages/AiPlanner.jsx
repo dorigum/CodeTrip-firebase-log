@@ -11,6 +11,7 @@ import { getPlanSourceBadge } from '../utils/aiPlanSource';
 
 const STYLE_OPTIONS = ['실내', '문화', '맛집', '자연', '힐링', '카페', '사진', '역사'];
 const AVOID_OPTIONS = ['장거리 이동', '등산', '혼잡한 장소', '야외 위주', '비싼 코스'];
+const PRIORITY_OPTIONS = ['예산', '휴식', '맛집', '체험', '사진', '문화'];
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -23,6 +24,8 @@ const DEFAULT_FORM = {
   travelEndDate: '',
   companionType: '친구',
   peopleCount: 2,
+  transportation: '대중교통',
+  priorities: ['휴식'],
   budgetLevel: '보통',
   pace: '여유',
   weatherKeyword: '',
@@ -30,6 +33,33 @@ const DEFAULT_FORM = {
   endTime: '18:00',
   travelStyle: ['실내', '문화'],
   avoidKeywords: [],
+};
+
+const createDefaultForm = () => ({
+  ...DEFAULT_FORM,
+  priorities: [...DEFAULT_FORM.priorities],
+  travelStyle: [...DEFAULT_FORM.travelStyle],
+  avoidKeywords: [],
+});
+
+const getMinimumPeopleCount = (companionType) => (companionType === '혼자' ? 1 : 2);
+
+const normalizePeopleCount = (companionType, value) => {
+  const minimum = getMinimumPeopleCount(companionType);
+  return Math.min(10, Math.max(minimum, Number(value) || minimum));
+};
+
+const isValidTripTimeRange = (startTime, endTime) => {
+  const toMinutes = (value) => {
+    const [hours, minutes] = String(value || '').split(':').map(Number);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+    return (hours * 60) + minutes;
+  };
+  const startMinutes = toMinutes(startTime);
+  const endMinutes = toMinutes(endTime);
+  return startMinutes != null && endMinutes != null && endMinutes > startMinutes;
 };
 
 const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
@@ -404,7 +434,11 @@ const AiPlanner = () => {
   const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
   const regeneratePlan = location.state?.regeneratePlan || null;
   const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
-  const regenerateFolderId = location.state?.folderId || regenerationContext.sourceFolderId || '';
+  const regenerateFolderId = (
+    regenerationContext.planningMode === PLAN_MODE.FOLDER
+      ? regenerationContext.sourceFolderId || ''
+      : ''
+  );
   const [form, setForm] = useState(() => {
     const initialForm = {
       ...DEFAULT_FORM,
@@ -412,13 +446,14 @@ const AiPlanner = () => {
     };
     return {
       ...initialForm,
+      peopleCount: normalizePeopleCount(initialForm.companionType, initialForm.peopleCount),
       durationDays: normalizeDurationDays(initialForm.durationDays),
       travelStartDate: initialForm.travelStartDate || '',
       travelEndDate: initialForm.travelEndDate || '',
     };
   });
   const [planningMode, setPlanningMode] = useState(
-    regenerateFolderId ? PLAN_MODE.FOLDER : (regenerationContext.planningMode || PLAN_MODE.CUSTOM)
+    regenerateFolderId ? PLAN_MODE.FOLDER : PLAN_MODE.CUSTOM
   );
   const [selectedFolderId, setSelectedFolderId] = useState(
     regenerateFolderId ? String(regenerateFolderId) : ''
@@ -481,17 +516,20 @@ const AiPlanner = () => {
     setForm((prev) => ({
       ...prev,
       companionType: value,
-      peopleCount: value === '혼자' ? 1 : prev.peopleCount,
+      peopleCount: normalizePeopleCount(value, prev.peopleCount),
     }));
 
     if (value === '혼자' && Number(form.peopleCount) > 1) {
       showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.', 'info');
+    } else if (value !== '혼자' && Number(form.peopleCount) < 2) {
+      showToast('연인·가족·친구 여행은 본인을 포함해 최소 2명으로 설정됩니다.', 'info');
     }
   };
 
   const handlePeopleCountChange = (value) => {
     if (plannerBusy) return;
-    const nextCount = Math.max(1, Number(value) || 1);
+    const minimum = getMinimumPeopleCount(form.companionType);
+    const nextCount = Math.max(minimum, Number(value) || minimum);
     if (form.companionType === '혼자' && nextCount > 1) {
       updateForm('peopleCount', 1);
       showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.', 'info');
@@ -499,6 +537,9 @@ const AiPlanner = () => {
     }
 
     updateForm('peopleCount', Math.min(nextCount, 10));
+    if (form.companionType !== '혼자' && Number(value) < 2) {
+      showToast('연인·가족·친구 여행은 본인을 포함해 최소 2명으로 설정됩니다.', 'info');
+    }
   };
 
   const handleDurationDaysChange = (value) => {
@@ -571,13 +612,23 @@ const AiPlanner = () => {
 
   const handlePlanningModeChange = (mode) => {
     if (plannerBusy) return;
+    folderSelectionRequestRef.current += 1;
     setPlanningMode(mode);
     invalidateCurrentPlan();
+    setForm(createDefaultForm());
     setSelectedContentIds(new Set());
-    if (mode === PLAN_MODE.CUSTOM) {
-      folderSelectionRequestRef.current += 1;
-      setSelectedFolderId('');
-    }
+    setSelectedFolderId('');
+  };
+
+  const handleResetPlanner = () => {
+    if (plannerBusy) return;
+    folderSelectionRequestRef.current += 1;
+    setPlanningMode(PLAN_MODE.CUSTOM);
+    invalidateCurrentPlan();
+    setForm(createDefaultForm());
+    setSelectedFolderId('');
+    setSelectedContentIds(new Set());
+    showToast('입력 조건과 위시리스트 선택을 기본값으로 초기화했습니다.', 'info');
   };
 
   const handleFolderChange = useCallback(async (folderId) => {
@@ -637,7 +688,7 @@ const AiPlanner = () => {
     if (!regenerateFolderId) {
       regenerationHydratedRef.current = true;
       navigate('/ai-planner', { replace: true, state: null });
-      showToast('기존 코스의 생성 조건을 불러왔습니다. 조건을 확인한 뒤 다시 생성해주세요.', 'info');
+      showToast('기존 코스의 생성 조건을 불러왔습니다. 조건을 바꾸면 새 코스로 다시 생성됩니다.', 'info');
       return;
     }
 
@@ -650,7 +701,7 @@ const AiPlanner = () => {
       handleFolderChange(String(regenerateFolderId));
     });
     navigate('/ai-planner', { replace: true, state: null });
-    showToast('기존 코스와 위시리스트 폴더 조건을 불러왔습니다.', 'info');
+    showToast('기존 코스의 생성 조건과 원래 위시리스트 폴더를 불러왔습니다.', 'info');
   }, [
     folders,
     handleFolderChange,
@@ -674,6 +725,17 @@ const AiPlanner = () => {
     if (form.companionType === '혼자' && Number(form.peopleCount) > 1) {
       updateForm('peopleCount', 1);
       showToast('동행 유형이 혼자일 때는 인원 수를 1명으로 설정해주세요.');
+      return;
+    }
+
+    if (form.companionType !== '혼자' && Number(form.peopleCount) < 2) {
+      updateForm('peopleCount', 2);
+      showToast('연인·가족·친구 여행은 본인을 포함해 최소 2명으로 설정해주세요.');
+      return;
+    }
+
+    if (!isValidTripTimeRange(form.startTime, form.endTime)) {
+      showToast('일정 종료 시간은 시작 시간보다 늦게 설정해주세요.');
       return;
     }
 
@@ -764,6 +826,8 @@ const AiPlanner = () => {
           startTime: form.startTime,
           endTime: form.endTime,
           travelStyle: form.travelStyle,
+          transportation: form.transportation,
+          priorities: form.priorities,
           avoidKeywords: form.avoidKeywords,
         },
       });
@@ -834,7 +898,7 @@ const AiPlanner = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
+    <div className="ai-planner-page mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
       <PageHeader
         label="ai_trip.planner"
         title="AI 여행 플래너"
@@ -854,7 +918,13 @@ const AiPlanner = () => {
       <div className="grid grid-cols-1 xl:grid-cols-[500px_minmax(0,1fr)] gap-6">
         <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
           <div>
-            <FieldLabel>Plan Mode</FieldLabel>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <FieldLabel>Plan Mode</FieldLabel>
+              <button type="button" onClick={handleResetPlanner} disabled={plannerBusy} className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-primary disabled:opacity-50">
+                <span className="material-symbols-outlined text-sm">restart_alt</span>
+                RESET
+              </button>
+            </div>
             <div className="grid grid-cols-1 gap-2 rounded-xl border border-outline-variant/30 bg-slate-50 p-1 sm:grid-cols-2">
               <button
                 type="button"
@@ -970,7 +1040,7 @@ const AiPlanner = () => {
               <FieldLabel>Days</FieldLabel>
               <input
                 type="number"
-                min="1"
+                min={form.companionType === '혼자' ? '1' : '2'}
                 max={MAX_DURATION_DAYS}
                 step="1"
                 value={form.durationDays}
@@ -1085,6 +1155,9 @@ const AiPlanner = () => {
                 disabled={plannerBusy}
                 className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">
+                {form.companionType === '혼자' ? '혼자 여행은 1명으로 고정됩니다.' : '연인·가족·친구 여행은 본인을 포함해 최소 2명입니다.'}
+              </p>
             </div>
             <div>
               <FieldLabel>End</FieldLabel>
@@ -1093,9 +1166,24 @@ const AiPlanner = () => {
                 value={form.endTime}
                 onChange={(e) => updateForm('endTime', e.target.value)}
                 disabled={plannerBusy}
-                className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                aria-invalid={!isValidTripTimeRange(form.startTime, form.endTime)}
+                className={`w-full min-w-0 h-11 px-3 rounded-lg border focus:outline-none text-sm ${
+                  isValidTripTimeRange(form.startTime, form.endTime)
+                    ? 'border-outline-variant/40 focus:border-primary'
+                    : 'border-red-400 focus:border-red-500'
+                }`}
               />
+              {!isValidTripTimeRange(form.startTime, form.endTime) && (
+                <p className="mt-1.5 text-[10px] leading-4 text-red-500">종료 시간은 시작 시간보다 늦어야 합니다.</p>
+              )}
             </div>
+          </div>
+
+          <div>
+            <FieldLabel>Transportation</FieldLabel>
+            <select value={form.transportation} onChange={(e) => updateForm('transportation', e.target.value)} disabled={plannerBusy} className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white">
+              {['대중교통', '자차', '도보'].map((item) => <option key={item}>{item}</option>)}
+            </select>
           </div>
 
           <div>
@@ -1125,6 +1213,17 @@ const AiPlanner = () => {
                   }`}
                 >
                   {style}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Priority</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              {PRIORITY_OPTIONS.map((item) => (
+                <button key={item} type="button" disabled={plannerBusy} onClick={() => updateForm('priorities', toggleValue(form.priorities, item))} className={`px-3 h-9 rounded-lg border text-xs font-bold transition-colors ${form.priorities.includes(item) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-500 border-outline-variant/40 hover:border-primary/50'}`}>
+                  {item}
                 </button>
               ))}
             </div>
@@ -1195,6 +1294,14 @@ const AiPlanner = () => {
                 </button>
               </div>
 
+              <section className="rounded-xl border border-primary/15 bg-primary/5 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Why this course</p>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-slate-700">
+                  {[`${form.companionType} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...(form.priorities || [])].map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
+                </div>
+                <p className="mt-3 text-xs leading-5 text-slate-600">각 장소 카드의 추천 이유는 선택한 조건과 날씨·이동 부담을 반영해 생성됩니다.</p>
+              </section>
+
               <div className="space-y-5">
                 {(plan.days || []).map((day) => (
                   <article key={day.day} className="border border-outline-variant/30 rounded-xl overflow-hidden">
@@ -1221,7 +1328,8 @@ const AiPlanner = () => {
                                 </span>
                               </div>
                               {item.address && <p className="text-xs text-slate-400 mt-1">{item.address}</p>}
-                              <p className="text-sm text-slate-600 mt-3 leading-6">{item.reason}</p>
+                              <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-primary">Recommendation reason</p>
+                              <p className="text-sm text-slate-600 mt-1 leading-6">{item.reason}</p>
                               {item.tip && <p className="text-xs text-slate-400 mt-2 font-mono">// {item.tip}</p>}
                             </div>
                           </div>
