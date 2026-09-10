@@ -6,6 +6,8 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
+const { applyCompanionConsistency, applyTransportationChecklist } = require('./tripPlanChecklist');
+const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
 
 initializeApp();
 
@@ -103,6 +105,14 @@ const sanitizeTripDate = (value, fieldName) => {
   return date;
 };
 
+const sanitizeTripTime = (value, fieldName) => {
+  const time = sanitizeString(value, '', 10);
+  if (!isValidTripTime(time)) {
+    throw new HttpsError('invalid-argument', `${fieldName} 형식이 올바르지 않습니다.`);
+  }
+  return time;
+};
+
 const getInclusiveDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate) return null;
   const start = parseLocalDate(startDate);
@@ -141,6 +151,14 @@ const sanitizeInput = (input = {}) => {
     throw new HttpsError('invalid-argument', `AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
   }
 
+  const companionType = sanitizeString(input.companionType, '미정', 30);
+  const minimumPeopleCount = companionType === '혼자' ? 1 : 2;
+  const startTime = sanitizeTripTime(input.startTime || '10:00', '일정 시작 시간');
+  const endTime = sanitizeTripTime(input.endTime || '18:00', '일정 종료 시간');
+  if (!isValidTripTimeRange(startTime, endTime)) {
+    throw new HttpsError('invalid-argument', '일정 종료 시간은 시작 시간보다 늦어야 합니다.');
+  }
+
   return {
     planningMode: sanitizeString(input.planningMode, 'custom', 20),
     sourceFolderName: sanitizeString(input.sourceFolderName, '', 80),
@@ -149,14 +167,16 @@ const sanitizeInput = (input = {}) => {
     travelStartDate,
     travelEndDate,
     travelStyle: sanitizeStringList(input.travelStyle, 10),
-    companionType: sanitizeString(input.companionType, '미정', 30),
-    peopleCount: sanitizeNumber(input.peopleCount, 1, 1, 10),
+    companionType,
+    peopleCount: sanitizeNumber(input.peopleCount, minimumPeopleCount, minimumPeopleCount, 10),
+    transportation: sanitizeString(input.transportation, '대중교통', 30),
+    priorities: sanitizeStringList(input.priorities, 5),
     budgetLevel: sanitizeString(input.budgetLevel, '보통', 20),
     totalBudgetLabel: sanitizeString(input.totalBudgetLabel, '미정', 80),
     pace: sanitizeString(input.pace, '보통', 20),
     weatherKeyword: sanitizeString(input.weatherKeyword, '', 80),
-    startTime: sanitizeString(input.startTime, '10:00', 10),
-    endTime: sanitizeString(input.endTime, '18:00', 10),
+    startTime,
+    endTime,
     avoidKeywords: sanitizeStringList(input.avoidKeywords, 10),
     preferredPlaces: Array.isArray(input.preferredPlaces)
       ? input.preferredPlaces.map(normalizePlace).slice(0, MAX_PREFERRED_PLACES)
@@ -211,6 +231,8 @@ const buildTripPrompt = (input) => `${SYSTEM_PROMPT}
 - 여행 스타일: ${toListText(input.travelStyle)}
 - 동행 유형: ${input.companionType || '미정'}
 - 인원 수: ${input.peopleCount || 1}명
+- 이동수단: ${input.transportation || '대중교통'}
+- 여행 우선순위: ${toListText(input.priorities)}
 - 예산 수준: ${input.budgetLevel || '보통'}
 - 예산 기준: ${BUDGET_GUIDE[input.budgetLevel] || BUDGET_GUIDE.보통}
 - 예상 총예산 범위: ${input.totalBudgetLabel || '미정'}
@@ -239,7 +261,14 @@ ${getRegionDiversityGuide(input.regionName)}
 10. 이동이 과도하게 많지 않도록 같은 지역 중심으로 구성하세요.
 11. 날씨 키워드가 있으면 실내/실외 비중에 반영하세요.
 12. 예산은 1일 1인 기준과 예상 총예산 범위를 함께 고려하여 식사, 카페, 유료 체험 수준을 조절하세요.
-13. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
+13. 비·폭염·한파 등 날씨 키워드는 실내/실외 비중과 대체 장소에 반영하세요.
+14. 아이·부모님 동반은 이동 구간과 일정 수를 줄이고 휴식 시간을 포함하세요. 친구·연인은 선택한 여행 스타일과 체험·식사 비중을 우선하세요.
+15. 대중교통은 환승과 장거리 이동을 줄이고, 자차는 주차·접근성을 고려하세요. 도보는 가까운 권역에 집중하세요.
+16. 여행 우선순위(예산, 휴식, 맛집, 체험, 사진, 문화)는 장소 선정과 일정 배치의 충돌 시 우선 반영하세요.
+17. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
+18. checklist의 이동 준비 항목은 선택한 이동수단에 정확히 맞춰 작성하세요. 대중교통은 교통카드·환승 경로·배차 간격, 자차는 주차 가능 여부·주차 요금·도로 혼잡 구간, 도보는 이동 거리·경사·편한 신발을 확인합니다. 자차 또는 도보 코스에는 배차·환승·교통카드 항목을 넣지 마세요.
+19. 동행 유형은 제목, 요약, 태그, 일정 테마, 추천 이유와 팁에 일관되게 반영하세요. 동행 유형이 혼자이면 친구·연인·가족과 함께라는 표현을 절대 사용하지 말고 혼자 여행에 맞는 표현만 사용하세요.
+20. 동행 유형이 혼자가 아니면 인원 수는 본인을 포함해 최소 2명입니다. 인원 수와 동행 유형이 충돌하지 않게 일정 규모와 예산을 제안하세요.
 
 [응답 JSON 스키마]
 {
@@ -571,7 +600,12 @@ exports.generateTripPlan = onCall(
 
       const data = await readResponseJson(response);
       const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
-      const plan = validateTripPlan(parseGeminiJson(text));
+      let plan = validateTripPlan(parseGeminiJson(text));
+      plan.saveGuide.checklist = applyTransportationChecklist(
+        plan.saveGuide.checklist,
+        input.transportation
+      );
+      plan = applyCompanionConsistency(plan, input.companionType);
 
       logger.info('Gemini trip plan generated', {
         uid,
