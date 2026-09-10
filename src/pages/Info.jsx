@@ -135,7 +135,7 @@ const Info = () => {
         <div className="relative z-10 max-w-3xl space-y-4 sm:space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur-md sm:px-4 sm:text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            system.info — MVP 0.9.0-rc
+            SYSTEM.INFO — CODETRIP BETA
           </div>
           <h1 className="font-headline text-4xl font-extrabold leading-tight tracking-tighter text-white sm:text-5xl lg:text-6xl">
             CodeTrip<span className="text-primary">.</span>
