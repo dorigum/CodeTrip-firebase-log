@@ -12,7 +12,8 @@ const compactCommentBody = (value) => String(value || '')
   .slice(0, 80);
 
 const getProfileDisplayName = (profile = {}) => {
-  const name = String(profile.name || profile.nickname || '').trim();
+  const name = String(profile.name || '').trim()
+    || String(profile.nickname || '').trim();
   if (name) return name;
   return String(profile.email || '').split('@')[0].trim() || 'CodeTrip 사용자';
 };
