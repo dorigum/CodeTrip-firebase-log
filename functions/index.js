@@ -6,6 +6,7 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
+const { applyTransportationChecklist } = require('./tripPlanChecklist');
 
 initializeApp();
 
@@ -248,6 +249,7 @@ ${getRegionDiversityGuide(input.regionName)}
 15. 대중교통은 환승과 장거리 이동을 줄이고, 자차는 주차·접근성을 고려하세요. 도보는 가까운 권역에 집중하세요.
 16. 여행 우선순위(예산, 휴식, 맛집, 체험, 사진, 문화)는 장소 선정과 일정 배치의 충돌 시 우선 반영하세요.
 17. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
+18. checklist의 이동 준비 항목은 선택한 이동수단에 정확히 맞춰 작성하세요. 대중교통은 교통카드·환승 경로·배차 간격, 자차는 주차 가능 여부·주차 요금·도로 혼잡 구간, 도보는 이동 거리·경사·편한 신발을 확인합니다. 자차 또는 도보 코스에는 배차·환승·교통카드 항목을 넣지 마세요.
 
 [응답 JSON 스키마]
 {
@@ -580,6 +582,10 @@ exports.generateTripPlan = onCall(
       const data = await readResponseJson(response);
       const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
       const plan = validateTripPlan(parseGeminiJson(text));
+      plan.saveGuide.checklist = applyTransportationChecklist(
+        plan.saveGuide.checklist,
+        input.transportation
+      );
 
       logger.info('Gemini trip plan generated', {
         uid,
