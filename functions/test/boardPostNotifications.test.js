@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildBoardPostNotification } = require('../boardPostNotifications');
+const { buildBoardPostNotification, getProfileDisplayName } = require('../boardPostNotifications');
 
 test('다른 사용자의 댓글은 게시글 작성자 알림으로 변환한다', () => {
   assert.deepEqual(buildBoardPostNotification({
@@ -48,4 +48,10 @@ test('게시글 작성자의 자체 댓글·좋아요에는 알림을 만들지 
     postId: 'post-1',
     createdAt: '2026-09-10T08:00:00.000Z',
   }), null);
+});
+
+test('프로필 이름이 없으면 이메일 앞부분을 알림 작성자 이름으로 사용한다', () => {
+  assert.equal(getProfileDisplayName({ email: 'traveler@example.com' }), 'traveler');
+  assert.equal(getProfileDisplayName({ name: ' ', nickname: '여행자', email: 'traveler@example.com' }), '여행자');
+  assert.equal(getProfileDisplayName({}), 'CodeTrip 사용자');
 });

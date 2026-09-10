@@ -135,7 +135,7 @@ const Info = () => {
         <div className="relative z-10 max-w-3xl space-y-4 sm:space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur-md sm:px-4 sm:text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            system.info — MVP 0.9.0-rc
+            SYSTEM.INFO — CODETRIP BETA
           </div>
           <h1 className="font-headline text-4xl font-extrabold leading-tight tracking-tighter text-white sm:text-5xl lg:text-6xl">
             CodeTrip<span className="text-primary">.</span>
@@ -182,10 +182,14 @@ const Info = () => {
       {/* Service Differentiation */}
       <section className="border-b border-outline-variant/10 bg-white px-4 py-12 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-5xl space-y-8 sm:space-y-12">
-          <InfoReveal className="mx-auto max-w-2xl space-y-3 text-center">
+          <InfoReveal className="mx-auto max-w-4xl space-y-3 text-center">
             <p className="text-[11px] font-label uppercase tracking-[0.2em] text-primary font-bold">Why CodeTrip</p>
-            <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">여행지를 찾는 것을 넘어, 선택을 돕습니다</h2>
-            <p className="text-sm leading-relaxed text-slate-500 sm:text-base">정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고, 저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.</p>
+            <h2 className="font-headline text-2xl font-bold text-on-surface sm:text-3xl">
+              여행지를 찾는 것을 넘어, 선택을 돕습니다<span className="text-primary">.</span>
+            </h2>
+            <p className="text-sm leading-relaxed text-slate-500 sm:text-base">
+              정확한 목적지를 정하지 못한 상태에서도 여행 후보를 발견하고,<br className="hidden sm:block" /> 저장·비교·일정 초안까지 자연스럽게 이어갈 수 있습니다.
+            </p>
           </InfoReveal>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
             {[

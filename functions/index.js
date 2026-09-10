@@ -9,7 +9,7 @@ const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
 const { applyCompanionConsistency, applyTransportationChecklist } = require('./tripPlanChecklist');
 const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
 const { dedupeTourApiItems } = require('./tourApiUpdates');
-const { buildBoardPostNotification } = require('./boardPostNotifications');
+const { buildBoardPostNotification, getProfileDisplayName } = require('./boardPostNotifications');
 
 initializeApp();
 
@@ -579,7 +579,7 @@ exports.notifyBoardCommentLike = onValueWritten(
     const notification = buildBoardPostNotification({
       postOwnerId: comment.user_id,
       actorId: event.params.actorId,
-      actorNickname: userSnapshot.child('name').val() || userSnapshot.child('nickname').val(),
+      actorNickname: getProfileDisplayName(userSnapshot.val()),
       interaction: 'comment_like',
       postId,
       commentBody: comment.body,
@@ -603,7 +603,7 @@ exports.notifyBoardPostLike = onValueWritten(
     return createBoardPostOwnerNotification({
       postId: event.params.postId,
       actorId: event.params.actorId,
-      actorNickname: userSnapshot.child('name').val() || userSnapshot.child('nickname').val(),
+      actorNickname: getProfileDisplayName(userSnapshot.val()),
       interaction: 'like',
       notificationId: `board-post-like-${event.params.postId}-${event.params.actorId}`,
     });

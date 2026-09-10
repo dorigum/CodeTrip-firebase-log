@@ -84,7 +84,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-160px)] flex items-center justify-center p-6 bg-background">
+    <div className="auth-page min-h-[calc(100vh-160px)] flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-md glass-panel p-10 rounded-3xl shadow-2xl border border-white/50">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 text-primary rounded-2xl mb-4">
@@ -101,7 +101,7 @@ const SignUp = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form id="signup-form" onSubmit={handleSubmit} className="space-y-5">
           {/* ... 필드 부분은 동일 ... */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary ml-1 uppercase tracking-tighter">Full Name</label>
@@ -171,29 +171,28 @@ const SignUp = () => {
             </div>
           </div>
 
+        </form>
+
+        <div className="mt-5 space-y-3">
           <button
             type="submit"
+            form="signup-form"
             disabled={isLoading}
-            className="w-full py-4 bg-primary text-white font-headline font-bold rounded-2xl shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:cursor-wait disabled:opacity-70"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-4 font-headline font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 disabled:cursor-wait disabled:opacity-70"
           >
             <span className="material-symbols-outlined text-xl">app_registration</span>
             Create Account
           </button>
-        </form>
-
-        <div className="my-6 flex items-center gap-3 text-xs text-outline">
-          <span className="h-px flex-1 bg-outline/20" /><span>OR</span><span className="h-px flex-1 bg-outline/20" />
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={isLoading}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-outline/20 bg-white px-3 py-4 font-headline font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
+          >
+            <GoogleIcon />
+            Sign up with Google
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          disabled={isLoading}
-          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-outline/20 bg-white py-4 font-headline font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
-        >
-          <GoogleIcon />
-          Sign up with Google
-        </button>
 
         <div className="mt-8 text-center text-sm">
           <span className="text-on-secondary-container">Already have an account? </span>
