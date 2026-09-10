@@ -8,6 +8,7 @@ const logger = require('firebase-functions/logger');
 const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
 const { applyCompanionConsistency, applyTransportationChecklist } = require('./tripPlanChecklist');
 const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
+const { dedupeTourApiItems } = require('./tourApiUpdates');
 
 initializeApp();
 
@@ -32,6 +33,9 @@ const MAX_TEXT_LENGTH = 120;
 const MAX_DURATION_DAYS = 5;
 const TOUR_UPDATE_LOOKBACK_ROWS = 30;
 const TOUR_UPDATE_RETENTION_LIMIT = 100;
+const TOUR_API_MAX_RETRIES = 2;
+const TOUR_API_RETRY_BASE_DELAY_MS = 1000;
+const TOUR_API_REQUEST_TIMEOUT_MS = 15000;
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -516,7 +520,7 @@ exports.syncBoardPostSummary = onValueWritten(
   }
 );
 
-const buildTourApiUrl = () => {
+const buildTourApiUrl = (endpoint, extraParams = {}) => {
   const params = new URLSearchParams({
     serviceKey: decodeURIComponent(TOUR_API_SERVICE_KEY.value() || ''),
     MobileOS: 'ETC',
@@ -525,13 +529,62 @@ const buildTourApiUrl = () => {
     arrange: 'R',
     pageNo: '1',
     numOfRows: String(TOUR_UPDATE_LOOKBACK_ROWS),
+    ...extraParams,
   });
 
-  return `${TOUR_API_BASE_URL}/areaBasedList2?${params.toString()}`;
+  return `${TOUR_API_BASE_URL}/${endpoint}?${params.toString()}`;
 };
 
-const fetchRecentTourApiItems = async () => {
-  const response = await fetch(buildTourApiUrl());
+const fetchTourApiItems = async (endpoint, extraParams = {}) => {
+  const url = buildTourApiUrl(endpoint, extraParams);
+  let response;
+
+  for (let attempt = 0; attempt <= TOUR_API_MAX_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TOUR_API_REQUEST_TIMEOUT_MS);
+
+    try {
+      response = await fetch(url, { signal: controller.signal });
+      if (response.ok) {
+        const data = await response.json();
+        return parseRecentTourApiItemsResponse(data, logger);
+      }
+      if (!isRetryableStatus(response.status) || attempt === TOUR_API_MAX_RETRIES) {
+        break;
+      }
+
+      logger.warn('TourAPI update sync received retryable response', {
+        attempt: attempt + 1,
+        status: response.status,
+        statusText: response.statusText,
+      });
+      await response.body?.cancel().catch(() => {});
+    } catch (error) {
+      const isLastAttempt = attempt === TOUR_API_MAX_RETRIES;
+      logger.warn('TourAPI update request failed', {
+        attempt: attempt + 1,
+        retrying: !isLastAttempt && isRetryableFetchError(error),
+        errorName: error?.name,
+        errorMessage: error?.message,
+        causeCode: error?.cause?.code,
+        causeMessage: error?.cause?.message,
+      });
+
+      if (!isRetryableFetchError(error) || isLastAttempt) {
+        if (!isRetryableFetchError(error)) throw error;
+        throw new Error('TourAPI 신규 여행지 서버에 연결하지 못했습니다.', { cause: error });
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    await sleep(TOUR_API_RETRY_BASE_DELAY_MS * (attempt + 1));
+  }
+
+  if (!response) {
+    throw new Error('TourAPI 신규 여행지 서버에 연결하지 못했습니다.');
+  }
+
   if (!response.ok) {
     logger.warn('TourAPI update sync failed', {
       status: response.status,
@@ -540,15 +593,24 @@ const fetchRecentTourApiItems = async () => {
     throw new Error('TourAPI 신규 여행지 조회에 실패했습니다.');
   }
 
-  const data = await response.json();
-  return parseRecentTourApiItemsResponse(data, logger);
+};
+
+const fetchRecentTourApiItems = async () => fetchTourApiItems('areaBasedList2');
+
+const fetchRecentTourApiFestivalItems = async () => {
+  const year = new Date().getFullYear();
+  return fetchTourApiItems('searchFestival2', { eventStartDate: `${year}0101` });
 };
 
 const readExistingTourApiUpdates = async (itemsRef) => {
   const snapshot = await itemsRef.once('value');
   const items = [];
   snapshot.forEach((child) => {
-    items.push({ key: child.key, detectedAt: child.child('detectedAt').val() || '' });
+    items.push({
+      key: child.key,
+      detectedAt: child.child('detectedAt').val() || '',
+      areaCode: child.child('areaCode').val() || '',
+    });
   });
   return items;
 };
@@ -634,27 +696,39 @@ exports.syncTourApiUpdates = onSchedule(
     const db = getDatabase();
     const itemsRef = db.ref('tourApiUpdates/items');
     const now = new Date().toISOString();
-    const [recentItems, existingItems] = await Promise.all([
+    const [recentDestinationItems, recentFestivalItems, existingItems] = await Promise.all([
       fetchRecentTourApiItems(),
+      fetchRecentTourApiFestivalItems(),
       readExistingTourApiUpdates(itemsRef),
     ]);
-    const existingIds = new Set(existingItems.map((item) => item.key));
+    const recentItems = dedupeTourApiItems([
+      ...recentFestivalItems.map((item) => ({ ...item, source: 'KorService2.searchFestival2' })),
+      ...recentDestinationItems.map((item) => ({ ...item, source: 'KorService2.areaBasedList2' })),
+    ]);
+    const existingItemsById = new Map(existingItems.map((item) => [item.key, item]));
     const nextItemsForRetention = [...existingItems];
     const updates = {
       'tourApiUpdates/state/lastRunAt': now,
-      'tourApiUpdates/state/source': 'KorService2.areaBasedList2',
+      'tourApiUpdates/state/source': 'KorService2.areaBasedList2, KorService2.searchFestival2',
     };
     let newItemCount = 0;
+    let backfilledAreaCodeCount = 0;
 
     recentItems.forEach((item) => {
-      if (existingIds.has(item.contentId)) return;
+      const existingItem = existingItemsById.get(item.contentId);
+      if (existingItem) {
+        if (item.areaCode && String(existingItem.areaCode) !== item.areaCode) {
+          updates[`tourApiUpdates/items/${item.contentId}/areaCode`] = item.areaCode;
+          backfilledAreaCodeCount += 1;
+        }
+        return;
+      }
 
       newItemCount += 1;
       nextItemsForRetention.push({ key: item.contentId, detectedAt: now });
       updates[`tourApiUpdates/items/${item.contentId}`] = {
         ...item,
         detectedAt: now,
-        source: 'KorService2.areaBasedList2',
       };
     });
 
@@ -665,7 +739,9 @@ exports.syncTourApiUpdates = onSchedule(
 
     logger.info('TourAPI update sync completed', {
       checkedCount: recentItems.length,
+      checkedFestivalCount: recentFestivalItems.length,
       newItemCount,
+      backfilledAreaCodeCount,
     });
   }
 );

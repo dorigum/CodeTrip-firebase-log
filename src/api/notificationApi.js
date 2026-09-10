@@ -12,6 +12,11 @@ const getFavoriteRegions = async (userId) => {
   return toTourApiAreaCodeSet(snapshot.exists() ? snapshot.val() : []);
 };
 
+const getTourApiNotificationEnabled = async (userId) => {
+  const snapshot = await get(ref(realtimeDb, `users/${userId}/notificationSettings/tourApiUpdatesEnabled`));
+  return !snapshot.exists() || snapshot.val() !== false;
+};
+
 const getMyNotifications = async (userId, { limit = NOTIFICATION_DISPLAY_LIMIT } = {}) => {
   const constraints = [orderByChild('created_at')];
   if (limit !== null) constraints.push(limitToLast(limit));
@@ -60,11 +65,14 @@ const getTourApiUpdateId = (id) =>
 
 export const getNotifications = async () => {
   const user = await getCurrentUser();
-  const [notifications, favoriteRegions] = await Promise.all([
+  const [notifications, favoriteRegions, tourApiNotificationEnabled] = await Promise.all([
     getMyNotifications(user.id),
     getFavoriteRegions(user.id),
+    getTourApiNotificationEnabled(user.id),
   ]);
-  const tourApiNotifications = await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null });
+  const tourApiNotifications = tourApiNotificationEnabled
+    ? await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null })
+    : [];
   const mergedNotifications = [
     ...notifications.map((notification) => ({
       ...notification,
@@ -83,11 +91,14 @@ export const getNotifications = async () => {
 
 export const markAllRead = async () => {
   const user = await getCurrentUser();
-  const [notifications, favoriteRegions] = await Promise.all([
+  const [notifications, favoriteRegions, tourApiNotificationEnabled] = await Promise.all([
     getMyNotifications(user.id, { limit: null }),
     getFavoriteRegions(user.id),
+    getTourApiNotificationEnabled(user.id),
   ]);
-  const tourApiNotifications = await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null });
+  const tourApiNotifications = tourApiNotificationEnabled
+    ? await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null })
+    : [];
   const updates = {};
   notifications
     .filter((notification) => !notification.is_read)
@@ -132,11 +143,14 @@ export const deleteOneNotification = async (id) => {
 
 export const deleteReadNotifications = async () => {
   const user = await getCurrentUser();
-  const [notifications, favoriteRegions] = await Promise.all([
+  const [notifications, favoriteRegions, tourApiNotificationEnabled] = await Promise.all([
     getMyNotifications(user.id, { limit: null }),
     getFavoriteRegions(user.id),
+    getTourApiNotificationEnabled(user.id),
   ]);
-  const tourApiNotifications = await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null });
+  const tourApiNotifications = tourApiNotificationEnabled
+    ? await getTourApiUpdateNotifications(user.id, favoriteRegions, { limit: null })
+    : [];
   const updates = {};
   notifications
     .filter((notification) => notification.is_read)
