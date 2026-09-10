@@ -242,6 +242,8 @@ const Festivals = () => {
           label="system_events.exe"
           title="전국 축제 및 행사 정보"
           description="대한민국 곳곳에서 열리는 활기찬 축제 데이터를 탐색하세요."
+          actionBreakpoint="xl"
+          titleNoWrap
           action={(
             <div className="flex flex-col gap-2 sm:flex-row">
               <select
