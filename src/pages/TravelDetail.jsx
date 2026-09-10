@@ -6,6 +6,7 @@ import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
 import useRecentlyViewedStore from '../store/useRecentlyViewedStore';
 import WishlistModal from '../components/WishlistModal';
+import ConfirmModal from '../components/ConfirmModal';
 import useToast from '../hooks/useToast';
 import '../App.css';
 import { Map, MapMarker } from 'react-kakao-maps-sdk';
@@ -232,6 +233,8 @@ const TravelDetail = () => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [travelCommentEditingId, setTravelCommentEditingId] = useState(null);
   const [travelCommentEditText, setTravelCommentEditText] = useState('');
+  const [travelCommentDeleteId, setTravelCommentDeleteId] = useState(null);
+  const [travelCommentDeleting, setTravelCommentDeleting] = useState(false);
 
   // 모달 관련 상태 추가
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -518,15 +521,23 @@ const TravelDetail = () => {
     }
   };
 
-  const handleTravelCommentDelete = async (id) => {
-    if (!window.confirm('코멘트를 삭제하시겠습니까?')) return;
+  const handleTravelCommentDelete = (id) => {
+    setTravelCommentDeleteId(id);
+  };
+
+  const handleTravelCommentDeleteConfirm = async () => {
+    if (!travelCommentDeleteId || travelCommentDeleting) return;
     const targetContentId = contentId;
     try {
-      await deleteTravelComment(id);
+      setTravelCommentDeleting(true);
+      await deleteTravelComment(travelCommentDeleteId);
+      setTravelCommentDeleteId(null);
       if (targetContentId !== currentContentIdRef.current) return;
       await reloadComments();
     } catch (err) {
       console.error('Comment delete error:', err);
+    } finally {
+      setTravelCommentDeleting(false);
     }
   };
 
@@ -677,6 +688,19 @@ const TravelDetail = () => {
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-20">
+
+      <ConfirmModal
+        open={Boolean(travelCommentDeleteId)}
+        title="코멘트를 삭제할까요?"
+        description="삭제한 코멘트는 복구할 수 없습니다. 계속 진행하시겠습니까?"
+        confirmText={travelCommentDeleting ? '삭제 중...' : '삭제'}
+        cancelText="취소"
+        icon="delete_forever"
+        confirmDisabled={travelCommentDeleting}
+        onConfirm={handleTravelCommentDeleteConfirm}
+        onCancel={() => !travelCommentDeleting && setTravelCommentDeleteId(null)}
+        onClose={() => !travelCommentDeleting && setTravelCommentDeleteId(null)}
+      />
 
       {/* 로그인 유도 다이얼로그 */}
       {showLoginDialog && (

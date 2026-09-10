@@ -9,6 +9,7 @@ const { parseRecentTourApiItemsResponse } = require('./tourApiUpdates');
 const { applyCompanionConsistency, applyTransportationChecklist } = require('./tripPlanChecklist');
 const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
 const { dedupeTourApiItems } = require('./tourApiUpdates');
+const { buildBoardPostNotification } = require('./boardPostNotifications');
 
 initializeApp();
 
@@ -518,6 +519,62 @@ exports.syncBoardPostSummary = onValueWritten(
 
     return summaryRef.set(createBoardPostSummary(post));
   }
+);
+
+const createBoardPostOwnerNotification = async ({ postId, actorId, actorNickname, interaction, notificationId }) => {
+  const db = getDatabase();
+  const postSnapshot = await db.ref(`boardPosts/${postId}`).once('value');
+  if (!postSnapshot.exists()) return null;
+
+  const notification = buildBoardPostNotification({
+    postOwnerId: postSnapshot.child('user_id').val(),
+    actorId,
+    actorNickname,
+    interaction,
+    createdAt: new Date().toISOString(),
+  });
+  if (!notification) return null;
+
+  await db.ref(`users/${notification.user_id}/notifications/${notificationId}`).set(notification);
+  logger.info('Created board post interaction notification', { postId, actorId, interaction });
+  return null;
+};
+
+exports.notifyBoardPostComment = onValueWritten(
+  { ref: '/boardComments/{commentId}', region: DATABASE_TRIGGER_REGION, instance: DATABASE_INSTANCE },
+  async (event) => {
+    if (event.data.before.exists() || !event.data.after.exists()) return null;
+
+    const comment = event.data.after.val() || {};
+    const postId = String(comment.post_id || '').trim();
+    const actorId = String(comment.user_id || '').trim();
+    if (!postId || !actorId) return null;
+
+    return createBoardPostOwnerNotification({
+      postId,
+      actorId,
+      actorNickname: comment.nickname,
+      interaction: 'comment',
+      notificationId: `board-comment-${event.params.commentId}`,
+    });
+  },
+);
+
+exports.notifyBoardPostLike = onValueWritten(
+  { ref: '/likes/boardPosts/{postId}/{actorId}', region: DATABASE_TRIGGER_REGION, instance: DATABASE_INSTANCE },
+  async (event) => {
+    if (event.data.before.val() === true || event.data.after.val() !== true) return null;
+
+    const db = getDatabase();
+    const userSnapshot = await db.ref(`users/${event.params.actorId}`).once('value');
+    return createBoardPostOwnerNotification({
+      postId: event.params.postId,
+      actorId: event.params.actorId,
+      actorNickname: userSnapshot.child('name').val() || userSnapshot.child('nickname').val(),
+      interaction: 'like',
+      notificationId: `board-post-like-${event.params.postId}-${event.params.actorId}`,
+    });
+  },
 );
 
 const buildTourApiUrl = (endpoint, extraParams = {}) => {

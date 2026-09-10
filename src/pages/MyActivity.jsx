@@ -6,6 +6,7 @@ import { deleteTravelComment } from '../api/travelCommentApi';
 import useToast from '../hooks/useToast';
 import useRecentlyViewedStore from '../store/useRecentlyViewedStore';
 import PageHeader from '../components/PageHeader';
+import ConfirmModal from '../components/ConfirmModal';
 
 const TABS = [
   { key: 'likedPosts',     label: 'Liked Posts',      icon: 'favorite' },
@@ -84,6 +85,8 @@ const MyActivity = () => {
   const [likedPosts, setLikedPosts] = useState([]);
   const [mobileRecentOpen, setMobileRecentOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState(null);
+  const [commentDeleting, setCommentDeleting] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) { navigate('/login'); return; }
@@ -115,10 +118,8 @@ const MyActivity = () => {
     setPosts(prev => prev.filter(p => p.id !== id));
   };
 
-  const handleDeleteBoardComment = async (id) => {
-    if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
-    await deleteBoardComment(id);
-    setBoardComments(prev => prev.filter(c => c.id !== id));
+  const handleDeleteBoardComment = (id) => {
+    setCommentDeleteTarget({ id, type: 'board' });
   };
 
   const handleUnlikePost = async (id) => {
@@ -132,10 +133,27 @@ const MyActivity = () => {
     }
   };
 
-  const handleDeleteTravelComment = async (id) => {
-    if (!window.confirm('코멘트를 삭제하시겠습니까?')) return;
-    await deleteTravelComment(id);
-    setTravelComments(prev => prev.filter(c => c.id !== id));
+  const handleDeleteTravelComment = (id) => {
+    setCommentDeleteTarget({ id, type: 'travel' });
+  };
+
+  const handleCommentDeleteConfirm = async () => {
+    if (!commentDeleteTarget || commentDeleting) return;
+    try {
+      setCommentDeleting(true);
+      if (commentDeleteTarget.type === 'board') {
+        await deleteBoardComment(commentDeleteTarget.id);
+        setBoardComments(prev => prev.filter(c => c.id !== commentDeleteTarget.id));
+      } else {
+        await deleteTravelComment(commentDeleteTarget.id);
+        setTravelComments(prev => prev.filter(c => c.id !== commentDeleteTarget.id));
+      }
+      setCommentDeleteTarget(null);
+    } catch {
+      showToast('댓글을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setCommentDeleting(false);
+    }
   };
 
   const paginate = (data) => {
@@ -154,6 +172,18 @@ const MyActivity = () => {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <ConfirmModal
+        open={Boolean(commentDeleteTarget)}
+        title={`${commentDeleteTarget?.type === 'travel' ? '코멘트' : '댓글'}를 삭제할까요?`}
+        description="삭제한 댓글은 복구할 수 없습니다. 계속 진행하시겠습니까?"
+        confirmText={commentDeleting ? '삭제 중...' : '삭제'}
+        cancelText="취소"
+        icon="delete_forever"
+        confirmDisabled={commentDeleting}
+        onConfirm={handleCommentDeleteConfirm}
+        onCancel={() => !commentDeleting && setCommentDeleteTarget(null)}
+        onClose={() => !commentDeleting && setCommentDeleteTarget(null)}
+      />
       <PageHeader
         className="mb-8"
         label="my_activity.log"

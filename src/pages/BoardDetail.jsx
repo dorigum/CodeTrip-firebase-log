@@ -29,6 +29,8 @@ const BoardDetail = () => {
   const [boardCommentSubmitting, setBoardCommentSubmitting] = useState(false);
   const [boardCommentEditingId, setBoardCommentEditingId] = useState(null);
   const [boardCommentEditText, setBoardCommentEditText] = useState('');
+  const [boardCommentDeleteId, setBoardCommentDeleteId] = useState(null);
+  const [boardCommentDeleting, setBoardCommentDeleting] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -130,13 +132,21 @@ const BoardDetail = () => {
     }
   };
 
-  const handleBoardCommentDelete = async (commentId) => {
-    if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
+  const handleBoardCommentDelete = (commentId) => {
+    setBoardCommentDeleteId(commentId);
+  };
+
+  const handleBoardCommentDeleteConfirm = async () => {
+    if (!boardCommentDeleteId || boardCommentDeleting) return;
     try {
-      await deleteBoardComment(commentId);
+      setBoardCommentDeleting(true);
+      await deleteBoardComment(boardCommentDeleteId);
       setBoardComments(await getBoardComments(id));
+      setBoardCommentDeleteId(null);
     } catch (err) {
       console.error(err);
+    } finally {
+      setBoardCommentDeleting(false);
     }
   };
 
@@ -223,6 +233,18 @@ const BoardDetail = () => {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         onClose={handleDeleteCancel}
+      />
+      <ConfirmModal
+        open={Boolean(boardCommentDeleteId)}
+        title="댓글을 삭제할까요?"
+        description="삭제한 댓글은 복구할 수 없습니다. 계속 진행하시겠습니까?"
+        confirmText={boardCommentDeleting ? '삭제 중...' : '삭제'}
+        cancelText="취소"
+        icon="delete_forever"
+        confirmDisabled={boardCommentDeleting}
+        onConfirm={handleBoardCommentDeleteConfirm}
+        onCancel={() => !boardCommentDeleting && setBoardCommentDeleteId(null)}
+        onClose={() => !boardCommentDeleting && setBoardCommentDeleteId(null)}
       />
 
       {/* Login Dialog */}
