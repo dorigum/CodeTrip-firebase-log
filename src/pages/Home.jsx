@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getWeather, getLocationName } from '../api/weatherApi';
 import { getPhotoList, getFestivalList, getCityBasedPlaces, searchKeywordPlaces, getSpontaneousTravel } from '../api/travelApi';
@@ -12,6 +12,135 @@ const MOCK_NODE_HEADER = [
 ];
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
+
+const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+const getCalendarDate = (value) => {
+  const match = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getCalendarKey = (date) => (
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+);
+
+const getCalendarDateLabel = (dateKey) => {
+  const date = getCalendarDate(dateKey);
+  return date ? `${date.getMonth() + 1}월 ${date.getDate()}일` : '';
+};
+
+const buildAiPlanCalendarEvents = (plans, folders) => {
+  const folderMap = new Map(folders.map((folder) => [String(folder?.id ?? folder?.folder_id ?? ''), folder]));
+
+  return plans.flatMap((plan) => {
+    const folder = folderMap.get(String(plan?.folder_id ?? ''));
+    const start = String(folder?.startDate ?? folder?.start_date ?? folder?.start ?? '').slice(0, 10);
+    const end = String(folder?.endDate ?? folder?.end_date ?? folder?.end ?? start).slice(0, 10);
+    const startDate = getCalendarDate(start);
+    const endDate = getCalendarDate(end);
+    if (!folder || !startDate || !endDate) return [];
+
+    return [{
+      id: String(plan?.id ?? `${plan?.folder_id}-${plan?.created_at ?? ''}`),
+      folderId: String(plan.folder_id),
+      title: plan?.title || folder?.name || 'AI 여행 코스',
+      start: getCalendarKey(startDate),
+      end: getCalendarKey(endDate < startDate ? startDate : endDate),
+    }];
+  });
+};
+
+const MiniPlanCalendar = ({ events, loading }) => {
+  const [viewMonth, setViewMonth] = useState(() => new Date());
+  const [selectedDateKey, setSelectedDateKey] = useState(() => getCalendarKey(new Date()));
+  const monthStart = useMemo(() => new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1), [viewMonth]);
+  const gridStart = useMemo(() => new Date(monthStart.getFullYear(), monthStart.getMonth(), 1 - monthStart.getDay()), [monthStart]);
+  const todayKey = getCalendarKey(new Date());
+  const calendarDays = useMemo(() => Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    const key = getCalendarKey(date);
+    return {
+      date,
+      key,
+      isCurrentMonth: date.getMonth() === monthStart.getMonth(),
+      eventCount: events.filter((event) => event.start <= key && event.end >= key).length,
+    };
+  }), [events, gridStart, monthStart]);
+  const selectedEvents = events.filter((event) => event.start <= selectedDateKey && event.end >= selectedDateKey);
+  const moveMonth = (offset) => {
+    const nextMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + offset, 1);
+    setViewMonth(nextMonth);
+    setSelectedDateKey(getCalendarKey(nextMonth));
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-container font-label">ai_plan.calendar</p>
+          <p className="mt-1 text-sm font-bold text-white">{viewMonth.getFullYear()}년 {viewMonth.getMonth() + 1}월</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => moveMonth(-1)} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white" aria-label="이전 달 보기">
+            <span className="material-symbols-outlined text-base">chevron_left</span>
+          </button>
+          <button type="button" onClick={() => moveMonth(1)} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white" aria-label="다음 달 보기">
+            <span className="material-symbols-outlined text-base">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-7 text-center text-[10px] font-bold text-white/40">
+        {CALENDAR_WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-y-1">
+        {calendarDays.map(({ date, key, isCurrentMonth, eventCount }) => {
+          const isSelected = key === selectedDateKey;
+          const isToday = key === todayKey;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSelectedDateKey(key)}
+              className={`relative mx-auto flex h-8 w-8 flex-col items-center justify-center rounded-full text-[11px] transition ${isCurrentMonth ? 'text-white' : 'text-white/25'} ${isSelected ? 'bg-primary text-slate-950 font-black' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-primary-container/70' : ''}`}
+              aria-label={`${getCalendarDateLabel(key)}${eventCount ? `, AI 여행 플랜 ${eventCount}개` : ''}`}
+            >
+              <span>{date.getDate()}</span>
+              {eventCount > 0 && <span className={`absolute bottom-0.5 h-1 w-1 rounded-full ${isSelected ? 'bg-slate-950' : 'bg-primary-container'}`} />}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 min-h-11 border-t border-white/10 pt-3">
+        {loading ? (
+          <div className="h-4 w-3/4 animate-pulse rounded bg-white/10" />
+        ) : selectedEvents.length > 0 ? (
+          <div className="space-y-1.5">
+            {selectedEvents.slice(0, 2).map((event) => (
+              <Link key={event.id} to="/mypage" state={{ folderId: event.folderId }} className="flex items-center gap-2 rounded-lg px-1 py-0.5 text-left transition hover:bg-white/10">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-container" />
+                <span className="truncate text-xs font-bold text-white">{event.title}</span>
+              </Link>
+            ))}
+            {selectedEvents.length > 2 && <p className="px-1 text-[10px] text-white/45">+ {selectedEvents.length - 2}개 일정</p>}
+          </div>
+        ) : events.length > 0 ? (
+          <p className="text-xs text-white/45">{getCalendarDateLabel(selectedDateKey)}에는 AI 플랜 일정이 없습니다.</p>
+        ) : (
+          <Link to="/ai-planner" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-container hover:underline">
+            <span className="material-symbols-outlined text-sm">auto_awesome</span>
+            저장된 AI 여행 플랜이 없습니다.
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const getDateKey = (item, key) => {
   const alternateKey = key === 'eventstartdate'
@@ -486,8 +615,10 @@ const Home = () => {
   const {
     wishlistItems,
     folders,
+    aiTripPlans,
     initWishlist,
-    loading: wishlistLoading
+    loading: wishlistLoading,
+    initialized: wishlistInitialized
   } = useWishlistStore();
   const [weather, setWeather] = useState({ temp: 24, label: 'Sunny', icon: 'sunny', keywords: ['여행'], location: '서울' });
   const [province, setProvince] = useState('서울');
@@ -769,6 +900,10 @@ const Home = () => {
   const dashboardFolders = sortedFolders.slice(0, 3);
   const scheduledFolders = sortedFolders.filter(folder => folder.startDate || folder.start_date || folder.endDate || folder.end_date).slice(0, 3);
   const primaryFolder = scheduledFolders[0] || dashboardFolders[0];
+  const aiPlanCalendarEvents = useMemo(
+    () => buildAiPlanCalendarEvents(aiTripPlans, folders),
+    [aiTripPlans, folders]
+  );
   const uncategorizedCount = wishlistItems.filter(item => !item.folder_id && !item.folderId).length;
   const weatherSummary = weather.korLabel || weather.label || '여행하기 좋은 날씨';
   const todayBriefing = `${user?.name || 'traveler'}님, 오늘 ${province} ${weather.location}의 날씨는 ${weatherSummary}, ${weather.temp}°C입니다. 저장한 여행지 ${wishlistItems.length}개와 폴더 ${folders.length}개를 이어서 가볍게 다음 코스를 준비해보세요.`;
@@ -899,6 +1034,7 @@ const Home = () => {
           </div>
 
           <div className="relative mt-6 space-y-3">
+            <MiniPlanCalendar events={aiPlanCalendarEvents} loading={wishlistLoading || !wishlistInitialized} />
             {primaryFolder ? (
               <>
                 <div className="rounded-2xl bg-white/10 border border-white/10 p-4">

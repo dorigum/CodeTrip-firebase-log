@@ -20,6 +20,7 @@ const normalizeWishlistItem = (itemData = {}) => {
 const useWishlistStore = create((set, get) => ({
   wishlistItems: [],
   folders: [],
+  aiTripPlans: [],
   wishlistIds: new Set(),
   loading: false,
   initialized: false,
@@ -37,12 +38,13 @@ const useWishlistStore = create((set, get) => ({
   syncWithServer: async () => {
     set({ loading: true, syncError: null });
     try {
-      const [items, folders] = await Promise.all([
+      const [items, folders, aiTripPlans] = await Promise.all([
         wishlistApi.getWishlistDetails(),
-        wishlistApi.getFolders()
+        wishlistApi.getFolders(),
+        wishlistApi.getAllAiTripPlans(),
       ]);
       const ids = new Set(items.map(item => String(item.contentid || item.content_id)));
-      set({ wishlistItems: items, folders, wishlistIds: ids });
+      set({ wishlistItems: items, folders, aiTripPlans, wishlistIds: ids });
     } catch (err) {
       console.error('Wishlist sync failed:', err);
       set({ syncError: '위시리스트를 불러오는 데 실패했습니다.' });
@@ -52,7 +54,7 @@ const useWishlistStore = create((set, get) => ({
   },
 
   clearWishlist: () => {
-    set({ wishlistItems: [], folders: [], wishlistIds: new Set(), initialized: false });
+    set({ wishlistItems: [], folders: [], aiTripPlans: [], wishlistIds: new Set(), initialized: false });
   },
 
   toggleWishlist: async (itemData) => {
