@@ -4,7 +4,7 @@ import {
   getCurrentUser,
   getLikesByIds,
   getStoredUser,
-  likeMapToIds,
+  mergeLikeUserIds,
   normalizeComment,
   normalizePost,
   nowIso,
@@ -16,7 +16,7 @@ const getAllPosts = async () => {
   const likesByPostId = await getLikesByIds('boardPosts', posts.map(({ id }) => id));
   return posts.map((post) => ({
     ...post,
-    likeUserIds: likesByPostId[post.id] ?? post.likeUserIds,
+    likeUserIds: mergeLikeUserIds(post.likeUserIds, likesByPostId[post.id]),
   }));
 };
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
@@ -48,7 +48,7 @@ const getPostsByIds = async (ids, currentUserId, commentCounts = null) => {
     postSnaps
       .filter(({ snap }) => snap.exists())
       .map(({ id, snap }) => ({
-        ...normalizePost({ id, ...snap.val(), likeUserIds: likesByPostId[id] ?? snap.val().likeUserIds }, currentUserId),
+        ...normalizePost({ id, ...snap.val(), likeUserIds: mergeLikeUserIds(snap.val().likeUserIds, likesByPostId[id]) }, currentUserId),
         comment_count: counts[id] || 0,
       })),
     'created_at'
@@ -84,7 +84,7 @@ const getRecentBoardPostsPage = async ({ cursor, numOfRows, currentUserId }) => 
   ]);
   const posts = sortPosts(
     pagePosts.map((post) => ({
-      ...normalizePost({ ...post, content: post.content_preview, likeUserIds: likesByPostId[post.id] ?? post.likeUserIds }, currentUserId),
+      ...normalizePost({ ...post, content: post.content_preview, likeUserIds: mergeLikeUserIds(post.likeUserIds, likesByPostId[post.id]) }, currentUserId),
       comment_count: commentCounts[post.id] || 0,
     })),
     'created_at'
@@ -148,7 +148,7 @@ export const getBoardPost = async (id) => {
   await update(ref(realtimeDb), {
     [`boardPosts/${id}/view_count`]: increment(1),
   });
-  return normalizePost({ id, ...post, likeUserIds: likesSnapshot.val() ?? post.likeUserIds, view_count: Number(post.view_count || 0) + 1 }, currentUserId);
+  return normalizePost({ id, ...post, likeUserIds: mergeLikeUserIds(post.likeUserIds, likesSnapshot.val()), view_count: Number(post.view_count || 0) + 1 }, currentUserId);
 };
 
 export const createBoardPost = async ({ title, content, tags = [] }) => {
@@ -229,7 +229,7 @@ export const getBoardComments = async (postId) => {
   ]);
   return commentSnaps
     .filter(({ snap }) => snap.exists())
-    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, currentUserId))
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: mergeLikeUserIds(snap.val().likeUserIds, likesByCommentId[id]) }, currentUserId))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
@@ -299,8 +299,12 @@ const toggleLike = async (likeType, id) => {
     return nextLiked ? true : null;
   });
   const liked = transaction.snapshot.val() === true;
-  const likeSnapshot = await get(ref(realtimeDb, likePath));
-  const likes = likeMapToIds(likeSnapshot.val()).length;
+  const contentPath = likeType === 'boardPosts' ? `boardPosts/${id}` : `boardComments/${id}`;
+  const [likeSnapshot, contentSnapshot] = await Promise.all([
+    get(ref(realtimeDb, likePath)),
+    get(ref(realtimeDb, contentPath)),
+  ]);
+  const likes = mergeLikeUserIds(contentSnapshot.val()?.likeUserIds, likeSnapshot.val()).length;
   if (likeType === 'boardPosts') {
     const postId = id;
     await update(ref(realtimeDb), {
@@ -340,7 +344,7 @@ export const getMyBoardComments = async () => {
   return commentSnaps
     .filter(({ snap }) => snap.exists())
     .map(({ id, snap }) => ({
-      ...normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, user.id),
+      ...normalizeComment({ id, ...snap.val(), likeUserIds: mergeLikeUserIds(snap.val().likeUserIds, likesByCommentId[id]) }, user.id),
       post_title: activityMap[id]?.post_title || '',
     }))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -356,6 +360,6 @@ export const getMyTravelComments = async () => {
   ]);
   return commentSnaps
     .filter(({ snap }) => snap.exists())
-    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, user.id))
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: mergeLikeUserIds(snap.val().likeUserIds, likesByCommentId[id]) }, user.id))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 };

@@ -1,6 +1,6 @@
 import { get, push, ref, runTransaction, update } from 'firebase/database';
 import { realtimeDb } from '../firebase';
-import { getCurrentUser, getLikesByIds, getStoredUser, likeMapToIds, normalizeComment, nowIso } from './firebaseHelpers';
+import { getCurrentUser, getLikesByIds, getStoredUser, mergeLikeUserIds, normalizeComment, nowIso } from './firebaseHelpers';
 
 const userActivityPath = (uid, child) => `users/${uid}/activities/${child}`;
 const travelCommentIndexPath = (contentId, commentId = '') =>
@@ -19,7 +19,7 @@ export const getTravelComments = async (contentId) => {
 
   return commentSnaps
     .filter(({ snap }) => snap.exists())
-    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: likesByCommentId[id] ?? snap.val().likeUserIds }, currentUserId))
+    .map(({ id, snap }) => normalizeComment({ id, ...snap.val(), likeUserIds: mergeLikeUserIds(snap.val().likeUserIds, likesByCommentId[id]) }, currentUserId))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 };
 
@@ -32,8 +32,11 @@ export const toggleTravelCommentLike = async (commentId) => {
     return nextLiked ? true : null;
   });
   const liked = transaction.snapshot.val() === true;
-  const likeSnapshot = await get(ref(realtimeDb, likePath));
-  const likes = likeMapToIds(likeSnapshot.val()).length;
+  const [likeSnapshot, commentSnapshot] = await Promise.all([
+    get(ref(realtimeDb, likePath)),
+    get(ref(realtimeDb, `travelComments/${commentId}`)),
+  ]);
+  const likes = mergeLikeUserIds(commentSnapshot.val()?.likeUserIds, likeSnapshot.val()).length;
   return { liked, likes };
 };
 

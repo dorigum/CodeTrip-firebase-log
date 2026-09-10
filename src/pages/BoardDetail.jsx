@@ -31,6 +31,8 @@ const BoardDetail = () => {
   const [boardCommentEditText, setBoardCommentEditText] = useState('');
   const [boardCommentDeleteId, setBoardCommentDeleteId] = useState(null);
   const [boardCommentDeleting, setBoardCommentDeleting] = useState(false);
+  const [postLikePending, setPostLikePending] = useState(false);
+  const [boardCommentLikePendingIds, setBoardCommentLikePendingIds] = useState(new Set());
 
   useEffect(() => {
     const fetch = async () => {
@@ -152,45 +154,35 @@ const BoardDetail = () => {
 
   const handlePostLike = async () => {
     if (!isLoggedIn) { setShowLoginDialog(true); return; }
-    setPost((prev) => ({
-      ...prev,
-      liked: !prev.liked,
-      like_count: prev.liked ? prev.like_count - 1 : prev.like_count + 1,
-    }));
+    if (postLikePending) return;
     try {
+      setPostLikePending(true);
       const { liked, likes } = await toggleBoardPostLike(id);
       setPost((prev) => ({ ...prev, liked, like_count: likes }));
     } catch {
-      setPost((prev) => ({
-        ...prev,
-        liked: !prev.liked,
-        like_count: prev.liked ? prev.like_count - 1 : prev.like_count + 1,
-      }));
+      console.error('Post like update failed');
+    } finally {
+      setPostLikePending(false);
     }
   };
 
   const handleBoardCommentLike = async (commentId) => {
     if (!isLoggedIn) { setShowLoginDialog(true); return; }
-    setBoardComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId
-          ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 }
-          : c
-      )
-    );
+    if (boardCommentLikePendingIds.has(commentId)) return;
     try {
+      setBoardCommentLikePendingIds((prev) => new Set(prev).add(commentId));
       const { liked, likes } = await toggleBoardCommentLike(commentId);
       setBoardComments((prev) =>
         prev.map((c) => (c.id === commentId ? { ...c, liked, likes } : c))
       );
     } catch {
-      setBoardComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 }
-            : c
-        )
-      );
+      console.error('Board comment like update failed');
+    } finally {
+      setBoardCommentLikePendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
     }
   };
 
@@ -357,6 +349,7 @@ const BoardDetail = () => {
             <div className="mt-8 pt-6 border-t border-slate-50 flex justify-center">
               <button
                 onClick={handlePostLike}
+                disabled={postLikePending}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-full border transition-all text-sm font-mono font-bold ${
                   post.liked
                     ? 'bg-primary/10 border-primary text-primary'
@@ -502,7 +495,8 @@ const BoardDetail = () => {
                             )}
                             <button
                               onClick={() => handleBoardCommentLike(comment.id)}
-                              className={`flex items-center gap-1 transition-colors text-[11px] font-mono ${comment.liked ? 'text-primary' : 'text-outline hover:text-primary'}`}
+                disabled={boardCommentLikePendingIds.has(comment.id)}
+                className={`flex items-center gap-1 transition-colors text-[11px] font-mono disabled:cursor-wait disabled:opacity-60 ${comment.liked ? 'text-primary' : 'text-outline hover:text-primary'}`}
                             >
                               <span className={`material-symbols-outlined text-sm ${comment.liked ? 'filled' : ''}`}>favorite</span>
                               {comment.likes}

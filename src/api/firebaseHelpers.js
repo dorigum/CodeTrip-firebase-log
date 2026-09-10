@@ -62,6 +62,10 @@ export const likeMapToIds = (likes) => {
     .map(([userId]) => userId);
 };
 
+export const mergeLikeUserIds = (...likeSources) => [
+  ...new Set(likeSources.flatMap((likes) => likeMapToIds(likes))),
+];
+
 export const getLikesByIds = async (likeType, ids) => {
   const uniqueIds = [...new Set(ids)];
   const snapshots = await Promise.all(

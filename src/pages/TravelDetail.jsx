@@ -235,6 +235,7 @@ const TravelDetail = () => {
   const [travelCommentEditText, setTravelCommentEditText] = useState('');
   const [travelCommentDeleteId, setTravelCommentDeleteId] = useState(null);
   const [travelCommentDeleting, setTravelCommentDeleting] = useState(false);
+  const [travelCommentLikePendingIds, setTravelCommentLikePendingIds] = useState(new Set());
 
   // 모달 관련 상태 추가
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -546,28 +547,21 @@ const TravelDetail = () => {
       setShowLoginDialog(true);
       return;
     }
-    // 낙관적 업데이트
-    setTravelComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId
-          ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 }
-          : c
-      )
-    );
+    if (travelCommentLikePendingIds.has(commentId)) return;
     try {
+      setTravelCommentLikePendingIds((prev) => new Set(prev).add(commentId));
       const { liked, likes } = await toggleTravelCommentLike(commentId);
       setTravelComments((prev) =>
         prev.map((c) => (c.id === commentId ? { ...c, liked, likes } : c))
       );
     } catch {
-      // 실패 시 롤백
-      setTravelComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 }
-            : c
-        )
-      );
+      console.error('Travel comment like update failed');
+    } finally {
+      setTravelCommentLikePendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
     }
   };
 
@@ -1078,7 +1072,8 @@ const TravelDetail = () => {
                             )}
                             <button
                               onClick={() => handleTravelCommentLike(comment.id)}
-                              className={`flex items-center gap-1 transition-colors text-[11px] font-mono ${comment.liked ? 'text-primary' : 'text-outline hover:text-primary'}`}
+                              disabled={travelCommentLikePendingIds.has(comment.id)}
+                              className={`flex items-center gap-1 transition-colors text-[11px] font-mono disabled:cursor-wait disabled:opacity-60 ${comment.liked ? 'text-primary' : 'text-outline hover:text-primary'}`}
                             >
                               <span className={`material-symbols-outlined text-sm ${comment.liked ? 'filled' : ''}`}>
                                 favorite
