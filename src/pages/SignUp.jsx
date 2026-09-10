@@ -173,24 +173,24 @@ const SignUp = () => {
 
         </form>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="mt-5 space-y-3">
           <button
             type="submit"
             form="signup-form"
             disabled={isLoading}
-            className="flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-4 font-headline text-sm font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-4 font-headline font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 disabled:cursor-wait disabled:opacity-70"
           >
             <span className="material-symbols-outlined text-xl">app_registration</span>
-            <span className="truncate">Create Account</span>
+            Create Account
           </button>
           <button
             type="button"
             onClick={handleGoogleSignup}
             disabled={isLoading}
-            className="flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-outline/20 bg-white px-3 py-4 font-headline text-sm font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-outline/20 bg-white px-3 py-4 font-headline font-bold text-on-background transition-all hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
           >
             <GoogleIcon />
-            <span className="truncate">Sign up with Google</span>
+            Sign up with Google
           </button>
         </div>
 
