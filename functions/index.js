@@ -142,6 +142,9 @@ const sanitizeInput = (input = {}) => {
     throw new HttpsError('invalid-argument', `AI 여행 코스는 최대 ${MAX_DURATION_DAYS}일까지 생성할 수 있습니다.`);
   }
 
+  const companionType = sanitizeString(input.companionType, '미정', 30);
+  const minimumPeopleCount = companionType === '혼자' ? 1 : 2;
+
   return {
     planningMode: sanitizeString(input.planningMode, 'custom', 20),
     sourceFolderName: sanitizeString(input.sourceFolderName, '', 80),
@@ -150,8 +153,8 @@ const sanitizeInput = (input = {}) => {
     travelStartDate,
     travelEndDate,
     travelStyle: sanitizeStringList(input.travelStyle, 10),
-    companionType: sanitizeString(input.companionType, '미정', 30),
-    peopleCount: sanitizeNumber(input.peopleCount, 1, 1, 10),
+    companionType,
+    peopleCount: sanitizeNumber(input.peopleCount, minimumPeopleCount, minimumPeopleCount, 10),
     transportation: sanitizeString(input.transportation, '대중교통', 30),
     priorities: sanitizeStringList(input.priorities, 5),
     budgetLevel: sanitizeString(input.budgetLevel, '보통', 20),
@@ -251,6 +254,7 @@ ${getRegionDiversityGuide(input.regionName)}
 17. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
 18. checklist의 이동 준비 항목은 선택한 이동수단에 정확히 맞춰 작성하세요. 대중교통은 교통카드·환승 경로·배차 간격, 자차는 주차 가능 여부·주차 요금·도로 혼잡 구간, 도보는 이동 거리·경사·편한 신발을 확인합니다. 자차 또는 도보 코스에는 배차·환승·교통카드 항목을 넣지 마세요.
 19. 동행 유형은 제목, 요약, 태그, 일정 테마, 추천 이유와 팁에 일관되게 반영하세요. 동행 유형이 혼자이면 친구·연인·가족과 함께라는 표현을 절대 사용하지 말고 혼자 여행에 맞는 표현만 사용하세요.
+20. 동행 유형이 혼자가 아니면 인원 수는 본인을 포함해 최소 2명입니다. 인원 수와 동행 유형이 충돌하지 않게 일정 규모와 예산을 제안하세요.
 
 [응답 JSON 스키마]
 {

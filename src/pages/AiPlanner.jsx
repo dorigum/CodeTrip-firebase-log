@@ -42,6 +42,13 @@ const createDefaultForm = () => ({
   avoidKeywords: [],
 });
 
+const getMinimumPeopleCount = (companionType) => (companionType === '혼자' ? 1 : 2);
+
+const normalizePeopleCount = (companionType, value) => {
+  const minimum = getMinimumPeopleCount(companionType);
+  return Math.min(10, Math.max(minimum, Number(value) || minimum));
+};
+
 const REGION_HELP = '시/도, 시/군/구, 동네명까지 입력할 수 있습니다. 예: 부산, 해운대, 서울 종로';
 
 const BROAD_REGION_TOUR_CODES = {
@@ -426,6 +433,7 @@ const AiPlanner = () => {
     };
     return {
       ...initialForm,
+      peopleCount: normalizePeopleCount(initialForm.companionType, initialForm.peopleCount),
       durationDays: normalizeDurationDays(initialForm.durationDays),
       travelStartDate: initialForm.travelStartDate || '',
       travelEndDate: initialForm.travelEndDate || '',
@@ -495,17 +503,20 @@ const AiPlanner = () => {
     setForm((prev) => ({
       ...prev,
       companionType: value,
-      peopleCount: value === '혼자' ? 1 : prev.peopleCount,
+      peopleCount: normalizePeopleCount(value, prev.peopleCount),
     }));
 
     if (value === '혼자' && Number(form.peopleCount) > 1) {
       showToast('동행 유형이 혼자일 때는 인원 수가 1명으로 설정됩니다.', 'info');
+    } else if (value !== '혼자' && Number(form.peopleCount) < 2) {
+      showToast('연인·가족·친구 여행은 본인을 포함해 최소 2명으로 설정됩니다.', 'info');
     }
   };
 
   const handlePeopleCountChange = (value) => {
     if (plannerBusy) return;
-    const nextCount = Math.max(1, Number(value) || 1);
+    const minimum = getMinimumPeopleCount(form.companionType);
+    const nextCount = Math.max(minimum, Number(value) || minimum);
     if (form.companionType === '혼자' && nextCount > 1) {
       updateForm('peopleCount', 1);
       showToast('동행 유형이 혼자일 때는 2명 이상으로 설정할 수 없습니다.', 'info');
@@ -513,6 +524,9 @@ const AiPlanner = () => {
     }
 
     updateForm('peopleCount', Math.min(nextCount, 10));
+    if (form.companionType !== '혼자' && Number(value) < 2) {
+      showToast('연인·가족·친구 여행은 본인을 포함해 최소 2명으로 설정됩니다.', 'info');
+    }
   };
 
   const handleDurationDaysChange = (value) => {
@@ -698,6 +712,12 @@ const AiPlanner = () => {
     if (form.companionType === '혼자' && Number(form.peopleCount) > 1) {
       updateForm('peopleCount', 1);
       showToast('동행 유형이 혼자일 때는 인원 수를 1명으로 설정해주세요.');
+      return;
+    }
+
+    if (form.companionType !== '혼자' && Number(form.peopleCount) < 2) {
+      updateForm('peopleCount', 2);
+      showToast('연인·가족·친구 여행은 본인을 포함해 최소 2명으로 설정해주세요.');
       return;
     }
 
@@ -1002,7 +1022,7 @@ const AiPlanner = () => {
               <FieldLabel>Days</FieldLabel>
               <input
                 type="number"
-                min="1"
+                min={form.companionType === '혼자' ? '1' : '2'}
                 max={MAX_DURATION_DAYS}
                 step="1"
                 value={form.durationDays}
@@ -1117,6 +1137,9 @@ const AiPlanner = () => {
                 disabled={plannerBusy}
                 className="w-full min-w-0 h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">
+                {form.companionType === '혼자' ? '혼자 여행은 1명으로 고정됩니다.' : '연인·가족·친구 여행은 본인을 포함해 최소 2명입니다.'}
+              </p>
             </div>
             <div>
               <FieldLabel>End</FieldLabel>
