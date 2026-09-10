@@ -275,7 +275,7 @@ const GuestReveal = ({ children, delay = 0, className = '' }) => {
 };
 
 const GuestHome = () => (
-  <div className="relative flex-1 overflow-y-auto bg-background p-6 lg:p-10">
+  <div className="relative flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-10">
     <style>{`
       @keyframes codetrip-hero-pan {
         0%, 100% { transform: scale(1.02) translate3d(0, 0, 0); }
@@ -331,7 +331,7 @@ const GuestHome = () => (
       }
     `}</style>
 
-    <section className="relative min-h-[460px] overflow-hidden rounded-2xl bg-slate-950 shadow-2xl">
+    <section className="relative min-h-[400px] overflow-hidden rounded-2xl bg-slate-950 shadow-2xl sm:min-h-[460px]">
       <img
         src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2070"
         alt="CodeTrip service preview"
@@ -342,7 +342,7 @@ const GuestHome = () => (
         <div className="guest-scan-line h-px w-1/2 bg-primary-container/90" />
       </div>
 
-      <div className="relative z-10 grid min-h-[460px] grid-cols-1 items-center gap-8 px-7 py-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
+      <div className="relative z-10 grid min-h-[400px] grid-cols-1 items-center gap-8 px-6 py-8 sm:min-h-[460px] sm:px-7 sm:py-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
         <div className="max-w-3xl">
           <div className="guest-fade-up inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-md font-label">
             <span className="guest-pulse-dot h-2 w-2 rounded-full bg-primary-container" />
@@ -355,12 +355,12 @@ const GuestHome = () => (
           <p className="guest-fade-up mt-5 max-w-2xl break-keep text-base leading-8 text-white/80 sm:text-lg" style={{ animationDelay: '.16s' }}>
             CodeTrip은 여행지 탐색, 위시리스트 저장, AI 여행 플래너, 여행 게시판을 하나의 흐름으로 연결하는 개발자 감성의 여행 큐레이션 서비스입니다.
           </p>
-          <div className="guest-fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: '.24s' }}>
-            <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label">
+          <div className="guest-fade-up mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row" style={{ animationDelay: '.24s' }}>
+            <Link to="/login" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-container font-label sm:w-auto">
               <span className="material-symbols-outlined text-lg">login</span>
               로그인하고 시작하기
             </Link>
-            <Link to="/explore" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/15 px-7 py-3 text-sm font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/25 font-label">
+            <Link to="/explore" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/15 px-7 py-3 text-sm font-bold text-white backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/25 font-label sm:w-auto">
               <span className="material-symbols-outlined text-lg">travel_explore</span>
               여행지 둘러보기
             </Link>
@@ -401,12 +401,12 @@ const GuestHome = () => (
       </div>
     </section>
 
-    <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-4">
+    <section className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:gap-5 xl:grid-cols-4">
       {GUEST_FEATURES.map((feature, index) => (
         <GuestReveal key={feature.label} delay={index * 90}>
           <Link
             to={feature.to}
-            className={`guest-feature-card group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-6 shadow-sm`}
+            className={`guest-feature-card group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br ${feature.gradient} p-5 shadow-sm sm:p-6`}
           >
             <div className="mb-5 flex items-center justify-between gap-3">
               <span className={`guest-emoji-badge flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl ${feature.accent}`}>
@@ -932,7 +932,7 @@ const Home = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
       <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-5">
-        <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-6 lg:p-7 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-4 sm:p-6 lg:p-7 overflow-hidden">
           <div className="flex flex-col gap-4">
             <div className="space-y-2">
               <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-primary font-label">
@@ -981,30 +981,30 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
             {[
               { icon: 'favorite', label: 'SAVED_NODES', value: wishlistItems.length, helper: '저장 여행지' },
               { icon: 'folder', label: 'FOLDERS', value: folders.length, helper: '여행 폴더' },
               { icon: 'inventory_2', label: 'UNCATEGORIZED', value: uncategorizedCount, helper: '미분류' }
             ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+              <div key={stat.label} className="rounded-2xl bg-slate-50 border border-slate-100 p-3 sm:p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="material-symbols-outlined text-primary text-xl">{stat.icon}</span>
                   <span className="font-headline text-2xl font-bold text-slate-950">{wishlistLoading ? '-' : stat.value}</span>
                 </div>
-                <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 font-label">{stat.label}</p>
-                <p className="mt-1 text-xs text-slate-500">{stat.helper}</p>
+                <p className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 font-label sm:mt-3 sm:text-[10px] sm:tracking-[0.18em]">{stat.label}</p>
+                <p className="mt-1 text-[11px] text-slate-500 sm:text-xs">{stat.helper}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="mt-5 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid-cols-3 md:grid-flow-row md:overflow-visible md:pb-0">
             {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
               <Link
                 key={getFolderId(folder)}
                 to="/mypage"
                 state={{ folderId: getFolderId(folder) }}
-                className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                className="group snap-start rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -1065,7 +1065,7 @@ const Home = () => {
       </section>
 
       {/* 1. 상단 Node_Header 섹션 */}
-      <section className="relative w-full min-h-[320px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0 sm:min-h-[260px]">
+      <section className="relative w-full min-h-[250px] rounded-2xl overflow-hidden shadow-xl bg-surface-container-high shrink-0 sm:min-h-[260px]">
         <img src={currentNodeHeader.galWebImageUrl || currentNodeHeader.image} key={currentNodeHeader.galContentId || currentNodeHeader.id} className="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000" alt="bg" />
         <div className="absolute inset-0 flex flex-col justify-between gap-5 bg-gradient-to-b from-slate-900/82 via-slate-900/56 to-slate-900/28 px-5 py-6 sm:flex-row sm:items-center sm:bg-gradient-to-r sm:from-slate-900/80 sm:via-slate-900/45 sm:to-slate-900/10 sm:px-10 lg:px-12">
           <div className="max-w-xl space-y-3 sm:max-w-[min(40rem,calc(100%-13rem))]">
@@ -1084,9 +1084,9 @@ const Home = () => {
       </section>
 
       {/* 2. 카드 그리드 */}
-      <div className="grid grid-cols-1 gap-5 flex-1 min-h-0 xl:grid-cols-3">
+      <div className="grid auto-cols-[88%] grid-flow-col gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar xl:grid-cols-3 xl:grid-flow-row xl:gap-5 xl:overflow-visible xl:pb-0">
         {/* Card 1: Regional (Near Me) */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+        <div className="snap-start bg-white p-5 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-6">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[86px] justify-between items-start">
@@ -1110,7 +1110,7 @@ const Home = () => {
         </div>
 
         {/* Card 2: Slot Machine */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group">
+        <div className="snap-start bg-white p-5 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-6">
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[86px] justify-between items-start">
                 <div className="space-y-1 min-w-0 flex-1">
@@ -1189,7 +1189,7 @@ const Home = () => {
         </div>
 
         {/* Card 3: Trending */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group">
+        <div className="snap-start bg-white p-5 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group sm:p-6">
           <div className="flex justify-between items-start mb-4 shrink-0">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold">

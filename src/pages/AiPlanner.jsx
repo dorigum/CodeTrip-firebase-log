@@ -898,7 +898,7 @@ const AiPlanner = () => {
   };
 
   return (
-    <div className="ai-planner-page mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
+    <div className="ai-planner-page mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 pb-24 sm:space-y-8 sm:px-6 sm:py-8 md:pb-8 lg:px-8 lg:py-12">
       <PageHeader
         label="ai_trip.planner"
         title="AI 여행 플래너"
@@ -907,7 +907,7 @@ const AiPlanner = () => {
           <button
             type="button"
             onClick={() => navigate('/mypage')}
-            className="inline-flex items-center justify-center gap-2 px-4 h-11 rounded-lg border border-outline-variant/50 text-slate-600 hover:text-primary hover:border-primary/40 transition-colors text-xs font-bold uppercase tracking-wider"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-outline-variant/50 px-4 text-xs font-bold uppercase tracking-wider text-slate-600 transition-colors hover:border-primary/40 hover:text-primary sm:w-auto"
           >
             <span className="material-symbols-outlined text-base">folder</span>
             My Folders
@@ -915,8 +915,8 @@ const AiPlanner = () => {
         )}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[500px_minmax(0,1fr)] gap-6">
-        <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
+      <div className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-[500px_minmax(0,1fr)]">
+        <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-4 space-y-5 sm:p-5">
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
               <FieldLabel>Plan Mode</FieldLabel>
@@ -1024,7 +1024,7 @@ const AiPlanner = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel>Region</FieldLabel>
               <input
@@ -1051,7 +1051,7 @@ const AiPlanner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel htmlFor="ai-planner-travel-start-date">Travel Start</FieldLabel>
               <input
@@ -1088,7 +1088,7 @@ const AiPlanner = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel>Companion</FieldLabel>
               <select
@@ -1134,8 +1134,8 @@ const AiPlanner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="col-span-2 sm:col-span-1">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+            <div>
               <FieldLabel>Pace</FieldLabel>
               <select
                 value={form.pace}
@@ -1262,14 +1262,14 @@ const AiPlanner = () => {
           </button>
         </section>
 
-        <section className="min-h-[360px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden md:min-h-[620px]">
+        <section className="min-h-[240px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden sm:min-h-[360px] md:min-h-[620px]">
           {!plan ? (
-            <div className="flex h-full min-h-[360px] flex-col items-center justify-center px-6 text-center md:min-h-[620px]">
+            <div className="flex h-full min-h-[240px] flex-col items-center justify-center px-6 text-center sm:min-h-[360px] md:min-h-[620px]">
               <span className="material-symbols-outlined mb-3 text-5xl text-primary/30 md:mb-4 md:text-6xl">travel_explore</span>
               <p className="font-mono text-xs text-slate-400">// generated_course_preview</p>
             </div>
           ) : (
-            <div className="p-5 md:p-6 space-y-6">
+            <div className="space-y-5 p-4 sm:space-y-6 sm:p-5 md:p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -1317,7 +1317,7 @@ const AiPlanner = () => {
                         const sourceBadge = getPlanSourceBadge(item);
 
                         return (
-                          <div key={`${day.day}-${item.order || index}`} className="p-4 grid grid-cols-[68px_1fr] gap-4">
+                          <div key={`${day.day}-${item.order || index}`} className="grid grid-cols-[54px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[68px_1fr] sm:gap-4 sm:p-4">
                             <div className="text-xs font-black text-primary font-mono">{item.time || '--:--'}</div>
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
