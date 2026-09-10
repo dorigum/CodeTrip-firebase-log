@@ -1523,7 +1523,7 @@ const MyPage = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 2xl:grid-cols-3">
               {paginatedWishList.map((item) => {
                 const itemId = item.contentid || item.content_id;
                 const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;
@@ -1531,7 +1531,7 @@ const MyPage = () => {
                 const itemImage = item.firstimage || item.image_url || FALLBACK_IMAGE;
 
                 return (
-                  <div key={itemKey} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
+                  <div key={itemKey} className="group relative flex min-h-36 overflow-hidden rounded-xl border border-outline-variant/10 bg-white shadow-sm transition-all hover:border-primary/30">
                     {movingItemId === itemKey && (
                       <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 flex flex-col">
                         <div className="flex justify-between mb-4 border-b pb-2"><span className="text-[10px] font-bold font-mono text-primary">MOVE_TO_FOLDER</span><button onClick={() => setMovingItemId(null)} className="material-symbols-outlined text-xs">close</button></div>
@@ -1549,19 +1549,19 @@ const MyPage = () => {
                         </div>
                       </div>
                     )}
-                    <div className="relative h-48">
-                      <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
-                      <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <button onClick={(e) => handleRemoveWish(e, item)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
-                        <button onClick={() => setMovingItemId(itemKey)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
+                    <div className="relative w-28 shrink-0 overflow-hidden bg-slate-100 sm:w-32 md:w-28 lg:w-32">
+                      <img src={itemImage} alt={itemTitle} className="absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-105" />
+                      <div className="absolute left-2 top-2 flex gap-1.5">
+                        <button onClick={(e) => handleRemoveWish(e, item)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-red-500 shadow-lg transition-all"><span className="material-symbols-outlined text-base fill-1">favorite</span></button>
+                        <button onClick={() => setMovingItemId(itemKey)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-500 shadow-lg transition-all"><span className="material-symbols-outlined text-base">folder_shared</span></button>
                       </div>
                     </div>
-                    <div className="p-5">
-                      <h3 className="font-headline text-base font-bold truncate mb-1">{itemTitle}</h3>
-                      <p className="text-[10px] text-slate-400 font-mono mb-4 truncate">{item.addr1 || '주소 정보 없음'}</p>
-                      <div className="flex justify-between items-center mt-4">
-                        <span className="min-w-0 truncate text-[10px] font-mono text-slate-500 uppercase tracking-tighter">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
-                        <Link to={`/explore/${itemId}`} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-primary hover:text-white transition-all border border-slate-100">VIEW_DATA</Link>
+                    <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+                      <h3 className="mb-1 line-clamp-2 font-headline text-sm font-bold leading-5 text-slate-950">{itemTitle}</h3>
+                      <p className="truncate font-mono text-[10px] text-slate-400">{item.addr1 || '주소 정보 없음'}</p>
+                      <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+                        <span className="min-w-0 truncate font-mono text-[9px] uppercase tracking-tighter text-slate-500">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
+                        <Link to={`/explore/${itemId}`} className="shrink-0 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-[9px] font-bold text-slate-600 transition-all hover:bg-primary hover:text-white">VIEW_DATA</Link>
                       </div>
                     </div>
                   </div>
