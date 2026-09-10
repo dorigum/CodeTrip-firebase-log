@@ -337,7 +337,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             className="fixed inset-0 z-[54] md:hidden"
             onClick={() => setMobileMyPageOpen(false)}
           />
-          <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-0 z-[56] w-48 overflow-hidden rounded-tl-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200 md:hidden">
+          <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-0 z-[56] w-48 overflow-hidden rounded-tl-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200 md:hidden">
             {MY_PAGE_SUB_ITEMS.map((sub) => (
               <Link
                 key={sub.label}
@@ -364,7 +364,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             className="fixed inset-0 z-[54] md:hidden"
             onClick={() => setMobileInfoOpen(false)}
           />
-          <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-12 z-[56] max-h-[70vh] w-56 overflow-y-auto rounded-t-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200 md:hidden">
+          <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-12 z-[56] max-h-[70vh] w-56 overflow-y-auto rounded-t-2xl border border-outline-variant/20 bg-white shadow-xl animate-in slide-in-from-bottom-2 duration-200 md:hidden">
             {INFO_SUB_ITEMS.map((sub) =>
               sub.external ? (
                 <a
@@ -400,7 +400,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-[55] grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-7 items-center border-t border-outline-variant/30 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-[55] grid h-[calc(5rem+env(safe-area-inset-bottom))] grid-cols-7 items-center border-t border-outline-variant/30 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
@@ -416,7 +416,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
               </span>
               {item.extra}
             </span>
-            <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-tighter">{item.mobileLabel || item.label}</span>
+            <span className="max-w-full truncate pb-px text-[9px] font-bold uppercase leading-[1.35] tracking-tighter">{item.mobileLabel || item.label}</span>
           </Link>
         ))}
         <button
@@ -436,7 +436,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             </span>
             {INFO_ITEM.extra}
           </span>
-          <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-tighter">{INFO_ITEM.label}</span>
+          <span className="max-w-full truncate pb-px text-[9px] font-bold uppercase leading-[1.35] tracking-tighter">{INFO_ITEM.label}</span>
         </button>
         <button
           onClick={() => {
@@ -453,7 +453,7 @@ const SideBar = ({ isCollapsed, toggleSidebar }) => {
             </span>
             {MY_PAGE_ITEM.extra}
           </span>
-          <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-tighter">My Page</span>
+          <span className="max-w-full truncate pb-px text-[9px] font-bold uppercase leading-[1.35] tracking-tighter">My Page</span>
         </button>
       </nav>
 

@@ -17,7 +17,7 @@ const Footer = () => (
           CodeTrip · Travel decision companion
         </p>
         <p className="mt-2 text-[11px] leading-5 text-on-secondary-container/75 sm:text-xs">
-          여행지를 고르기 어려운 순간부터 일정 저장과 여행 준비까지, 조건을 바탕으로 나만의 여행 결정을 돕습니다.
+          여행지를 고르기 어려운 순간부터 일정 저장과 여행 준비까지, 조건을 바탕으로<br />나만의 여행 결정을 돕습니다.
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[9px] leading-4 text-on-secondary-container/55 sm:text-[10px]">
           <span>Travel information · Korea Tourism Organization TourAPI</span>

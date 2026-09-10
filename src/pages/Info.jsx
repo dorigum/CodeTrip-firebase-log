@@ -142,7 +142,7 @@ const Info = () => {
           </h1>
           <p className="text-sm leading-relaxed text-white/70 sm:text-base md:text-lg">
             <span className="md:hidden">
-              날씨·위치·관심 지역을 단서로,<br />나에게 맞는 여행 선택을 시작하세요.
+              어디로 갈지부터 막막한 순간, 날씨·위치·관심 지역을 단서로<br />나에게 맞는 여행 선택을 시작하세요.
             </span>
             <span className="hidden md:inline">
               어디로 갈지부터 막막한 순간, 날씨·위치·관심 지역을 단서로 나에게 맞는 여행 선택을 시작하세요.
