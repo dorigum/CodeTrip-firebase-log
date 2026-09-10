@@ -78,7 +78,7 @@ const MiniPlanCalendar = ({ events, loading }) => {
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+    <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-container font-label">ai_plan.calendar</p>
@@ -94,10 +94,10 @@ const MiniPlanCalendar = ({ events, loading }) => {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-7 text-center text-[10px] font-bold text-white/40">
+      <div className="mt-3 grid grid-cols-7 text-center text-[10px] font-bold text-white/40 sm:mt-4">
         {CALENDAR_WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
       </div>
-      <div className="mt-1 grid grid-cols-7 gap-y-1">
+      <div className="mt-1 grid grid-cols-7 gap-y-0.5 sm:gap-y-1">
         {calendarDays.map(({ date, key, isCurrentMonth, eventCount }) => {
           const isSelected = key === selectedDateKey;
           const isToday = key === todayKey;
@@ -106,7 +106,7 @@ const MiniPlanCalendar = ({ events, loading }) => {
               key={key}
               type="button"
               onClick={() => setSelectedDateKey(key)}
-              className={`relative mx-auto flex h-8 w-8 flex-col items-center justify-center rounded-full text-[11px] transition ${isCurrentMonth ? 'text-white' : 'text-white/25'} ${isSelected ? 'bg-primary text-slate-950 font-black' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-primary-container/70' : ''}`}
+              className={`relative mx-auto flex h-7 w-7 flex-col items-center justify-center rounded-full text-[11px] transition sm:h-8 sm:w-8 ${isCurrentMonth ? 'text-white' : 'text-white/25'} ${isSelected ? 'bg-primary text-slate-950 font-black' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-primary-container/70' : ''}`}
               aria-label={`${getCalendarDateLabel(key)}${eventCount ? `, AI 여행 플랜 ${eventCount}개` : ''}`}
             >
               <span>{date.getDate()}</span>
@@ -116,7 +116,7 @@ const MiniPlanCalendar = ({ events, loading }) => {
         })}
       </div>
 
-      <div className="mt-3 min-h-11 border-t border-white/10 pt-3">
+      <div className="mt-2 min-h-8 border-t border-white/10 pt-2 sm:mt-3 sm:min-h-11 sm:pt-3">
         {loading ? (
           <div className="h-4 w-3/4 animate-pulse rounded bg-white/10" />
         ) : selectedEvents.length > 0 ? (
@@ -124,7 +124,7 @@ const MiniPlanCalendar = ({ events, loading }) => {
             {selectedEvents.slice(0, 2).map((event) => (
               <Link key={event.id} to="/mypage" state={{ folderId: event.folderId }} className="flex items-center gap-2 rounded-lg px-1 py-0.5 text-left transition hover:bg-white/10">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-container" />
-                <span className="truncate text-xs font-bold text-white">{event.title}</span>
+                <span className="truncate text-[11px] font-bold text-white sm:text-xs">{event.title}</span>
               </Link>
             ))}
             {selectedEvents.length > 2 && <p className="px-1 text-[10px] text-white/45">+ {selectedEvents.length - 2}개 일정</p>}
@@ -930,7 +930,7 @@ const Home = () => {
   }
 
   return (
-    <div className="p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
+    <div className="p-4 sm:p-6 lg:p-10 gap-5 flex-1 flex flex-col bg-background overflow-hidden">
       <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-5">
         <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-sm p-6 lg:p-7 overflow-hidden">
           <div className="flex flex-col gap-4">
@@ -1023,7 +1023,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm p-6 lg:p-7 text-white overflow-hidden relative">
+        <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm p-4 sm:p-6 lg:p-7 text-white overflow-hidden relative">
           <div className="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-primary/20 blur-3xl"></div>
           <div className="relative flex items-start justify-between gap-4">
             <div>
@@ -1033,8 +1033,9 @@ const Home = () => {
             <span className="material-symbols-outlined text-primary-container">event_available</span>
           </div>
 
-          <div className="relative mt-6 space-y-3">
+          <div className="relative mt-4 space-y-3 sm:mt-6">
             <MiniPlanCalendar events={aiPlanCalendarEvents} loading={wishlistLoading || !wishlistInitialized} />
+            <div className="hidden space-y-3 sm:block">
             {primaryFolder ? (
               <>
                 <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
@@ -1058,6 +1059,7 @@ const Home = () => {
                 <p className="mt-3 text-sm font-bold text-white/70">// 여행 폴더를 만들면 일정 대시보드가 채워집니다.</p>
               </div>
             )}
+            </div>
           </div>
         </div>
       </section>
