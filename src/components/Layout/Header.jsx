@@ -369,20 +369,29 @@ const Header = () => {
             </div>
           </div>
         ) : (
-          <Link
-            to="/login"
-            state={{ from: loginReturnPath }}
-            onClick={() => {
-              sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
-              if (location.pathname === '/explore') {
-                sessionStorage.setItem(PRESERVE_EXPLORE_STATE_KEY, 'true');
-              }
-            }}
-            className="px-5 py-2 bg-primary text-white font-headline font-bold rounded-lg hover:brightness-110 transition-all text-sm flex items-center gap-2 shadow-md"
-          >
-            <span className="material-symbols-outlined text-base font-normal">login</span>
-            Sign In
-          </Link>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Link
+              to="/signup"
+              className="flex items-center gap-1.5 rounded-lg border border-primary/25 bg-white px-3 py-2 font-headline text-sm font-bold text-primary transition-all hover:bg-primary/5 sm:px-4"
+            >
+              <span className="material-symbols-outlined text-base font-normal">person_add</span>
+              <span className="hidden min-[380px]:inline">Sign Up</span>
+            </Link>
+            <Link
+              to="/login"
+              state={{ from: loginReturnPath }}
+              onClick={() => {
+                sessionStorage.setItem('codetrip:return_after_login', loginReturnPath);
+                if (location.pathname === '/explore') {
+                  sessionStorage.setItem(PRESERVE_EXPLORE_STATE_KEY, 'true');
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 font-headline text-sm font-bold text-white shadow-md transition-all hover:brightness-110 sm:px-4"
+            >
+              <span className="material-symbols-outlined text-base font-normal">login</span>
+              Sign In
+            </Link>
+          </div>
         )}
       </div>
     </header>
