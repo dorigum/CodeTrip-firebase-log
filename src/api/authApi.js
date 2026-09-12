@@ -82,7 +82,7 @@ const waitForDatabaseAuth = (delayMs) => new Promise((resolve) => {
   window.setTimeout(resolve, delayMs);
 });
 
-const runOAuthDatabaseOperation = async (authUser, operation) => {
+const runAuthenticatedDatabaseOperation = async (authUser, operation) => {
   let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -91,7 +91,7 @@ const runOAuthDatabaseOperation = async (authUser, operation) => {
       lastError = error;
       if (!isPermissionDeniedError(error) || attempt === 2) throw error;
 
-      // OAuth 직후에는 Realtime Database 연결에 새 인증 토큰이 반영되기 전일 수 있습니다.
+      // 신규 인증 직후에는 Realtime Database 연결에 새 인증 토큰이 반영되기 전일 수 있습니다.
       await authUser.getIdToken(true);
       await waitForDatabaseAuth(150 * (attempt + 1));
     }
@@ -108,16 +108,18 @@ const authApi = {
       if (!normalizedName) {
         throw { message: '이름 또는 닉네임을 입력해 주세요.' };
       }
+      await setPersistence(firebaseAuth, browserSessionPersistence);
       const credential = await createUserWithEmailAndPassword(firebaseAuth, normalizedEmail, password);
       await updateFirebaseProfile(credential.user, { displayName: normalizedName });
-      await set(ref(realtimeDb, `users/${credential.user.uid}`), {
+      await credential.user.getIdToken(true);
+      await runAuthenticatedDatabaseOperation(credential.user, () => set(ref(realtimeDb, `users/${credential.user.uid}`), {
         email: normalizedEmail,
         name: normalizedName,
         profileImg: '',
         favoriteRegions: [],
         created_at: nowIso(),
         updated_at: nowIso(),
-      });
+      }));
       await firebaseAuth.signOut();
       return { message: 'Success' };
     } catch (error) {
@@ -182,7 +184,7 @@ const authApi = {
 
       await credential.user.getIdToken();
       const profileRef = ref(realtimeDb, `users/${credential.user.uid}`);
-      const profileSnap = await runOAuthDatabaseOperation(
+      const profileSnap = await runAuthenticatedDatabaseOperation(
         credential.user,
         () => get(profileRef),
       );
@@ -193,7 +195,7 @@ const authApi = {
         if (!normalizeUserName(credential.user.displayName)) {
           await updateFirebaseProfile(credential.user, { displayName: resolvedName });
         }
-        await runOAuthDatabaseOperation(credential.user, () => set(profileRef, {
+        await runAuthenticatedDatabaseOperation(credential.user, () => set(profileRef, {
           email: credential.user.email || '',
           name: resolvedName,
           profileImg: credential.user.photoURL || '',
@@ -207,7 +209,7 @@ const authApi = {
         if (normalizeUserName(profile.name) !== resolvedName) profileUpdates.name = resolvedName;
         if (profile.authProvider !== 'google') profileUpdates.authProvider = 'google';
         if (Object.keys(profileUpdates).length) {
-          await runOAuthDatabaseOperation(credential.user, () => update(profileRef, {
+          await runAuthenticatedDatabaseOperation(credential.user, () => update(profileRef, {
             ...profileUpdates,
             updated_at: nowIso(),
           }));
