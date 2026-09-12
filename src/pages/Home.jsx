@@ -1111,8 +1111,8 @@ const Home = () => {
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] md:min-h-[86px]">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">location_on</span><p className="text-[10px] uppercase tracking-widest font-label whitespace-nowrap">NEAR ME ({province} {weather.location})</p></div>
-                  <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">🛫지역 기반 추천: {province}</h3>
+                  <div className="flex items-center gap-2 text-primary font-bold"><span className="material-symbols-outlined text-sm">location_on</span><p className="text-[10px] uppercase tracking-widest font-label whitespace-nowrap">CURRENT LOCATION ({province} {weather.location})</p></div>
+                  <h3 className="font-headline text-xl font-bold text-slate-900 leading-tight break-keep">🛫현 위치 기반 추천: {province}</h3>
                 </div>
                 <button onClick={() => setNearbyIndex(i => (i+1) % (nearbyPlaces.length || 1))} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-900 rounded-xl hover:bg-primary hover:text-white transition-all shadow-md"><span className="material-symbols-outlined">navigate_next</span></button>
               </div>
@@ -1181,9 +1181,9 @@ const Home = () => {
                   </h4>
                   {weatherRec && hasPicked && !isSlotSpinning && <Link to={`/explore/${weatherRec.contentid}`} className="shrink-0 text-[10px] font-bold text-primary hover:underline uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full font-label">View_Detail</Link>}
                 </div>
-                <div className="flex items-center gap-2 mt-2 text-slate-400 font-mono text-xs italic">
+                <div className="flex items-start gap-2 mt-2 text-slate-400 font-mono text-xs italic">
                   <span className="text-primary-container">//</span>
-                  <p className="truncate">{slotAddress}</p>
+                  <p className="min-w-0 truncate md:line-clamp-2 md:whitespace-normal md:text-clip md:leading-relaxed">{slotAddress}</p>
                 </div>
                 {spontaneousMeta?.reasons?.length > 0 && (
                   <div className="mt-3 space-y-1">
