@@ -1346,9 +1346,13 @@ const AiPlanner = () => {
               value={form.weatherKeyword}
               onChange={(e) => updateForm('weatherKeyword', e.target.value)}
               disabled={plannerBusy}
+              aria-describedby="ai-planner-weather-help"
               className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               placeholder="비, 맑음, 더움"
             />
+            <p id="ai-planner-weather-help" className="mt-1.5 text-[10px] leading-4 text-slate-400">
+              예상 날씨 또는 선호 조건을 입력하세요. 예: 비, 맑음, 더움, 추움, 실내 위주
+            </p>
           </div>
 
           <div>
