@@ -679,6 +679,7 @@ const Home = () => {
   const currentProvinceRef = useRef(''); // 현재 지역 고정용
   const topImgTimerRef = useRef(null);
   const dashboardFolderScrollerRef = useRef(null);
+  const recommendationScrollerRef = useRef(null);
 
   const resetHomeState = useCallback(() => {
     setWeather({ temp: 24, label: 'Sunny', icon: 'sunny', keywords: ['여행'], location: '서울' });
@@ -1139,7 +1140,15 @@ const Home = () => {
       </section>
 
       {/* 2. 카드 그리드 */}
-      <div className="grid auto-cols-[88%] grid-flow-col gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid-cols-3 md:grid-flow-row md:gap-5 md:overflow-visible md:pb-0">
+      <div className="hidden justify-end gap-1 min-[520px]:flex">
+        <button type="button" onClick={() => recommendationScrollerRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} className="flex h-9 w-9 items-center justify-center rounded-xl border border-outline-variant/20 bg-white text-slate-500 shadow-sm transition hover:border-primary/40 hover:text-primary" aria-label="이전 추천 카드 보기">
+          <span className="material-symbols-outlined text-lg">chevron_left</span>
+        </button>
+        <button type="button" onClick={() => recommendationScrollerRef.current?.scrollBy({ left: 360, behavior: 'smooth' })} className="flex h-9 w-9 items-center justify-center rounded-xl border border-outline-variant/20 bg-white text-slate-500 shadow-sm transition hover:border-primary/40 hover:text-primary" aria-label="다음 추천 카드 보기">
+          <span className="material-symbols-outlined text-lg">chevron_right</span>
+        </button>
+      </div>
+      <div ref={recommendationScrollerRef} className="mt-3 grid auto-cols-[88%] grid-flow-col gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:auto-cols-[calc((100%-2.5rem)/3)] md:gap-5 md:pb-0">
         {/* Card 1: Regional (Near Me) */}
         <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 md:p-6">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
