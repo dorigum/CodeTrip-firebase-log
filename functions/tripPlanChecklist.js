@@ -33,13 +33,17 @@ const normalizeChecklist = (checklist) => (
     : []
 );
 
+const dedupeChecklist = (checklist) => Array.from(new Map(
+  normalizeChecklist(checklist).map((item) => [item.replace(/\s+/g, ' ').toLocaleLowerCase('ko-KR'), item])
+).values());
+
 const applyTransportationChecklist = (checklist, transportation) => {
   const transportationGuide = TRANSPORTATION_CHECKLIST[transportation]
     || TRANSPORTATION_CHECKLIST.대중교통;
   const nonTransportationItems = normalizeChecklist(checklist)
     .filter((item) => !TRANSPORTATION_KEYWORD_PATTERN.test(item));
 
-  return [transportationGuide, ...nonTransportationItems].slice(0, 5);
+  return dedupeChecklist([transportationGuide, ...nonTransportationItems]).slice(0, 5);
 };
 
 const replaceSoloCompanionText = (value) => SOLO_COMPANION_REPLACEMENTS.reduce(

@@ -425,6 +425,45 @@ const getFolderRegion = (folder, places) => {
   return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
 };
 
+const getLatestFolderGenerationContext = (folder, plans = []) => {
+  const folderContext = folder?.generation_context || folder?.generationContext;
+  if (folderContext && typeof folderContext === 'object') return folderContext;
+
+  return [...plans]
+    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
+    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0]
+    ?.generation_context || [...plans]
+    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
+    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0]
+    ?.generationContext || {};
+};
+
+const getFolderContextFormValues = (context = {}) => {
+  const companionType = ['혼자', '연인', '가족', '친구'].includes(context.companionType)
+    ? context.companionType
+    : null;
+  if (!companionType) return {};
+
+  const requiredAreas = normalizeRequiredAreas(context.requiredAreas);
+  const durationDays = normalizeDurationDays(context.durationDays);
+  return {
+    companionType,
+    familyDetail: companionType === '가족' ? String(context.familyDetail || '') : '',
+    peopleCount: normalizePeopleCount(companionType, context.peopleCount),
+    transportation: context.transportation || DEFAULT_FORM.transportation,
+    priorities: Array.isArray(context.priorities) ? context.priorities : DEFAULT_FORM.priorities,
+    budgetLevel: context.budgetLevel || DEFAULT_FORM.budgetLevel,
+    pace: context.pace || DEFAULT_FORM.pace,
+    weatherKeyword: context.weatherKeyword || '',
+    startTime: context.startTime || DEFAULT_FORM.startTime,
+    endTime: context.endTime || DEFAULT_FORM.endTime,
+    travelStyle: Array.isArray(context.travelStyle) ? context.travelStyle : DEFAULT_FORM.travelStyle,
+    avoidKeywords: Array.isArray(context.avoidKeywords) ? context.avoidKeywords : [],
+    requiredAreas,
+    dayAreaPreferences: pruneDayAreaPreferences(context.dayAreaPreferences, durationDays, requiredAreas),
+  };
+};
+
 const getNormalizedFolderSchedule = (folder) => {
   const startDate = String(folder?.start_date || '').slice(0, 10);
   const endDate = String(folder?.end_date || '').slice(0, 10);
@@ -518,7 +557,7 @@ const AiPlanner = () => {
   const location = useLocation();
   const showToast = useToast();
   const { isLoggedIn } = useAuthStore();
-  const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
+  const { wishlistItems, folders, aiTripPlans, initWishlist, syncWithServer } = useWishlistStore();
   const regeneratePlan = location.state?.regeneratePlan || null;
   const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
   const regenerateFolderId = (
@@ -812,13 +851,20 @@ const AiPlanner = () => {
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
     const folderSchedule = getNormalizedFolderSchedule(selectedFolder);
+    const folderContext = getLatestFolderGenerationContext(selectedFolder, aiTripPlans);
 
     setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
     setForm((prev) => ({
       ...prev,
+      ...getFolderContextFormValues(folderContext),
       durationDays: folderSchedule.durationDays,
       travelStartDate: folderSchedule.travelStartDate,
       travelEndDate: folderSchedule.travelEndDate,
+      dayAreaPreferences: pruneDayAreaPreferences(
+        folderContext.dayAreaPreferences,
+        folderSchedule.durationDays,
+        normalizeRequiredAreas(folderContext.requiredAreas)
+      ),
     }));
     if (folderSchedule.adjusted) {
       showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 유효한 1~${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
@@ -852,7 +898,7 @@ const AiPlanner = () => {
         setFolderHydrating(false);
       }
     }
-  }, [folders, invalidateCurrentPlan, plannerActionBusy, showToast, wishlistItems]);
+  }, [aiTripPlans, folders, invalidateCurrentPlan, plannerActionBusy, showToast, wishlistItems]);
 
   useEffect(() => {
     if (!regeneratePlan || regenerationHydratedRef.current) return;
@@ -954,6 +1000,25 @@ const AiPlanner = () => {
     setIsPlanSaved(false);
     try {
       let preferredPlaces = selectedPlaces;
+
+      if (planningMode === PLAN_MODE.FOLDER) {
+        const selectedFolder = folders.find((folder) => String(folder.id) === String(selectedFolderId));
+        const folderRegion = getFolderRegion(selectedFolder, folderPlaces);
+        if (folderRegion && !isPlaceInRepresentativeRegion({ addr1: form.regionName }, folderRegion)) {
+          showToast('폴더의 저장 장소 지역과 다른 지역으로는 코스를 생성할 수 없습니다. 폴더 기준 지역으로 다시 불러왔습니다.');
+          await handleFolderChange(String(selectedFolderId));
+          return;
+        }
+
+        preferredPlaces = selectedPlaces
+          .filter((item) => String(item.folder_id) === String(selectedFolderId))
+          .filter((item) => isPlaceInRepresentativeRegion(item, form.regionName))
+          .filter((item) => isPlaceInRequiredArea(item, form.requiredAreas));
+        if (preferredPlaces.length === 0) {
+          showToast('선택한 폴더에 대표 지역과 필수 방문 권역을 모두 만족하는 장소가 없습니다. 조건을 조정해주세요.');
+          return;
+        }
+      }
 
       if (planningMode === PLAN_MODE.CUSTOM) {
         const broadRegionCode = getBroadRegionTourCode(form.regionName.trim());
@@ -1227,11 +1292,12 @@ const AiPlanner = () => {
               <input
                 value={form.regionName}
                 onChange={(e) => updateForm('regionName', e.target.value)}
+                readOnly={planningMode === PLAN_MODE.FOLDER && Boolean(selectedFolderId)}
                 disabled={plannerBusy}
-                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm read-only:cursor-not-allowed read-only:bg-slate-50"
                 placeholder="서울"
               />
-              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{REGION_HELP}</p>
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{planningMode === PLAN_MODE.FOLDER && selectedFolderId ? '폴더에 저장된 장소 주소를 기준으로 지역이 자동 적용됩니다.' : REGION_HELP}</p>
             </div>
             <div>
               <FieldLabel>Days</FieldLabel>

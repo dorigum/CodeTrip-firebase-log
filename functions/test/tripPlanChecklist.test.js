@@ -44,6 +44,19 @@ test('혼자 여행 코스에서는 친구 여행 표현을 혼자 여행 표현
   assert.equal(plan.saveGuide.folderName, '혼자 여행 서울');
 });
 
+test('같은 체크리스트 문구는 한 번만 유지한다', () => {
+  const checklist = applyTransportationChecklist([
+    '교통카드·환승 경로 및 배차 간격 확인',
+    '전시 예약 확인',
+    '전시 예약 확인',
+  ], '대중교통');
+
+  assert.deepEqual(checklist, [
+    '교통카드·환승 경로 및 배차 간격 확인',
+    '전시 예약 확인',
+  ]);
+});
+
 test('가족 세부 유형이 없거나 형제·자매이면 부모님 표현을 일반 가족 일행으로 보정한다', () => {
   const plan = applyCompanionConsistency({
     title: '부모님과 함께하는 부산 여행',

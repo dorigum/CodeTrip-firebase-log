@@ -51,6 +51,11 @@ const getRegionKey = (value) => {
   return REGION_MATCHERS.find(({ aliases }) => aliases.some((alias) => text.includes(alias)))?.key || '';
 };
 
+const normalizeChecklistKey = (value) => toText(value)
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toLocaleLowerCase('ko-KR');
+
 const matchesExpectedRegion = (address, expectedRegion) => {
   const expectedKey = getRegionKey(expectedRegion);
   if (!expectedKey) return true;
@@ -428,6 +433,24 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     : push(ref(realtimeDb, userPath(user.id, 'wishlistFolders')));
   const existingFolderSnapshot = targetFolderId ? await get(folderRef) : null;
   const existingFolder = existingFolderSnapshot?.exists() ? existingFolderSnapshot.val() : null;
+  const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
+  const notesRoot = ref(realtimeDb, userPath(user.id, 'wishlistNotes'));
+  const [wishlistsSnapshot, notesSnapshot] = await Promise.all([
+    get(wishlistRoot),
+    get(notesRoot),
+  ]);
+  const wishlists = snapshotToArray(wishlistsSnapshot);
+  const existingNotes = snapshotToArray(notesSnapshot);
+  const expectedRegionKey = getRegionKey(expectedRegion);
+  const folderRegionKeys = Array.from(new Set(
+    wishlists
+      .filter((item) => String(item.folder_id || '') === String(targetFolderId || ''))
+      .map((item) => getRegionKey(item.addr1 || item.address))
+      .filter(Boolean)
+  ));
+  if (targetFolderId && expectedRegionKey && folderRegionKeys.length === 1 && folderRegionKeys[0] !== expectedRegionKey) {
+    throw new Error('선택한 폴더의 저장 장소 지역과 다른 지역의 AI 코스는 저장할 수 없습니다.');
+  }
   const folder = {
     id: targetFolderId || folderRef.key,
     user_id: user.id,
@@ -472,6 +495,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
 
   if (targetFolderId) {
     updates[userPath(user.id, `wishlistFolders/${folder.id}/updated_at`)] = created_at;
+    updates[userPath(user.id, `wishlistFolders/${folder.id}/generation_context`)] = generationContext;
   } else {
     updates[userPath(user.id, `wishlistFolders/${folder.id}`)] = {
       user_id: folder.user_id,
@@ -480,6 +504,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
       end_date: folder.end_date,
       created_at: folder.created_at,
       updated_at: folder.updated_at,
+      generation_context: generationContext,
     };
   }
 
@@ -501,10 +526,28 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     created_at,
   };
 
-  const checklist = Array.isArray(plan?.saveGuide?.checklist)
-    ? plan.saveGuide.checklist.map((item) => toText(item)).filter(Boolean)
-    : [];
-  checklist.forEach((item) => {
+  const checklist = Array.from(new Map(
+    (Array.isArray(plan?.saveGuide?.checklist) ? plan.saveGuide.checklist : [])
+      .map((item) => toText(item))
+      .filter(Boolean)
+      .map((item) => [normalizeChecklistKey(item), item])
+  ).values());
+  const existingChecklistNotes = existingNotes.filter((note) => (
+    String(note.folder_id || '') === String(folder.id)
+    && String(note.type || 'CHECKLIST') === 'CHECKLIST'
+  ));
+  const existingChecklistKeys = new Set();
+  existingChecklistNotes.forEach((note) => {
+    const key = normalizeChecklistKey(note.content);
+    if (!key) return;
+    if (existingChecklistKeys.has(key)) {
+      updates[userPath(user.id, `wishlistNotes/${note.id}`)] = null;
+      return;
+    }
+    existingChecklistKeys.add(key);
+  });
+  const checklistToSave = checklist.filter((item) => !existingChecklistKeys.has(normalizeChecklistKey(item)));
+  checklistToSave.forEach((item) => {
     const noteRef = push(ref(realtimeDb, userPath(user.id, 'wishlistNotes')));
     updates[userPath(user.id, `wishlistNotes/${noteRef.key}`)] = {
       folder_id: String(folder.id),
@@ -516,8 +559,6 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     };
   });
 
-  const wishlistRoot = ref(realtimeDb, userPath(user.id, 'wishlists'));
-  const wishlists = snapshotToArray(await get(wishlistRoot));
   verifiedPlaces.forEach((place) => {
     const contentId = place.contentId;
     const existing = wishlists.find((wishlist) => (
@@ -546,7 +587,7 @@ export const saveAiTripToFolder = async (plan, options = {}) => {
     savedPlaces: verifiedPlaces.length,
     documentOnlyPlaces,
     rejectedContentIds,
-    savedChecklist: checklist.length,
+    savedChecklist: checklistToSave.length,
   };
 };
 
