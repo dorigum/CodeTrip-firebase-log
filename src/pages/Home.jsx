@@ -1285,11 +1285,11 @@ const Home = () => {
           </div>
         </div>
       </div>
-      <div className="pointer-events-none absolute inset-y-0 left-0 right-0 hidden min-[520px]:block">
-        <button type="button" onClick={() => recommendationScrollerRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} className="pointer-events-auto absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl border border-outline-variant/20 bg-white/95 text-slate-500 shadow-lg transition hover:border-primary/40 hover:text-primary" aria-label="이전 추천 카드 보기">
+      <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-30">
+        <button type="button" onClick={() => recommendationScrollerRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} className="pointer-events-auto absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl border border-outline-variant/20 bg-white text-slate-600 shadow-lg transition hover:border-primary/40 hover:text-primary" aria-label="이전 추천 카드 보기">
           <span className="material-symbols-outlined text-xl">chevron_left</span>
         </button>
-        <button type="button" onClick={() => recommendationScrollerRef.current?.scrollBy({ left: 360, behavior: 'smooth' })} className="pointer-events-auto absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl border border-outline-variant/20 bg-white/95 text-slate-500 shadow-lg transition hover:border-primary/40 hover:text-primary" aria-label="다음 추천 카드 보기">
+        <button type="button" onClick={() => recommendationScrollerRef.current?.scrollBy({ left: 360, behavior: 'smooth' })} className="pointer-events-auto absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl border border-outline-variant/20 bg-white text-slate-600 shadow-lg transition hover:border-primary/40 hover:text-primary" aria-label="다음 추천 카드 보기">
           <span className="material-symbols-outlined text-xl">chevron_right</span>
         </button>
       </div>
