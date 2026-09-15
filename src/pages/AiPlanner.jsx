@@ -23,6 +23,7 @@ const DEFAULT_FORM = {
   travelStartDate: '',
   travelEndDate: '',
   companionType: '친구',
+  familyDetail: '',
   peopleCount: 2,
   transportation: '대중교통',
   priorities: ['휴식'],
@@ -33,6 +34,8 @@ const DEFAULT_FORM = {
   endTime: '18:00',
   travelStyle: ['실내', '문화'],
   avoidKeywords: [],
+  requiredAreas: [],
+  dayAreaPreferences: {},
 };
 
 const createDefaultForm = () => ({
@@ -40,6 +43,8 @@ const createDefaultForm = () => ({
   priorities: [...DEFAULT_FORM.priorities],
   travelStyle: [...DEFAULT_FORM.travelStyle],
   avoidKeywords: [],
+  requiredAreas: [],
+  dayAreaPreferences: {},
 });
 
 const getMinimumPeopleCount = (companionType) => (companionType === '혼자' ? 1 : 2);
@@ -176,6 +181,34 @@ const REGION_ALIASES = {
 
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+
+const normalizeRequiredAreas = (value) => Array.from(new Set(
+  (Array.isArray(value) ? value : [])
+    .map((area) => String(area || '').trim())
+    .filter(Boolean)
+)).slice(0, 4);
+
+const pruneDayAreaPreferences = (value, durationDays, requiredAreas) => {
+  const preferences = value && typeof value === 'object' ? value : {};
+  const maxDay = normalizeDurationDays(durationDays);
+  return Object.entries(preferences).reduce((result, [day, area]) => {
+    const normalizedDay = Number(day);
+    const normalizedArea = String(area || '').trim();
+    if (
+      Number.isInteger(normalizedDay)
+      && normalizedDay >= 1
+      && normalizedDay <= maxDay
+      && requiredAreas.includes(normalizedArea)
+    ) {
+      result[normalizedDay] = normalizedArea;
+    }
+    return result;
+  }, {});
+};
+
+const getCompanionDisplayLabel = (companionType, familyDetail) => (
+  companionType === '가족' && familyDetail ? familyDetail : companionType
+);
 
 const parseTripDateParts = (dateString) => {
   if (!FOUR_DIGIT_DATE_PATTERN.test(dateString)) return null;
@@ -450,6 +483,13 @@ const AiPlanner = () => {
       durationDays: normalizeDurationDays(initialForm.durationDays),
       travelStartDate: initialForm.travelStartDate || '',
       travelEndDate: initialForm.travelEndDate || '',
+      familyDetail: initialForm.companionType === '가족' ? initialForm.familyDetail || '' : '',
+      requiredAreas: normalizeRequiredAreas(initialForm.requiredAreas),
+      dayAreaPreferences: pruneDayAreaPreferences(
+        initialForm.dayAreaPreferences,
+        initialForm.durationDays,
+        normalizeRequiredAreas(initialForm.requiredAreas)
+      ),
     };
   });
   const [planningMode, setPlanningMode] = useState(
@@ -459,6 +499,7 @@ const AiPlanner = () => {
     regenerateFolderId ? String(regenerateFolderId) : ''
   );
   const [selectedContentIds, setSelectedContentIds] = useState(new Set());
+  const [areaInput, setAreaInput] = useState('');
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -516,6 +557,7 @@ const AiPlanner = () => {
     setForm((prev) => ({
       ...prev,
       companionType: value,
+      familyDetail: value === '가족' ? prev.familyDetail : '',
       peopleCount: normalizePeopleCount(value, prev.peopleCount),
     }));
 
@@ -559,7 +601,47 @@ const AiPlanner = () => {
       ...prev,
       durationDays: nextDays,
       travelEndDate: nextEndDate,
+      dayAreaPreferences: pruneDayAreaPreferences(prev.dayAreaPreferences, nextDays, prev.requiredAreas),
     }));
+  };
+
+  const handleAddRequiredArea = () => {
+    if (plannerBusy) return;
+    const nextArea = areaInput.trim();
+    if (!nextArea) return;
+
+    const nextAreas = normalizeRequiredAreas([...form.requiredAreas, nextArea]);
+    if (nextAreas.length === form.requiredAreas.length) {
+      showToast('이미 추가했거나 최대 4개까지 등록할 수 있는 권역입니다.', 'info');
+      return;
+    }
+
+    updateForm('requiredAreas', nextAreas);
+    setAreaInput('');
+  };
+
+  const handleRemoveRequiredArea = (areaToRemove) => {
+    if (plannerBusy) return;
+    invalidateCurrentPlan();
+    setForm((prev) => {
+      const requiredAreas = prev.requiredAreas.filter((area) => area !== areaToRemove);
+      return {
+        ...prev,
+        requiredAreas,
+        dayAreaPreferences: pruneDayAreaPreferences(prev.dayAreaPreferences, prev.durationDays, requiredAreas),
+      };
+    });
+  };
+
+  const handleDayAreaPreferenceChange = (day, area) => {
+    if (plannerBusy) return;
+    invalidateCurrentPlan();
+    setForm((prev) => {
+      const nextPreferences = { ...prev.dayAreaPreferences };
+      if (area) nextPreferences[day] = area;
+      else delete nextPreferences[day];
+      return { ...prev, dayAreaPreferences: nextPreferences };
+    });
   };
 
   const handleTripStartDateChange = (value) => {
@@ -616,6 +698,7 @@ const AiPlanner = () => {
     setPlanningMode(mode);
     invalidateCurrentPlan();
     setForm(createDefaultForm());
+    setAreaInput('');
     setSelectedContentIds(new Set());
     setSelectedFolderId('');
   };
@@ -626,6 +709,7 @@ const AiPlanner = () => {
     setPlanningMode(PLAN_MODE.CUSTOM);
     invalidateCurrentPlan();
     setForm(createDefaultForm());
+    setAreaInput('');
     setSelectedFolderId('');
     setSelectedContentIds(new Set());
     showToast('입력 조건과 위시리스트 선택을 기본값으로 초기화했습니다.', 'info');
@@ -819,6 +903,7 @@ const AiPlanner = () => {
           travelStartDate: form.travelStartDate || null,
           travelEndDate: form.travelEndDate || null,
           companionType: form.companionType,
+          familyDetail: form.companionType === '가족' ? form.familyDetail : '',
           peopleCount: Number(form.peopleCount) || 1,
           budgetLevel: form.budgetLevel,
           pace: form.pace,
@@ -829,6 +914,12 @@ const AiPlanner = () => {
           transportation: form.transportation,
           priorities: form.priorities,
           avoidKeywords: form.avoidKeywords,
+          requiredAreas: form.requiredAreas,
+          dayAreaPreferences: pruneDayAreaPreferences(
+            form.dayAreaPreferences,
+            normalizedDurationDays,
+            form.requiredAreas
+          ),
         },
       });
       showToast(
@@ -1051,6 +1142,55 @@ const AiPlanner = () => {
             </div>
           </div>
 
+          <div className="rounded-xl border border-outline-variant/30 bg-slate-50 p-4">
+            <FieldLabel>Must-visit Areas <span className="normal-case text-slate-400">(optional)</span></FieldLabel>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={areaInput}
+                onChange={(e) => setAreaInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddRequiredArea();
+                  }
+                }}
+                disabled={plannerBusy}
+                className="min-w-0 flex-1 h-10 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
+                placeholder="예: 기장, 광안리"
+              />
+              <button type="button" onClick={handleAddRequiredArea} disabled={plannerBusy} className="h-10 shrink-0 rounded-lg bg-slate-900 px-3 text-xs font-bold text-white transition-colors hover:bg-primary disabled:opacity-60">
+                ADD
+              </button>
+            </div>
+            {form.requiredAreas.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.requiredAreas.map((area) => (
+                  <button key={area} type="button" onClick={() => handleRemoveRequiredArea(area)} disabled={plannerBusy} className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-white px-2.5 py-1 text-xs font-bold text-primary hover:border-primary">
+                    {area}<span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="mt-2 text-[10px] leading-4 text-slate-400">대표 지역이 부산이라면 기장·광안리처럼 반드시 들르고 싶은 권역을 추가하세요. 최대 4개까지 선택할 수 있습니다.</p>
+
+            {form.requiredAreas.length > 0 && normalizeDurationDays(form.durationDays) > 1 && (
+              <div className="mt-4 border-t border-outline-variant/20 pt-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Day-by-day area preference</p>
+                <div className="mt-2 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+                  {Array.from({ length: normalizeDurationDays(form.durationDays) }, (_, index) => index + 1).map((day) => (
+                    <label key={day} className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                      <span className="w-10 shrink-0 text-primary">DAY {day}</span>
+                      <select value={form.dayAreaPreferences?.[day] || ''} onChange={(e) => handleDayAreaPreferenceChange(day, e.target.value)} disabled={plannerBusy} className="h-9 min-w-0 flex-1 rounded-lg border border-outline-variant/40 bg-white px-2 text-xs focus:border-primary focus:outline-none">
+                        <option value="">AI 자동 배분</option>
+                        {form.requiredAreas.map((area) => <option key={area} value={area}>{area}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel htmlFor="ai-planner-travel-start-date">Travel Start</FieldLabel>
@@ -1100,6 +1240,18 @@ const AiPlanner = () => {
                 {['혼자', '연인', '가족', '친구'].map((item) => <option key={item}>{item}</option>)}
               </select>
             </div>
+            {form.companionType === '가족' && (
+              <div>
+                <FieldLabel>Family Detail</FieldLabel>
+                <select value={form.familyDetail} onChange={(e) => updateForm('familyDetail', e.target.value)} disabled={plannerBusy} className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white">
+                  <option value="">상관없음</option>
+                  <option value="부모님·자녀 동반">부모님·자녀 동반</option>
+                  <option value="형제·자매">형제·자매</option>
+                  <option value="친척·혼합">친척·혼합</option>
+                </select>
+                <p className="mt-1.5 text-[10px] leading-4 text-slate-400">선택하지 않으면 부모님 동반으로 가정하지 않고 일반 가족 일행 기준으로 추천합니다.</p>
+              </div>
+            )}
             <div>
               <FieldLabel>People</FieldLabel>
               <input
@@ -1297,7 +1449,7 @@ const AiPlanner = () => {
               <section className="rounded-xl border border-primary/15 bg-primary/5 p-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Why this course</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-slate-700">
-                  {[`${form.companionType} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...(form.priorities || [])].map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
+                  {[`${getCompanionDisplayLabel(form.companionType, form.familyDetail)} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...form.requiredAreas.map((area) => `방문: ${area}`), ...(form.priorities || [])].map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
                 </div>
                 <p className="mt-3 text-xs leading-5 text-slate-600">각 장소 카드의 추천 이유는 선택한 조건과 날씨·이동 부담을 반영해 생성됩니다.</p>
               </section>
