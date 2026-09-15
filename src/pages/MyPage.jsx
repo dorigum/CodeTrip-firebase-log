@@ -1259,21 +1259,21 @@ const MyPage = () => {
               </button>
               <div className="h-2" />
               {folders.map(folder => (
-                <button key={folder.id} onClick={() => handleSelectFolder(folder.id)} className={`flex justify-between items-start px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight group transition-all ${selectedFolderId === folder.id ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
-                  <div className="flex-1 min-w-0 text-left">
+                <div key={folder.id} className={`flex items-start gap-2 rounded-lg px-3 py-3 text-[13px] font-body font-bold tracking-tight group transition-all ${selectedFolderId === folder.id ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <button type="button" onClick={() => handleSelectFolder(folder.id)} className="min-w-0 flex-1 text-left">
                     <span className="block truncate uppercase">{folder.name}</span>
                     {folder.start_date && (
                       <span className={`block text-[10px] font-mono font-normal mt-0.5 truncate ${selectedFolderId === folder.id ? 'text-white/70' : 'text-slate-400'}`}>
                         {formatScheduleShort(folder.start_date, folder.end_date)}
                       </span>
                     )}
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1 font-mono text-[11px] shrink-0 ml-2 mt-0.5">
                     <span className="opacity-60">{wishlistItems.filter(i => String(i.folder_id) === String(folder.id)).length}</span>
-                    <span onClick={(e) => { e.stopPropagation(); openEditModal(folder); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-white/80' : 'hover:text-primary'}`}>edit</span>
-                    <span onClick={(e) => { e.stopPropagation(); setFolderDeleteTarget(folder); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-red-300' : 'hover:text-red-500'}`}>delete</span>
+                    <button type="button" onClick={() => openEditModal(folder)} className={`material-symbols-outlined rounded p-0.5 text-sm opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 ${selectedFolderId === folder.id ? 'hover:text-white/80' : 'hover:text-primary'}`} aria-label={`${folder.name} 폴더 편집`}>edit</button>
+                    <button type="button" onClick={() => setFolderDeleteTarget(folder)} className={`material-symbols-outlined rounded p-0.5 text-sm opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 ${selectedFolderId === folder.id ? 'hover:text-red-300' : 'hover:text-red-500'}`} aria-label={`${folder.name} 폴더 삭제`}>delete</button>
                   </div>
-                </button>
+                </div>
               ))}
             </nav>
           </section>

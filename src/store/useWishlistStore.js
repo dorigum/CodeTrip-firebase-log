@@ -111,6 +111,15 @@ const useWishlistStore = create((set, get) => ({
   deleteFolder: async (folderId) => {
     try {
       await wishlistApi.deleteFolder(folderId);
+      set((state) => ({
+        folders: state.folders.filter((folder) => String(folder.id) !== String(folderId)),
+        aiTripPlans: state.aiTripPlans.filter((plan) => String(plan.folder_id) !== String(folderId)),
+        wishlistItems: state.wishlistItems.map((item) => (
+          String(item.folder_id) === String(folderId)
+            ? { ...item, folder_id: null }
+            : item
+        )),
+      }));
       await get().syncWithServer();
       return true;
     } catch (err) {

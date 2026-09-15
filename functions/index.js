@@ -153,6 +153,16 @@ const normalizePlace = (place = {}) => ({
   contenttypeid: sanitizeString(place.contenttypeid || place.contentTypeId, '', 20) || null,
 });
 
+const isAddressInRequiredAreas = (address, requiredAreas = []) => {
+  if (requiredAreas.length === 0) return true;
+
+  const normalizedAddress = String(address || '').replace(/\s+/g, '').trim();
+  return requiredAreas.some((area) => {
+    const normalizedArea = String(area || '').replace(/\s+/g, '').trim();
+    return normalizedArea && normalizedAddress.includes(normalizedArea);
+  });
+};
+
 const sanitizeInput = (input = {}) => {
   const regionName = sanitizeString(input.regionName, '', 80);
   if (!regionName) {
@@ -187,6 +197,10 @@ const sanitizeInput = (input = {}) => {
 
   const requiredAreas = sanitizeStringList(input.requiredAreas, 4);
 
+  const preferredPlaces = Array.isArray(input.preferredPlaces)
+    ? input.preferredPlaces.map(normalizePlace).slice(0, MAX_PREFERRED_PLACES)
+    : [];
+
   return {
     planningMode: sanitizeString(input.planningMode, 'custom', 20),
     sourceFolderName: sanitizeString(input.sourceFolderName, '', 80),
@@ -213,9 +227,9 @@ const sanitizeInput = (input = {}) => {
       dateDurationDays || durationDays,
       requiredAreas
     ),
-    preferredPlaces: Array.isArray(input.preferredPlaces)
-      ? input.preferredPlaces.map(normalizePlace).slice(0, MAX_PREFERRED_PLACES)
-      : [],
+    preferredPlaces: requiredAreas.length > 0
+      ? preferredPlaces.filter((place) => isAddressInRequiredAreas(place.addr1, requiredAreas))
+      : preferredPlaces,
   };
 };
 
@@ -375,7 +389,7 @@ const parseGeminiJson = (text) => {
   }
 };
 
-const validateTripPlan = (plan) => {
+const validateTripPlan = (plan, requiredAreas = []) => {
   if (!plan || typeof plan !== 'object') throw new HttpsError('internal', 'AI 코스 응답이 비어 있습니다.');
   if (!plan.title || typeof plan.title !== 'string') throw new HttpsError('internal', 'AI 코스 제목이 없습니다.');
   if (!Array.isArray(plan.days) || plan.days.length === 0) throw new HttpsError('internal', 'AI 코스 일정이 없습니다.');
@@ -383,6 +397,14 @@ const validateTripPlan = (plan) => {
 
   plan.days.forEach((day) => {
     if (!Array.isArray(day.items)) throw new HttpsError('internal', '일정 항목 구조가 올바르지 않습니다.');
+    if (requiredAreas.length > 0) {
+      day.items.forEach((item) => {
+        const address = item?.address || item?.addr1 || item?.location || '';
+        if (!isAddressInRequiredAreas(address, requiredAreas)) {
+          throw new HttpsError('internal', 'AI 코스에 필수 방문 권역 밖 장소가 포함되었습니다. 다시 생성해주세요.');
+        }
+      });
+    }
   });
 
   return plan;
@@ -797,7 +819,7 @@ exports.generateTripPlan = onCall(
 
       const data = await readResponseJson(response);
       const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
-      let plan = validateTripPlan(parseGeminiJson(text));
+      let plan = validateTripPlan(parseGeminiJson(text), input.requiredAreas);
       plan.saveGuide.checklist = applyTransportationChecklist(
         plan.saveGuide.checklist,
         input.transportation

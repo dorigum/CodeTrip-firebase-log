@@ -145,7 +145,7 @@ const diversifyPreferredPlaces = (places = [], limit = 12) => {
 const isPlaceInRequiredArea = (place, requiredAreas = []) => {
   if (requiredAreas.length === 0) return true;
 
-  const placeText = [place?.addr1, place?.address, place?.addr2, place?.title, place?.placeName]
+  const placeText = [place?.addr1, place?.address, place?.addr2]
     .map((value) => String(value || '').replace(/\s+/g, '').trim())
     .join(' ');
 
