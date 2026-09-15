@@ -1451,7 +1451,7 @@ const AiPlanner = () => {
               <section className="rounded-xl border border-primary/15 bg-primary/5 p-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Why this course</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-slate-700">
-                  {[`${getCompanionDisplayLabel(form.companionType, form.familyDetail)} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...form.requiredAreas.map((area) => `방문: ${area}`), ...(form.priorities || [])].map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
+                  {[`${getCompanionDisplayLabel(form.companionType, form.familyDetail)} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...form.requiredAreas.map((area) => `방문: ${area}`), ...(form.priorities || [])].map((item, index) => <span key={`why-${index}-${item}`} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
                 </div>
                 <p className="mt-3 text-xs leading-5 text-slate-600">각 장소 카드의 추천 이유는 선택한 조건과 날씨·이동 부담을 반영해 생성됩니다.</p>
               </section>
