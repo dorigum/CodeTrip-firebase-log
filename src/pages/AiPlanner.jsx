@@ -16,6 +16,7 @@ const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DURATION_DAYS = 5;
+const MAX_REQUIRED_AREA_LENGTH = 40;
 
 const DEFAULT_FORM = {
   regionName: '서울',
@@ -184,7 +185,7 @@ const toggleValue = (list, value) =>
 
 const normalizeRequiredAreas = (value) => Array.from(new Set(
   (Array.isArray(value) ? value : [])
-    .map((area) => String(area || '').trim())
+    .map((area) => String(area || '').trim().slice(0, MAX_REQUIRED_AREA_LENGTH))
     .filter(Boolean)
 )).slice(0, 4);
 
@@ -1147,6 +1148,7 @@ const AiPlanner = () => {
             <div className="mt-2 flex gap-2">
               <input
                 value={areaInput}
+                maxLength={MAX_REQUIRED_AREA_LENGTH}
                 onChange={(e) => setAreaInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
