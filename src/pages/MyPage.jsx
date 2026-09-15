@@ -44,6 +44,7 @@ const MyPage = () => {
   const [editFolderEnd, setEditFolderEnd] = useState('');
   const [movingItemId, setMovingItemId] = useState(null);
   const [selectedAiPlan, setSelectedAiPlan] = useState(null);
+  const [requestedAiPlanId, setRequestedAiPlanId] = useState(null);
   const [selectedAiPlanDayIndex, setSelectedAiPlanDayIndex] = useState(0);
   const [expandedAiPlanItems, setExpandedAiPlanItems] = useState({});
   const [editingAiPlan, setEditingAiPlan] = useState(false);
@@ -51,6 +52,8 @@ const MyPage = () => {
   const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
   const [aiPlanPending, setAiPlanPending] = useState(false);
   const [planDeleteTarget, setPlanDeleteTarget] = useState(null);
+  const [folderDeleteTarget, setFolderDeleteTarget] = useState(null);
+  const [folderDeletePending, setFolderDeletePending] = useState(false);
   const [wishDeleteTarget, setWishDeleteTarget] = useState(null);
   const [wishDeletePending, setWishDeletePending] = useState(false);
   const [legacyMigrationOpen, setLegacyMigrationOpen] = useState(false);
@@ -114,6 +117,7 @@ const MyPage = () => {
 
   useEffect(() => {
     const requestedFolderId = location.state?.folderId;
+    const requestedAiPlanId = location.state?.aiPlanId;
     if (!requestedFolderId || folders.length === 0) return;
 
     const targetFolder = folders.find((folder) => String(folder.id) === String(requestedFolderId));
@@ -125,6 +129,7 @@ const MyPage = () => {
       setSelectedAiPlan(null);
       setEditingAiPlan(false);
       setSelectedFolderId(targetFolder.id);
+      setRequestedAiPlanId(requestedAiPlanId || null);
       setWishlistPage(1);
       setMobileFolderOpen(true);
       navigate('/mypage', { replace: true, state: null });
@@ -147,6 +152,17 @@ const MyPage = () => {
         if (!isMounted) return;
         setNotes(noteData);
         setAiTripPlans(planData);
+        if (requestedAiPlanId) {
+          const requestedPlan = planData.find((plan) => String(plan.id) === String(requestedAiPlanId));
+          if (requestedPlan) {
+            setEditingAiPlan(false);
+            setSelectedAiPlanDayIndex(0);
+            setExpandedAiPlanItems({});
+            setAiPlanMemoInput('');
+            setSelectedAiPlan(requestedPlan);
+          }
+          setRequestedAiPlanId(null);
+        }
         return;
       }
       if (!isMounted) return;
@@ -157,7 +173,7 @@ const MyPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedFolderId, fetchNotes, fetchAiTripPlans]);
+  }, [selectedFolderId, fetchNotes, fetchAiTripPlans, requestedAiPlanId]);
 
   const handleRemoveWish = (e, item) => {
     e.preventDefault();
@@ -184,6 +200,27 @@ const MyPage = () => {
     } else {
       showToast('삭제할 위시리스트 항목을 찾지 못했습니다.');
     }
+  };
+
+  const handleConfirmDeleteFolder = async () => {
+    if (!folderDeleteTarget || folderDeletePending) return;
+
+    setFolderDeletePending(true);
+    const deleted = await deleteFolder(folderDeleteTarget.id);
+    setFolderDeletePending(false);
+
+    if (!deleted) {
+      showToast('여행 폴더를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    if (String(selectedFolderId) === String(folderDeleteTarget.id)) {
+      setSelectedFolderId(null);
+      setSelectedAiPlan(null);
+      setEditingAiPlan(false);
+    }
+    setFolderDeleteTarget(null);
+    showToast('여행 폴더를 삭제했고, 안의 여행지는 미분류로 옮겼습니다.', 'success');
   };
 
   const handleAddNote = async (e) => {
@@ -1096,6 +1133,21 @@ const MyPage = () => {
       />
 
       <ConfirmModal
+        open={Boolean(folderDeleteTarget)}
+        title="여행 폴더를 삭제할까요?"
+        description={`"${folderDeleteTarget?.name || '선택한 폴더'}" 폴더를 삭제합니다. 안의 여행지 카드는 미분류로 이동하고, 폴더에 연결된 AI 코스·체크리스트·메모는 함께 삭제됩니다.`}
+        confirmText={folderDeletePending ? '삭제 중...' : '폴더 삭제'}
+        cancelText="취소"
+        icon="folder_delete"
+        tone="danger"
+        confirmDisabled={folderDeletePending}
+        onConfirm={handleConfirmDeleteFolder}
+        onCancel={() => {
+          if (!folderDeletePending) setFolderDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmModal
         open={Boolean(wishDeleteTarget)}
         title="위시리스트에서 삭제할까요?"
         description={`"${wishDeleteTarget?.title || '선택한 여행지'}" 카드를 현재 위시리스트에서 삭제합니다. AI 코스 문서와 체크리스트는 유지됩니다.`}
@@ -1219,7 +1271,7 @@ const MyPage = () => {
                   <div className="flex items-center gap-1 font-mono text-[11px] shrink-0 ml-2 mt-0.5">
                     <span className="opacity-60">{wishlistItems.filter(i => String(i.folder_id) === String(folder.id)).length}</span>
                     <span onClick={(e) => { e.stopPropagation(); openEditModal(folder); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-white/80' : 'hover:text-primary'}`}>edit</span>
-                    <span onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-red-300' : 'hover:text-red-500'}`}>delete</span>
+                    <span onClick={(e) => { e.stopPropagation(); setFolderDeleteTarget(folder); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-red-300' : 'hover:text-red-500'}`}>delete</span>
                   </div>
                 </button>
               ))}

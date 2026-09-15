@@ -52,6 +52,7 @@ const buildAiPlanCalendarEvents = (plans, folders) => {
 
     return [{
       id: String(plan?.id ?? `${plan?.folder_id}-${plan?.created_at ?? ''}`),
+      planId: String(plan?.id ?? ''),
       folderId: String(plan.folder_id),
       title: plan?.title || folder?.name || 'AI 여행 코스',
       start: getCalendarKey(startDate),
@@ -129,7 +130,7 @@ const MiniPlanCalendar = ({ events, loading }) => {
         ) : selectedEvents.length > 0 ? (
           <div className="space-y-1.5">
             {selectedEvents.slice(0, 2).map((event) => (
-              <Link key={event.id} to="/mypage" state={{ folderId: event.folderId }} className="flex items-center gap-2 rounded-lg px-1 py-0.5 text-left transition hover:bg-white/10">
+              <Link key={event.id} to="/mypage" state={{ folderId: event.folderId, aiPlanId: event.planId }} className="flex items-center gap-2 rounded-lg px-1 py-0.5 text-left transition hover:bg-white/10" aria-label={`${event.title} 코스와 위시리스트 폴더 열기`}>
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-container" />
                 <span className="truncate text-[11px] font-bold text-white sm:text-xs">{event.title}</span>
               </Link>
@@ -662,6 +663,7 @@ const Home = () => {
   const homeDataSequenceRef = useRef(0);
   const currentProvinceRef = useRef(''); // 현재 지역 고정용
   const topImgTimerRef = useRef(null);
+  const dashboardFolderScrollerRef = useRef(null);
 
   const resetHomeState = useCallback(() => {
     setWeather({ temp: 24, label: 'Sunny', icon: 'sunny', keywords: ['여행'], location: '서울' });
@@ -917,7 +919,7 @@ const Home = () => {
     const bTime = new Date(b.updated_at ?? b.updatedAt ?? b.created_at ?? b.createdAt ?? 0).getTime();
     return bTime - aTime;
   });
-  const dashboardFolders = sortedFolders.slice(0, 3);
+  const dashboardFolders = sortedFolders;
   const scheduledFolders = sortedFolders.filter(folder => folder.startDate || folder.start_date || folder.endDate || folder.end_date).slice(0, 3);
   const primaryFolder = scheduledFolders[0] || dashboardFolders[0];
   const aiPlanCalendarEvents = useMemo(
@@ -1018,7 +1020,20 @@ const Home = () => {
             ))}
           </div>
 
-          <div className="mt-5 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid-cols-3 md:grid-flow-row md:overflow-visible md:pb-0">
+          {dashboardFolders.length > 0 && (
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 font-label">saved_folders</p>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => dashboardFolderScrollerRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary" aria-label="이전 여행 폴더 보기">
+                  <span className="material-symbols-outlined text-base">chevron_left</span>
+                </button>
+                <button type="button" onClick={() => dashboardFolderScrollerRef.current?.scrollBy({ left: 360, behavior: 'smooth' })} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary" aria-label="다음 여행 폴더 보기">
+                  <span className="material-symbols-outlined text-base">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
+          <div ref={dashboardFolderScrollerRef} className="mt-3 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:auto-cols-[calc((100%-1.5rem)/3)] md:pb-0">
             {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
               <Link
                 key={getFolderId(folder)}

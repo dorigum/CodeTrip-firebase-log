@@ -109,12 +109,13 @@ const useWishlistStore = create((set, get) => ({
   },
 
   deleteFolder: async (folderId) => {
-    if (!window.confirm('폴더를 삭제하시겠습니까? (안의 여행지들은 미분류로 이동됩니다)')) return;
     try {
       await wishlistApi.deleteFolder(folderId);
       await get().syncWithServer();
+      return true;
     } catch (err) {
       console.error('Delete folder failed:', err);
+      return false;
     }
   },
 

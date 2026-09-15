@@ -141,6 +141,19 @@ const diversifyPreferredPlaces = (places = [], limit = 12) => {
   return result;
 };
 
+const isPlaceInRequiredArea = (place, requiredAreas = []) => {
+  if (requiredAreas.length === 0) return true;
+
+  const placeText = [place?.addr1, place?.address, place?.addr2, place?.title, place?.placeName]
+    .map((value) => String(value || '').replace(/\s+/g, '').trim())
+    .join(' ');
+
+  return requiredAreas.some((area) => {
+    const normalizedArea = String(area || '').replace(/\s+/g, '').trim();
+    return normalizedArea && placeText.includes(normalizedArea);
+  });
+};
+
 const BUDGET_HELP = {
   낮음: '1일 1인 3만 원 이하, 무료/저가 관광지와 가성비 식사 중심',
   보통: '1일 1인 3만~8만 원, 일반 입장료·식사·카페 포함',
@@ -870,15 +883,32 @@ const AiPlanner = () => {
 
       if (planningMode === PLAN_MODE.CUSTOM) {
         const broadRegionCode = getBroadRegionTourCode(form.regionName.trim());
-        const { items } = await getTravelList({
-          keyword: broadRegionCode ? '' : form.regionName.trim(),
-          regions: broadRegionCode ? [broadRegionCode] : [''],
-          pageNo: 1,
-          numOfRows: broadRegionCode ? 30 : 18,
-          sort: 'default',
-        });
+        const searchAreas = normalizeRequiredAreas(form.requiredAreas);
+        const requests = searchAreas.length > 0
+          ? searchAreas.map((area) => getTravelList({
+            keyword: `${form.regionName.trim()} ${area}`.trim(),
+            regions: broadRegionCode ? [broadRegionCode] : [''],
+            pageNo: 1,
+            numOfRows: 18,
+            sort: 'default',
+          }))
+          : [getTravelList({
+            keyword: broadRegionCode ? '' : form.regionName.trim(),
+            regions: broadRegionCode ? [broadRegionCode] : [''],
+            pageNo: 1,
+            numOfRows: broadRegionCode ? 30 : 18,
+            sort: 'default',
+          })];
+        const responses = await Promise.all(requests);
+        const candidates = responses
+          .flatMap(({ items }) => items)
+          .map(normalizeTourCandidate)
+          .filter((item) => item.contentid);
+        const areaCandidates = searchAreas.length > 0
+          ? candidates.filter((item) => isPlaceInRequiredArea(item, searchAreas))
+          : candidates;
         preferredPlaces = diversifyPreferredPlaces(
-          items.map(normalizeTourCandidate).filter((item) => item.contentid),
+          areaCandidates,
           12
         );
       }
