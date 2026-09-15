@@ -64,6 +64,7 @@ const buildAiPlanCalendarEvents = (plans, folders) => {
 const MiniPlanCalendar = ({ events, loading }) => {
   const [viewMonth, setViewMonth] = useState(() => new Date());
   const [selectedDateKey, setSelectedDateKey] = useState(() => getCalendarKey(new Date()));
+  const [showAllSelectedEvents, setShowAllSelectedEvents] = useState(false);
   const monthStart = useMemo(() => new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1), [viewMonth]);
   const gridStart = useMemo(() => new Date(monthStart.getFullYear(), monthStart.getMonth(), 1 - monthStart.getDay()), [monthStart]);
   const todayKey = getCalendarKey(new Date());
@@ -83,6 +84,7 @@ const MiniPlanCalendar = ({ events, loading }) => {
     const nextMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + offset, 1);
     setViewMonth(nextMonth);
     setSelectedDateKey(getCalendarKey(nextMonth));
+    setShowAllSelectedEvents(false);
   };
 
   return (
@@ -113,7 +115,10 @@ const MiniPlanCalendar = ({ events, loading }) => {
             <button
               key={key}
               type="button"
-              onClick={() => setSelectedDateKey(key)}
+              onClick={() => {
+                setSelectedDateKey(key);
+                setShowAllSelectedEvents(false);
+              }}
               className={`relative mx-auto flex h-7 w-7 flex-col items-center justify-center rounded-full text-[11px] transition sm:h-8 sm:w-8 ${isCurrentMonth ? 'text-white' : 'text-white/25'} ${isSelected ? 'bg-primary text-slate-950 font-black' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-primary-container/70' : ''}`}
               aria-label={`${getCalendarDateLabel(key)}${eventCount ? `, AI 여행 플랜 ${eventCount}개` : ''}`}
             >
@@ -129,13 +134,23 @@ const MiniPlanCalendar = ({ events, loading }) => {
           <div className="h-4 w-3/4 animate-pulse rounded bg-white/10" />
         ) : selectedEvents.length > 0 ? (
           <div className="space-y-1.5">
-            {selectedEvents.slice(0, 2).map((event) => (
+            {(showAllSelectedEvents ? selectedEvents : selectedEvents.slice(0, 2)).map((event) => (
               <Link key={event.id} to="/mypage" state={{ folderId: event.folderId, aiPlanId: event.planId }} className="flex items-center gap-2 rounded-lg px-1 py-0.5 text-left transition hover:bg-white/10" aria-label={`${event.title} 코스와 위시리스트 폴더 열기`}>
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-container" />
                 <span className="truncate text-[11px] font-bold text-white sm:text-xs">{event.title}</span>
               </Link>
             ))}
-            {selectedEvents.length > 2 && <p className="px-1 text-[10px] text-white/45">+ {selectedEvents.length - 2}개 일정</p>}
+            {selectedEvents.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setShowAllSelectedEvents((previous) => !previous)}
+                className="inline-flex items-center gap-1 px-1 text-[10px] font-bold text-primary-container transition hover:text-white"
+                aria-expanded={showAllSelectedEvents}
+              >
+                <span>{showAllSelectedEvents ? '일정 접기' : `+ ${selectedEvents.length - 2}개 일정 모두 보기`}</span>
+                <span className="material-symbols-outlined text-xs">{showAllSelectedEvents ? 'expand_less' : 'expand_more'}</span>
+              </button>
+            )}
           </div>
         ) : events.length > 0 ? (
           <p className="text-xs text-white/45">{getCalendarDateLabel(selectedDateKey)}에는 AI 플랜 일정이 없습니다.</p>
@@ -926,6 +941,11 @@ const Home = () => {
     () => buildAiPlanCalendarEvents(aiTripPlans, folders),
     [aiTripPlans, folders]
   );
+  const getFolderScheduleState = (folder) => {
+    const folderId = getFolderId(folder);
+    const planEvent = aiPlanCalendarEvents.find((event) => event.folderId === folderId);
+    return planEvent?.planId ? { folderId, aiPlanId: planEvent.planId } : { folderId };
+  };
   const uncategorizedCount = wishlistItems.filter(item => !item.folder_id && !item.folderId).length;
   const weatherSummary = weather.korLabel || weather.label || '여행하기 좋은 날씨';
   const todayBriefing = `${user?.name || 'traveler'}님, 오늘 ${province} ${weather.location}의 날씨는 ${weatherSummary}, ${weather.temp}°C입니다. 저장한 여행지 ${wishlistItems.length}개와 폴더 ${folders.length}개를 이어서 가볍게 다음 코스를 준비해보세요.`;
@@ -1038,7 +1058,7 @@ const Home = () => {
               <Link
                 key={getFolderId(folder)}
                 to="/mypage"
-                state={{ folderId: getFolderId(folder) }}
+                state={getFolderScheduleState(folder)}
                 className="group snap-start rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -1073,19 +1093,19 @@ const Home = () => {
             <div className="hidden space-y-3 sm:block">
             {primaryFolder ? (
               <>
-                <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+                <Link to="/mypage" state={getFolderScheduleState(primaryFolder)} className="block rounded-2xl border border-white/10 bg-white/10 p-4 transition hover:bg-white/15 hover:ring-1 hover:ring-primary-container/40">
                   <p className="text-xs font-bold uppercase tracking-widest text-primary-container font-label">next_folder</p>
                   <p className="mt-2 text-xl font-headline font-bold">{getFolderName(primaryFolder)}</p>
                   <p className="mt-1 text-sm text-white/60">{formatFolderDate(primaryFolder)} · 저장 여행지 {getFolderItemCount(primaryFolder)}개</p>
-                </div>
+                </Link>
                 {(scheduledFolders.length > 0 ? scheduledFolders : dashboardFolders).slice(0, 3).map((folder, index) => (
-                  <div key={getFolderId(folder) || index} className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3">
+                  <Link key={getFolderId(folder) || index} to="/mypage" state={getFolderScheduleState(folder)} className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3 transition hover:bg-white/10">
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-primary-container">{String(index + 1).padStart(2, '0')}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{getFolderName(folder)}</p>
                       <p className="text-[11px] text-white/45">{formatFolderDate(folder)}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </>
             ) : (

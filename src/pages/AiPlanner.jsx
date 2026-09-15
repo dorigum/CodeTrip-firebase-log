@@ -51,6 +51,7 @@ const createDefaultForm = () => ({
 const getMinimumPeopleCount = (companionType) => (companionType === '혼자' ? 1 : 2);
 
 const normalizePeopleCount = (companionType, value) => {
+  if (companionType === '혼자') return 1;
   const minimum = getMinimumPeopleCount(companionType);
   return Math.min(10, Math.max(minimum, Number(value) || minimum));
 };
