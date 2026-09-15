@@ -163,6 +163,31 @@ const isAddressInRequiredAreas = (address, requiredAreas = []) => {
   });
 };
 
+const REGION_ADDRESS_ALIASES = {
+  서울: '서울', 서울특별시: '서울', 부산: '부산', 부산광역시: '부산',
+  대구: '대구', 대구광역시: '대구', 인천: '인천', 인천광역시: '인천',
+  광주: '광주', 광주광역시: '광주', 대전: '대전', 대전광역시: '대전',
+  울산: '울산', 울산광역시: '울산', 경기: '경기', 경기도: '경기',
+  충북: '충북', 충청북도: '충북', 충남: '충남', 충청남도: '충남',
+  전북: '전북', 전라북도: '전북', 전남: '전남', 전라남도: '전남',
+  경북: '경북', 경상북도: '경북', 경남: '경남', 경상남도: '경남',
+  제주: '제주', 제주도: '제주', 제주특별자치도: '제주',
+  강원: '강원', 강원도: '강원', 강원특별자치도: '강원',
+  세종: '세종', 세종특별자치시: '세종',
+};
+
+const isAddressInRepresentativeRegion = (address, regionName) => {
+  const normalizedRegion = String(regionName || '').trim();
+  const regionKeywords = (REGION_ADDRESS_ALIASES[normalizedRegion]
+    ? [REGION_ADDRESS_ALIASES[normalizedRegion]]
+    : normalizedRegion.split(/\s+/).map((part) => (
+      REGION_ADDRESS_ALIASES[part] || part.replace(/(특별자치도|특별자치시|특별시|광역시|도|시|군|구)$/, '')
+    )).filter(Boolean)
+  ).map((keyword) => String(keyword).replace(/\s+/g, ''));
+  const normalizedAddress = String(address || '').replace(/\s+/g, '');
+  return regionKeywords.length === 0 || regionKeywords.every((keyword) => normalizedAddress.includes(keyword));
+};
+
 const sanitizeInput = (input = {}) => {
   const regionName = sanitizeString(input.regionName, '', 80);
   if (!regionName) {
@@ -227,9 +252,10 @@ const sanitizeInput = (input = {}) => {
       dateDurationDays || durationDays,
       requiredAreas
     ),
-    preferredPlaces: requiredAreas.length > 0
-      ? preferredPlaces.filter((place) => isAddressInRequiredAreas(place.addr1, requiredAreas))
-      : preferredPlaces,
+    preferredPlaces: preferredPlaces.filter((place) => (
+      isAddressInRepresentativeRegion(place.addr1, regionName)
+      && isAddressInRequiredAreas(place.addr1, requiredAreas)
+    )),
   };
 };
 
@@ -389,7 +415,7 @@ const parseGeminiJson = (text) => {
   }
 };
 
-const validateTripPlan = (plan, requiredAreas = []) => {
+const validateTripPlan = (plan, requiredAreas = [], regionName = '') => {
   if (!plan || typeof plan !== 'object') throw new HttpsError('internal', 'AI 코스 응답이 비어 있습니다.');
   if (!plan.title || typeof plan.title !== 'string') throw new HttpsError('internal', 'AI 코스 제목이 없습니다.');
   if (!Array.isArray(plan.days) || plan.days.length === 0) throw new HttpsError('internal', 'AI 코스 일정이 없습니다.');
@@ -397,14 +423,17 @@ const validateTripPlan = (plan, requiredAreas = []) => {
 
   plan.days.forEach((day) => {
     if (!Array.isArray(day.items)) throw new HttpsError('internal', '일정 항목 구조가 올바르지 않습니다.');
-    if (requiredAreas.length > 0) {
-      day.items.forEach((item) => {
-        const address = item?.address || item?.addr1 || item?.location || '';
+    day.items.forEach((item) => {
+      const address = item?.address || item?.addr1 || item?.location || '';
+      if (!isAddressInRepresentativeRegion(address, regionName)) {
+        throw new HttpsError('internal', 'AI 코스에 대표 여행 지역 밖 장소가 포함되었습니다. 다시 생성해주세요.');
+      }
+      if (requiredAreas.length > 0) {
         if (!isAddressInRequiredAreas(address, requiredAreas)) {
           throw new HttpsError('internal', 'AI 코스에 필수 방문 권역 밖 장소가 포함되었습니다. 다시 생성해주세요.');
         }
-      });
-    }
+      }
+    });
   });
 
   return plan;
@@ -819,7 +848,7 @@ exports.generateTripPlan = onCall(
 
       const data = await readResponseJson(response);
       const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
-      let plan = validateTripPlan(parseGeminiJson(text), input.requiredAreas);
+      let plan = validateTripPlan(parseGeminiJson(text), input.requiredAreas, input.regionName);
       plan.saveGuide.checklist = applyTransportationChecklist(
         plan.saveGuide.checklist,
         input.transportation

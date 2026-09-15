@@ -3,7 +3,7 @@ import useWishlistStore from '../store/useWishlistStore';
 import useToast from '../hooks/useToast';
 
 const WishlistModal = ({ isOpen, onClose, travelData }) => {
-  const { folders, syncWithServer, createFolder, toggleWishlist } = useWishlistStore();
+  const { folders, syncWithServer, createFolder, saveToFolder } = useWishlistStore();
   const showToast = useToast();
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -25,8 +25,8 @@ const WishlistModal = ({ isOpen, onClose, travelData }) => {
       addr1: travelData.addr1 || travelData.address || travelData.addr,
       folder_id: folderId
     };
-    const result = await toggleWishlist(travelInfo);
-    if (!result.success || !result.wishlisted) {
+    const result = await saveToFolder(travelInfo, folderId);
+    if (!result.success) {
       showToast('위시리스트에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
       return;
     }

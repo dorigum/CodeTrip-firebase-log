@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generateTripPlan } from '../api/geminiApi';
-import { getDetailCommon, getTravelList } from '../api/travelInfoApi';
+import { getDetailCommon, getSubRegions, getTravelList } from '../api/travelInfoApi';
 import { saveAiTripToFolder } from '../api/wishlistApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
@@ -114,6 +114,45 @@ const getBroadRegionTourCode = (regionName) => {
   const normalized = String(regionName || '').trim();
   return BROAD_REGION_TOUR_CODES[normalized] || '';
 };
+
+const REGION_ADDRESS_ALIASES = {
+  서울: '서울', 서울특별시: '서울', 부산: '부산', 부산광역시: '부산',
+  대구: '대구', 대구광역시: '대구', 인천: '인천', 인천광역시: '인천',
+  광주: '광주', 광주광역시: '광주', 대전: '대전', 대전광역시: '대전',
+  울산: '울산', 울산광역시: '울산', 경기: '경기', 경기도: '경기',
+  충북: '충북', 충청북도: '충북', 충남: '충남', 충청남도: '충남',
+  전북: '전북', 전라북도: '전북', 전남: '전남', 전라남도: '전남',
+  경북: '경북', 경상북도: '경북', 경남: '경남', 경상남도: '경남',
+  제주: '제주', 제주도: '제주', 제주특별자치도: '제주',
+  강원: '강원', 강원도: '강원', 강원특별자치도: '강원',
+  세종: '세종', 세종특별자치시: '세종',
+};
+
+const normalizeAddressText = (value) => String(value || '').replace(/\s+/g, '').trim();
+
+const getRegionAddressKeywords = (regionName) => {
+  const normalized = String(regionName || '').trim();
+  if (REGION_ADDRESS_ALIASES[normalized]) return [REGION_ADDRESS_ALIASES[normalized]];
+
+  return normalized
+    .split(/\s+/)
+    .map((part) => REGION_ADDRESS_ALIASES[part] || part.replace(/(특별자치도|특별자치시|특별시|광역시|도|시|군|구)$/, ''))
+    .filter(Boolean);
+};
+
+const isPlaceInRepresentativeRegion = (place, regionName) => {
+  const regionKeywords = getRegionAddressKeywords(regionName);
+  if (regionKeywords.length === 0) return true;
+
+  const placeText = [place?.addr1, place?.address, place?.addr2]
+    .map(normalizeAddressText)
+    .join(' ');
+  return regionKeywords.every((keyword) => placeText.includes(normalizeAddressText(keyword)));
+};
+
+const normalizeAdministrativeAreaName = (value) => String(value || '')
+  .replace(/\s+/g, '')
+  .replace(/(특별자치도|특별자치시|특별시|광역시|시|군|구)$/, '');
 
 const getPlaceAreaKey = (place = {}) => {
   const address = String(place.addr1 || place.address || '').trim();
@@ -521,6 +560,7 @@ const AiPlanner = () => {
   const [folderHydrating, setFolderHydrating] = useState(false);
   const [isPlanSaved, setIsPlanSaved] = useState(false);
   const generationInFlightRef = useRef(false);
+  const areaValidationInFlightRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const plannerRevisionRef = useRef(0);
   const folderSelectionRequestRef = useRef(0);
@@ -620,10 +660,43 @@ const AiPlanner = () => {
     }));
   };
 
-  const handleAddRequiredArea = () => {
+  const handleAddRequiredArea = async () => {
     if (plannerBusy) return;
     const nextArea = areaInput.trim();
     if (!nextArea) return;
+
+    const broadRegionCode = getBroadRegionTourCode(form.regionName);
+    if (broadRegionCode) {
+      if (areaValidationInFlightRef.current) return;
+      areaValidationInFlightRef.current = true;
+      try {
+        const subRegions = await getSubRegions(broadRegionCode);
+        const normalizedNextArea = normalizeAdministrativeAreaName(nextArea);
+        const matchesSubRegion = subRegions.some((subRegion) => (
+          normalizeAdministrativeAreaName(subRegion.name) === normalizedNextArea
+        ));
+        const isInRepresentativeRegion = matchesSubRegion || (await getTravelList({
+          keyword: `${form.regionName} ${nextArea}`.trim(),
+          regions: [broadRegionCode],
+          pageNo: 1,
+          numOfRows: 10,
+          sort: 'default',
+        })).items.some((item) => (
+          isPlaceInRepresentativeRegion(item, form.regionName)
+          && isPlaceInRequiredArea(item, [nextArea])
+        ));
+        if (!isInRepresentativeRegion) {
+          showToast(`${form.regionName}에서 확인할 수 있는 필수 방문 권역만 추가할 수 있습니다.`, 'info');
+          return;
+        }
+      } catch (error) {
+        console.error('CodeTrip required-area validation failed:', error);
+        showToast('필수 방문 권역의 지역 정보를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      } finally {
+        areaValidationInFlightRef.current = false;
+      }
+    }
 
     const nextAreas = normalizeRequiredAreas([...form.requiredAreas, nextArea]);
     if (nextAreas.length === form.requiredAreas.length) {
@@ -905,9 +978,10 @@ const AiPlanner = () => {
           .flatMap(({ items }) => items)
           .map(normalizeTourCandidate)
           .filter((item) => item.contentid);
+        const regionCandidates = candidates.filter((item) => isPlaceInRepresentativeRegion(item, form.regionName));
         const areaCandidates = searchAreas.length > 0
-          ? candidates.filter((item) => isPlaceInRequiredArea(item, searchAreas))
-          : candidates;
+          ? regionCandidates.filter((item) => isPlaceInRequiredArea(item, searchAreas))
+          : regionCandidates;
         preferredPlaces = diversifyPreferredPlaces(
           areaCandidates,
           12

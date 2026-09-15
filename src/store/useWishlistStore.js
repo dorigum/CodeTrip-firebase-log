@@ -77,6 +77,20 @@ const useWishlistStore = create((set, get) => ({
     }
   },
 
+  saveToFolder: async (itemData, folderId) => {
+    const { contentid, title, firstimage, addr1 } = normalizeWishlistItem(itemData);
+    if (!contentid) return { success: false, error: 'missing_content_id' };
+
+    try {
+      const savedItem = await wishlistApi.addWishlistToFolder({ contentid, title, firstimage, addr1 }, folderId);
+      await get().syncWithServer();
+      return { success: !!savedItem, item: savedItem || null };
+    } catch (err) {
+      console.error('Save wishlist to folder failed:', err);
+      return { success: false, error: err };
+    }
+  },
+
   removeWishlistItem: async (wishlistItemId) => {
     try {
       const result = await wishlistApi.removeWishlistItem(wishlistItemId);

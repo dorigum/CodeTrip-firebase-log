@@ -24,7 +24,7 @@ const Explore = () => {
   const [favoriteRegions, setFavoriteRegions] = useState([]);
 
   const { isLoggedIn } = useAuthStore();
-  const { wishlistIds, toggleWishlist, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
+  const { wishlistIds, toggleWishlist, saveToFolder, initWishlist, initialized: wishlistInitialized } = useWishlistStore();
 
   const {
     regions,
@@ -66,7 +66,25 @@ const Explore = () => {
     const postId = String(post.contentid);
     if (wishlistLoadingId === postId) return;
 
-    // 이미 찜한 상태라면 즉시 삭제
+    if (targetWishlistFolder) {
+      try {
+        setWishlistLoadingId(postId);
+        const wasWishlisted = wishlistIds.has(postId);
+        const result = await saveToFolder(post, targetWishlistFolder.id || null);
+        if (!result.success) {
+          showToast('위시리스트 폴더에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
+        showToast(`${targetWishlistFolder.name} 폴더에 ${wasWishlisted ? '이동했습니다.' : '추가되었습니다.'}`, 'success');
+      } catch (error) {
+        console.error('Wishlist error:', error);
+      } finally {
+        setWishlistLoadingId(null);
+      }
+      return;
+    }
+
+    // 폴더 지정 탐색이 아닐 때만 기존 하트 토글을 삭제 동작으로 사용한다.
     if (wishlistIds.has(postId)) {
       try {
         setWishlistLoadingId(postId);
@@ -82,26 +100,6 @@ const Explore = () => {
         setWishlistLoadingId(null);
       }
     } else {
-      if (targetWishlistFolder) {
-        try {
-          setWishlistLoadingId(postId);
-          const result = await toggleWishlist({
-            ...post,
-            folder_id: targetWishlistFolder.id || null,
-          });
-          if (!result.success || !result.wishlisted) {
-            showToast('위시리스트에 추가하지 못했습니다. 잠시 후 다시 시도해주세요.');
-            return;
-          }
-          showToast(`${targetWishlistFolder.name} 폴더에 추가되었습니다.`, 'success');
-        } catch (error) {
-          console.error('Wishlist error:', error);
-        } finally {
-          setWishlistLoadingId(null);
-        }
-        return;
-      }
-
       // 처음 찜하는 상태라면 폴더 선택 모달 오픈
       setSelectedTravel(post);
       setIsModalOpen(true);

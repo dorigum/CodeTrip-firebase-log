@@ -1091,7 +1091,7 @@ const Home = () => {
 
           <div className="relative mt-4 space-y-3 sm:mt-6">
             <MiniPlanCalendar events={aiPlanCalendarEvents} loading={wishlistLoading || !wishlistInitialized} />
-            <div className="hidden space-y-3 sm:block">
+            <div className="space-y-3">
             {primaryFolder ? (
               <>
                 <Link to="/mypage" state={getFolderScheduleState(primaryFolder)} className="block rounded-2xl border border-white/10 bg-white/10 p-4 transition hover:bg-white/15 hover:ring-1 hover:ring-primary-container/40">
