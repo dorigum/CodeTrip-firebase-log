@@ -14,6 +14,7 @@
 
 | 날짜 | 기준 커밋 | 검증 항목 | 결과 | 증빙 | 미해결 이슈 |
 |---|---|---|---|---|---|
+| 2026-09-17 | Firebase Hosting 배포본 | 이메일 테스트 계정 인증·보호 경로 수동 E2E | 통과. 별도 개인 테스트 계정으로 로그인한 뒤 홈 대시보드, 위시리스트, AI 플래너를 순서대로 열어 인증 세션 유지와 기존 저장 여행지·폴더 데이터 로드를 확인했습니다. 생성·저장·삭제는 수행하지 않았습니다. | Hosting `https://dorigum-codetrip.web.app`, 브라우저 수동 검증, `docs/40-authenticated-e2e-runbook.md` | AI 생성·임시 폴더 저장·삭제까지의 쓰기 E2E는 전용 정리 절차가 준비된 뒤 확장 |
 | 2026-09-17 | 인증 E2E 작업 트리 | 테스트 계정 로그인 후 보호 경로 접근 | 준비 완료. `E2E_EMAIL`, `E2E_PASSWORD`가 있을 때만 인증 스모크를 실행하며, 현재 계정 정보가 없는 환경에서는 명시적으로 skip됩니다. | `e2e/authenticated.smoke.spec.js`, `docs/40-authenticated-e2e-runbook.md`, `npm run test:e2e:auth` | 테스트 계정 Secret 등록 후 실제 로그인 실행, AI 생성·폴더 저장은 격리된 데이터 정리 절차와 함께 확장 필요 |
 | 2026-09-17 | 외부 서비스 fallback 작업 트리 | Open-Meteo·Nominatim 실패 fallback, Gemini 오류 안내 | 통과. 날씨·위치명 조회 실패 시 기본값을 반환하고, Gemini 인증·요청 과다·응답 지연·서버 불안정 오류를 사용자 안내로 정규화하는 테스트를 CI에 추가했습니다. | `src/utils/externalServiceErrors.js`, `src/utils/externalServiceErrors.test.js`, `src/api/weatherApi.js`, `src/api/geminiApi.js`, `npm run test:external-service-errors`, `npm run lint`, `npm run build` | 실제 Firebase 인증·AI 생성·폴더 저장 E2E는 테스트 계정 또는 Emulator 전략을 별도 설계해야 합니다. |
 | 2026-09-17 | TourAPI 실패 응답 작업 트리 | API 오류 코드가 업데이트 저장으로 이어지지 않는지 | 통과. 오류 응답은 경고 로그와 예외로 차단되고, 성공한 빈 응답·비정상 항목 구조와 구분됨을 Functions 테스트로 확인했습니다. | `functions/tourApiUpdates.js`, `functions/test/tourApiUpdates.test.js`, `npm --prefix functions test` | 네트워크 단절과 각 외부 API의 사용자 UI 안내는 별도 스모크 테스트로 확장합니다. |
