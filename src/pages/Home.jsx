@@ -1143,7 +1143,7 @@ const Home = () => {
       <div className="relative">
       <div ref={recommendationScrollerRef} className="grid auto-cols-[88%] grid-flow-col gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:auto-cols-[calc((100%-2.5rem)/3)] md:gap-5 md:pb-0">
         {/* Card 1: Regional (Near Me) */}
-        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 md:p-6">
+        <div className="snap-start bg-white p-4 rounded-2xl border border-outline-variant/10 relative overflow-hidden flex flex-col group transition-shadow hover:shadow-sm sm:p-5 md:p-6">
             {loading.nearby && <div className="absolute inset-0 bg-white/90 z-20 flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] md:min-h-[86px]">
@@ -1167,7 +1167,7 @@ const Home = () => {
         </div>
 
         {/* Card 2: Slot Machine */}
-        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 relative overflow-hidden flex flex-col group sm:p-5 md:p-6">
+        <div className="snap-start bg-white p-4 rounded-2xl border border-outline-variant/10 relative overflow-hidden flex flex-col group transition-shadow hover:shadow-sm sm:p-5 md:p-6">
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex min-h-[74px] justify-between items-start sm:min-h-[80px] md:min-h-[86px]">
                 <div className="space-y-1 min-w-0 flex-1">
@@ -1246,7 +1246,7 @@ const Home = () => {
         </div>
 
         {/* Card 3: Trending */}
-        <div className="snap-start bg-white p-4 rounded-2xl shadow-lg border border-outline-variant/10 flex flex-col h-full overflow-hidden group sm:p-5 md:p-6">
+        <div className="snap-start bg-white p-4 rounded-2xl border border-outline-variant/10 flex flex-col h-full overflow-hidden group transition-shadow hover:shadow-sm sm:p-5 md:p-6">
           <div className="flex justify-between items-start mb-4 shrink-0">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold">
