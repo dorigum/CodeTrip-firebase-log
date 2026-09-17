@@ -17,8 +17,19 @@ const addUserLikeRemovals = (updates, likesByContent, collectionName, userId, re
   });
 };
 
+const addActorNotificationRemovals = (updates, users, userId) => {
+  Object.entries(asRecord(users)).forEach(([ownerId, profile]) => {
+    Object.entries(asRecord(profile?.notifications)).forEach(([notificationId, notification]) => {
+      if (String(notification?.actor_id ?? notification?.actorId ?? '') === userId) {
+        updates[`users/${ownerId}/notifications/${notificationId}`] = null;
+      }
+    });
+  });
+};
+
 const buildAccountDeletionUpdates = ({
   userId,
+  users,
   boardPosts,
   boardComments,
   travelComments,
@@ -79,6 +90,7 @@ const buildAccountDeletionUpdates = ({
   addUserLikeRemovals(updates, likeRecords.boardPosts, 'boardPosts', userId, removedPostIds);
   addUserLikeRemovals(updates, likeRecords.boardComments, 'boardComments', userId, removedBoardCommentIds);
   addUserLikeRemovals(updates, likeRecords.travelComments, 'travelComments', userId, removedTravelCommentIds);
+  addActorNotificationRemovals(updates, users, userId);
 
   return updates;
 };

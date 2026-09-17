@@ -12,6 +12,7 @@ const MOCK_NODE_HEADER = [
 ];
 
 const FALLBACK_TRAVEL_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070';
+const DASHBOARD_FOLDERS_PER_PAGE = 6;
 
 const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -671,6 +672,7 @@ const Home = () => {
   const [isSlotSpinning, setIsSlotSpinning] = useState(false);
   const [hasPicked, setHasPicked] = useState(false);
   const [typedBriefing, setTypedBriefing] = useState('');
+  const [dashboardFolderPage, setDashboardFolderPage] = useState(0);
   
   const isInitialMount = useRef(true); 
   const initializedUserRef = useRef(null);
@@ -678,7 +680,6 @@ const Home = () => {
   const homeDataSequenceRef = useRef(0);
   const currentProvinceRef = useRef(''); // 현재 지역 고정용
   const topImgTimerRef = useRef(null);
-  const dashboardFolderScrollerRef = useRef(null);
   const recommendationScrollerRef = useRef(null);
 
   const resetHomeState = useCallback(() => {
@@ -936,6 +937,12 @@ const Home = () => {
     return bTime - aTime;
   });
   const dashboardFolders = sortedFolders;
+  const dashboardFolderPageCount = Math.max(1, Math.ceil(dashboardFolders.length / DASHBOARD_FOLDERS_PER_PAGE));
+  const activeDashboardFolderPage = Math.min(dashboardFolderPage, dashboardFolderPageCount - 1);
+  const paginatedDashboardFolders = dashboardFolders.slice(
+    activeDashboardFolderPage * DASHBOARD_FOLDERS_PER_PAGE,
+    (activeDashboardFolderPage + 1) * DASHBOARD_FOLDERS_PER_PAGE
+  );
   const scheduledFolders = sortedFolders.filter(folder => folder.startDate || folder.start_date || folder.endDate || folder.end_date).slice(0, 3);
   const primaryFolder = scheduledFolders[0] || dashboardFolders[0];
   const aiPlanCalendarEvents = useMemo(
@@ -1043,24 +1050,32 @@ const Home = () => {
 
           {dashboardFolders.length > 0 && (
             <div className="mt-5 flex items-center justify-between gap-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 font-label">saved_folders</p>
-              <div className="flex items-center gap-1 md:hidden">
-                <button type="button" onClick={() => dashboardFolderScrollerRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary" aria-label="이전 여행 폴더 보기">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 font-label">saved_folders <span className="text-primary">{activeDashboardFolderPage * DASHBOARD_FOLDERS_PER_PAGE + 1}-{Math.min((activeDashboardFolderPage + 1) * DASHBOARD_FOLDERS_PER_PAGE, dashboardFolders.length)} / {dashboardFolders.length}</span></p>
+              <div className="flex shrink-0 items-center gap-1" aria-label="여행 폴더 페이지 이동">
+                <button type="button" onClick={() => setDashboardFolderPage(Math.max(0, activeDashboardFolderPage - 1))} disabled={activeDashboardFolderPage === 0} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40" aria-label="이전 여행 폴더 페이지">
                   <span className="material-symbols-outlined text-base">chevron_left</span>
                 </button>
-                <button type="button" onClick={() => dashboardFolderScrollerRef.current?.scrollBy({ left: 360, behavior: 'smooth' })} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary" aria-label="다음 여행 폴더 보기">
+                <span className="px-1 text-xs font-bold text-slate-500 md:hidden" aria-current="page">{activeDashboardFolderPage + 1}/{dashboardFolderPageCount}</span>
+                <div className="hidden items-center gap-1 md:flex">
+                  {Array.from({ length: dashboardFolderPageCount }, (_, index) => (
+                    <button key={index} type="button" onClick={() => setDashboardFolderPage(index)} aria-current={activeDashboardFolderPage === index ? 'page' : undefined} aria-label={`여행 폴더 ${index + 1}페이지`} className={`flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-xs font-bold transition ${activeDashboardFolderPage === index ? 'border-primary bg-primary text-white' : 'border-outline-variant/20 bg-white text-slate-500 hover:border-primary/40 hover:text-primary'}`}>
+                    {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setDashboardFolderPage(Math.min(dashboardFolderPageCount - 1, activeDashboardFolderPage + 1))} disabled={activeDashboardFolderPage === dashboardFolderPageCount - 1} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40" aria-label="다음 여행 폴더 페이지">
                   <span className="material-symbols-outlined text-base">chevron_right</span>
                 </button>
               </div>
             </div>
           )}
-          <div ref={dashboardFolderScrollerRef} className="mt-3 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid-flow-row md:auto-cols-auto md:grid-cols-3 md:overflow-visible md:pb-0 md:snap-none xl:grid-cols-4">
-            {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {dashboardFolders.length > 0 ? paginatedDashboardFolders.map((folder) => (
               <Link
                 key={getFolderId(folder)}
                 to="/mypage"
                 state={getFolderScheduleState(folder)}
-                className="group snap-start rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                className="group rounded-2xl border border-outline-variant/20 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

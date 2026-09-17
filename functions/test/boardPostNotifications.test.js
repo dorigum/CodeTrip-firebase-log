@@ -12,6 +12,7 @@ test('다른 사용자의 댓글은 게시글 작성자 알림으로 변환한�
     createdAt: '2026-09-10T08:00:00.000Z',
   }), {
     user_id: 'post-owner',
+    actor_id: 'commenter',
     type: 'board_comment',
     content_id: '/board/post-1',
     message: '여행자님이 회원님의 게시글에 댓글을 남겼습니다.',
@@ -31,6 +32,7 @@ test('다른 사용자의 댓글 좋아요는 댓글 내용과 함께 댓글 작
     createdAt: '2026-09-10T08:00:00.000Z',
   }), {
     user_id: 'comment-owner',
+    actor_id: 'liker',
     type: 'board_comment_like',
     content_id: '/board/post-1',
     message: '좋아요 사용자님이 회원님의 댓글에 좋아요를 눌렀습니다. “비 오는 날에 방문하기 좋았어요.”',

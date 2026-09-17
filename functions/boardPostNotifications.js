@@ -27,6 +27,7 @@ const buildBoardPostNotification = ({ postOwnerId, actorId, actorNickname, inter
   const commentPreview = compactCommentBody(commentBody);
   return {
     user_id: postOwnerId,
+    actor_id: actorId,
     type: isCommentLike ? 'board_comment_like' : (isComment ? 'board_comment' : 'board_like'),
     content_id: `/board/${postId}`,
     message: isCommentLike

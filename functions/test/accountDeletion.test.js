@@ -5,6 +5,15 @@ const { buildAccountDeletionUpdates } = require('../accountDeletion');
 test('회원 탈퇴는 개인 데이터와 작성 콘텐츠, 연결 인덱스를 함께 제거한다', () => {
   const updates = buildAccountDeletionUpdates({
     userId: 'user-a',
+    users: {
+      'user-b': {
+        notifications: {
+          'notification-a': { actor_id: 'user-a' },
+          'notification-b': { actor_id: 'user-c' },
+          'legacy-notification': { message: '기존 알림' },
+        },
+      },
+    },
     boardPosts: {
       'post-a': { user_id: 'user-a' },
       'post-b': { user_id: 'user-b' },
@@ -36,5 +45,8 @@ test('회원 탈퇴는 개인 데이터와 작성 콘텐츠, 연결 인덱스를
   assert.equal(updates['likes/boardPosts/post-b/user-a'], null);
   assert.equal(updates['likes/boardComments/comment-c/user-a'], null);
   assert.equal(updates['likes/travelComments/travel-b/user-a'], null);
+  assert.equal(updates['users/user-b/notifications/notification-a'], null);
+  assert.equal(updates['users/user-b/notifications/notification-b'], undefined);
+  assert.equal(updates['users/user-b/notifications/legacy-notification'], undefined);
   assert.equal(updates['travelComments/travel-b'], undefined);
 });

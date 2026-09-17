@@ -887,7 +887,8 @@ exports.deleteAccount = onCall(
     const db = getDatabase();
 
     try {
-      const [boardPostsSnap, boardCommentsSnap, travelCommentsSnap, likesSnap] = await Promise.all([
+      const [usersSnap, boardPostsSnap, boardCommentsSnap, travelCommentsSnap, likesSnap] = await Promise.all([
+        db.ref('users').once('value'),
         db.ref('boardPosts').once('value'),
         db.ref('boardComments').once('value'),
         db.ref('travelComments').once('value'),
@@ -895,6 +896,7 @@ exports.deleteAccount = onCall(
       ]);
       const updates = buildAccountDeletionUpdates({
         userId,
+        users: usersSnap.val(),
         boardPosts: boardPostsSnap.val(),
         boardComments: boardCommentsSnap.val(),
         travelComments: travelCommentsSnap.val(),

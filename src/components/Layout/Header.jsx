@@ -9,8 +9,17 @@ import ConfirmModal from '../ConfirmModal';
 import { markLogoutRedirecting } from '../../utils/logoutRedirect';
 
 const formatDate = (str) => {
-  const d = new Date(str);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  const date = new Date(str);
+  if (Number.isNaN(date.getTime())) return '시간 정보 없음';
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date).replace(/\. /g, '.').replace(/\.$/, '');
 };
 
 const PRESERVE_EXPLORE_STATE_KEY = 'codetrip:preserve_explore_state';
