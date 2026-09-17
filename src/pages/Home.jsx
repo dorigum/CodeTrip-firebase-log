@@ -1044,7 +1044,7 @@ const Home = () => {
           {dashboardFolders.length > 0 && (
             <div className="mt-5 flex items-center justify-between gap-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 font-label">saved_folders</p>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 md:hidden">
                 <button type="button" onClick={() => dashboardFolderScrollerRef.current?.scrollBy({ left: -360, behavior: 'smooth' })} className="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/20 bg-white text-slate-500 transition hover:border-primary/40 hover:text-primary" aria-label="이전 여행 폴더 보기">
                   <span className="material-symbols-outlined text-base">chevron_left</span>
                 </button>
@@ -1054,7 +1054,7 @@ const Home = () => {
               </div>
             </div>
           )}
-          <div ref={dashboardFolderScrollerRef} className="mt-3 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:auto-cols-[calc((100%-1.5rem)/3)] md:pb-0">
+          <div ref={dashboardFolderScrollerRef} className="mt-3 grid auto-cols-[84%] grid-flow-col gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid-flow-row md:auto-cols-auto md:grid-cols-3 md:overflow-visible md:pb-0 md:snap-none xl:grid-cols-4">
             {dashboardFolders.length > 0 ? dashboardFolders.map((folder) => (
               <Link
                 key={getFolderId(folder)}
