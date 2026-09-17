@@ -98,7 +98,7 @@ GitHub Project를 만들 때 아래 카드를 추가하고, `Status` 필드를 `
 | BL-03 | 라우트 단위 코드 스플리팅 적용 여부 결정 및 구현 | P1 | done | `TD-01` | 적용 전후 `npm run build` 청크 크기 비교, 남은 500kB 초과 경고 원인 기록 | `src/main.jsx`, `docs/13-validation-report.md`, 빌드 로그 |
 | BL-04 | 번들 크기 기준선 측정표 작성 | P1 | done | `TD-01`, 성능 지표 | 현재 빌드의 주요 청크 크기와 경고 여부 기록 | `docs/13-validation-report.md` |
 | BL-05 | 핵심 사용자 여정 수동 검증 보고서 작성 | P1 | done | `TD-04`, `FR-01`~`FR-07` | VF-01~VF-07 배포 환경 결과를 검증 보고서에 기록 | `docs/13-validation-report.md` |
-| BL-06 | 핵심 사용자 여정 E2E 테스트 도입 검토 | P1 | todo | `TD-04` | 도구 도입 여부 결정, 최소 대표 흐름 1개 자동화 또는 보류 사유 기록 | `docs/06-quality-plan.md`, `decision-log/` |
+| BL-06 | 핵심 사용자 여정 E2E 테스트 도입 검토 | P1 | in_progress | `TD-04` | 공개·보호 경로 E2E와 테스트 계정 로그인 스모크를 추가하고, AI 생성·폴더 저장은 격리 환경에서 확장 | `e2e/`, `docs/40-authenticated-e2e-runbook.md` |
 | BL-07 | 성능·캐시·AI 성공률 릴리스별 측정 방식 확정 | P1 | todo | `TD-03`, `TD-06` | raw log 장기 저장 여부, 집계 지표, 보존 기간, 책임자 결정 | `docs/09-metrics.md`, `decision-log/` |
 | BL-08 | 외부 API 장애 시나리오별 smoke test 작성 | P2 | in_progress | `TD-08` | TourAPI 오류 응답, 날씨·위치 fallback, Gemini 오류 안내를 자동 검증하고 실제 네트워크 단절 시나리오를 추가 기록 | `docs/13-validation-report.md`, `functions/test/tourApiUpdates.test.js`, `src/utils/externalServiceErrors.test.js` |
 | BL-09 | 주요 의사결정 로그 3건 작성 | P2 | ready | `TD-07` | 애자일 문서 체계, AI 분석 규칙, 성능 측정 원칙 결정 기록 작성 | `docs/decision-log/` |

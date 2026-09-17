@@ -12,6 +12,7 @@
     "test:external-service-errors": "node src/utils/externalServiceErrors.test.js",
     "test:database-rules": "firebase emulators:exec --only database --project codetrip-rules-test \"node --test test/database.rules.test.js\"",
     "test:e2e": "playwright test",
+    "test:e2e:auth": "playwright test e2e/authenticated.smoke.spec.js",
     "preview": "vite preview"
   },
   "dependencies": {
