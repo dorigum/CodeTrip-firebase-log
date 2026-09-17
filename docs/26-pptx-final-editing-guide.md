@@ -10,8 +10,8 @@
 |---|---|
 | 기준 PPTX | `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_제출항목정리_초안.pptx` |
 | 기준 PDF | `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_5페이지_제출항목정리_초안.pdf` |
-| 현재 검증 상태 | PDF 5페이지, 394311 bytes, 텍스트 최소 12pt 이상 확인 |
-| 현재 남은 이슈 | 접수 팀명 placeholder, 로그인 후 내부 화면 캡처, 최종 입력값, 양식 수정 없음 육안 검증 |
+| 현재 검증 상태 | 2026-09-18 API 설명 보강 후보 PPTX/PDF는 5페이지, PDF 386962 bytes, 5번 슬라이드 렌더 검토를 통과 |
+| 현재 남은 이슈 | 3번 슬라이드의 로그인 후 내부 화면 캡처 교체, 제출 페이지 입력값과 OpenAPI 키 최종 확인 |
 
 ## 최종 편집 원칙
 
@@ -26,9 +26,9 @@
 
 | 슬라이드 | 현재 역할 | 최종 수정 항목 | 참조 문서 | 완료 기준 |
 |---:|---|---|---|---|
-| 1 | 표지 | `[접수 팀명 입력]` placeholder를 접수 페이지 기준 팀명으로 교체합니다. 서비스명은 `CodeTrip`으로 유지합니다. | `docs/25-final-input-checklist.md` FI-02 | 팀명과 서비스명이 제출 페이지와 일치합니다. |
+| 1 | 표지 | 최신 후보는 팀명을 `CodeTrip`으로 반영했습니다. 제출 페이지 팀명과 마지막으로 대조합니다. 서비스명은 `CodeTrip`으로 유지합니다. | `docs/25-final-input-checklist.md` FI-02 | 팀명과 서비스명이 제출 페이지와 일치합니다. |
 | 2 | 서비스 소개 | 서비스 개요, 주제 선정 이유, 핵심 기능 문구를 제출용 축약 문구로 정리합니다. 지역 특화 여부가 바뀌면 해당 문구도 함께 조정합니다. | `docs/24-submission-copywriting.md`, `docs/23-regional-specialization-strategy.md` | 심사자가 서비스 목적과 사용자 문제를 30초 안에 이해할 수 있습니다. |
-| 3 | 대표·상세 이미지 | 비로그인 화면 중심 캡처 중 일부를 로그인 후 AI 일정, 마이페이지 또는 찜·폴더, 커뮤니티 내부 화면으로 교체합니다. | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md`, `docs/31-submission-screenshot-plan.md` | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 흐름을 보여줍니다. |
+| 3 | 대표·상세 이미지 | 최신 후보는 기존 공개 화면 캡처를 유지했습니다. 제출 전 로그인 후 AI 일정, 찜·폴더, 커뮤니티 내부 화면 중 최소 2개로 교체합니다. | `docs/16-contest-submission-checklist.md`, `docs/19-test-account-verification.md`, `docs/31-submission-screenshot-plan.md` | 대표 이미지 1장과 상세 이미지 3~5장이 실제 서비스 흐름을 보여줍니다. |
 | 4 | 핵심 기능 흐름 | 5개 핵심 기능 흐름을 유지하되, 캡처 교체 또는 문구 수정으로 흐름이 달라졌다면 단계명을 맞춥니다. | `docs/03-user-flows.md`, `docs/15-demo-scenario.md` | 탐색 → 상세 → 찜·폴더 → AI 일정 → 커뮤니티 흐름이 끊기지 않습니다. |
 | 5 | 데이터 활용·차별성·발전계획 | 한국관광공사 OpenAPI 활용 목록을 제출 계정 기준 최종 목록과 대조합니다. 차별성·발전계획 문구는 과장 없이 정리합니다. | `docs/20-openapi-submission-verification.md`, `docs/24-submission-copywriting.md` | OpenAPI 목록, 기타 API, 차별성, 발전계획이 실제 구현과 일치합니다. |
 
@@ -73,7 +73,7 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 
 ### 발전계획
 
-Functions 프록시는 현재 구현으로 반영하고, 권한 검증, 성능 측정, 호출량 제한 반복 검증, 운영 모니터링, 코드 스플리팅, E2E 테스트를 보강합니다. 향후 지역별 큐레이션과 지역 축제 특화 일정으로 확장합니다.
+Gemini Functions 프록시, Firebase Rules 검증, 코드 스플리팅, 공개·보호 경로 E2E는 현재 반영했습니다. 이후 실제 사용량 기반 RTDB 비용·알림 조회 관측, AI 추천 근거 표시, 외부 API 장애 기록, 지역별 큐레이션을 보강합니다.
 
 ## 최종 PDF 변환 후 검증
 

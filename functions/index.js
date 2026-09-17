@@ -656,6 +656,7 @@ exports.notifyBoardPostComment = onValueWritten(
       actorId,
       actorNickname: comment.nickname,
       interaction: 'comment',
+      commentBody: comment.body,
       notificationId: `board-comment-${event.params.commentId}`,
     });
   },

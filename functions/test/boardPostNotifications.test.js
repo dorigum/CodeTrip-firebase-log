@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildBoardPostNotification, getProfileDisplayName } = require('../boardPostNotifications');
+const { buildBoardPostNotification, compactCommentBody, getProfileDisplayName } = require('../boardPostNotifications');
 
 test('다른 사용자의 댓글은 게시글 작성자 알림으로 변환한다', () => {
   assert.deepEqual(buildBoardPostNotification({
@@ -9,16 +9,35 @@ test('다른 사용자의 댓글은 게시글 작성자 알림으로 변환한�
     actorNickname: '여행자',
     interaction: 'comment',
     postId: 'post-1',
+    commentBody: '여행 일정이 정말 알차 보여요. 저도 다음 주말에 가보고 싶습니다!',
     createdAt: '2026-09-10T08:00:00.000Z',
   }), {
     user_id: 'post-owner',
     actor_id: 'commenter',
     type: 'board_comment',
     content_id: '/board/post-1',
-    message: '여행자님이 회원님의 게시글에 댓글을 남겼습니다.',
+    message: '여행자님이 회원님의 게시글에 댓글을 남겼습니다. “여행 일정이 정말 알차 보여요. 저도 다음 주말에 가보고 싶습니다!”',
     is_read: false,
     created_at: '2026-09-10T08:00:00.000Z',
   });
+});
+
+test('댓글 미리보기는 공백을 정리하고 긴 내용은 80자까지만 표시한다', () => {
+  const body = `첫 문장입니다.\n\n${'가'.repeat(100)}`;
+  const notification = buildBoardPostNotification({
+    postOwnerId: 'post-owner',
+    actorId: 'commenter',
+    actorNickname: '여행자',
+    interaction: 'comment',
+    postId: 'post-1',
+    commentBody: body,
+    createdAt: '2026-09-10T08:00:00.000Z',
+  });
+
+  const preview = compactCommentBody(body);
+  assert.equal(preview.length, 83);
+  assert.equal(preview.endsWith('...'), true);
+  assert.ok(notification.message.endsWith(`“${preview}”`));
 });
 
 test('다른 사용자의 댓글 좋아요는 댓글 내용과 함께 댓글 작성자에게 알린다', () => {

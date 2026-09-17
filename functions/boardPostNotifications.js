@@ -6,10 +6,16 @@ const isExternalPostInteraction = (postOwnerId, actorId) => (
   && postOwnerId !== actorId
 );
 
-const compactCommentBody = (value) => String(value || '')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, 80);
+const COMMENT_PREVIEW_LENGTH = 80;
+
+const compactCommentBody = (value) => {
+  const body = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (body.length <= COMMENT_PREVIEW_LENGTH) return body;
+  return `${body.slice(0, COMMENT_PREVIEW_LENGTH).trimEnd()}...`;
+};
 
 const getProfileDisplayName = (profile = {}) => {
   const name = String(profile.name || '').trim()
@@ -32,7 +38,7 @@ const buildBoardPostNotification = ({ postOwnerId, actorId, actorNickname, inter
     content_id: `/board/${postId}`,
     message: isCommentLike
       ? `${actorName}님이 회원님의 댓글에 좋아요를 눌렀습니다.${commentPreview ? ` “${commentPreview}”` : ''}`
-      : `${actorName}님이 회원님의 게시글에 ${isComment ? '댓글을 남겼습니다.' : '좋아요를 눌렀습니다.'}`,
+      : `${actorName}님이 회원님의 게시글에 ${isComment ? `댓글을 남겼습니다.${commentPreview ? ` “${commentPreview}”` : ''}` : '좋아요를 눌렀습니다.'}`,
     is_read: false,
     created_at: createdAt,
   };
