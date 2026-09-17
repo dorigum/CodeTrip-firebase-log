@@ -42,6 +42,22 @@ test('non-empty response without item structure is rejected', () => {
   );
 });
 
+test('TourAPI failure code is rejected and logged instead of publishing an update', () => {
+  const warnings = [];
+  assert.throws(
+    () => parseRecentTourApiItemsResponse({
+      response: {
+        header: { resultCode: '22', resultMsg: 'SERVICE_KEY_IS_NOT_REGISTERED_ERROR' },
+        body: { totalCount: '0', items: '' },
+      },
+    }, { warn: (...args) => warnings.push(args) }),
+    /응답 코드/,
+  );
+
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0][0], 'TourAPI update sync returned failure code');
+});
+
 test('single TourAPI item is normalized and sanitized', () => {
   const result = parseRecentTourApiItemsResponse({
     response: {
