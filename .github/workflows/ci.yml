@@ -31,6 +31,7 @@ jobs:
         run: |
           npm run test:date-key
           npm run test:tourapi-area-code
+          npm run test:external-service-errors
 
       - name: Functions tests
         run: npm --prefix functions test

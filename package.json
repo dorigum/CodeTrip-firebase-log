@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test:date-key": "node src/utils/dateKey.test.js",
     "test:tourapi-area-code": "node src/utils/tourApiAreaCode.test.js",
+    "test:external-service-errors": "node src/utils/externalServiceErrors.test.js",
     "test:database-rules": "firebase emulators:exec --only database --project codetrip-rules-test \"node --test test/database.rules.test.js\"",
     "test:e2e": "playwright test",
     "preview": "vite preview"

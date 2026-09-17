@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { cachedApiRequest } from './apiCache';
+import { createLocationFallback, createWeatherFallback } from '../utils/externalServiceErrors';
 
 const WEATHER_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 const SEOUL = '\uC11C\uC6B8';
@@ -51,7 +52,7 @@ export const getWeather = async (lat = 37.5665, lon = 126.9780) => {
       },
     });
   } catch {
-    return { temp: 24, label: 'Sunny', icon: 'sunny', keywords: [KEYWORDS.travel], location: SEOUL };
+    return createWeatherFallback(SEOUL);
   }
 };
 
@@ -85,7 +86,7 @@ export const getLocationName = async (lat, lon) => {
       },
     });
   } catch {
-    return { city: SEOUL, state: SEOUL };
+    return createLocationFallback(SEOUL);
   }
 };
 

@@ -100,7 +100,7 @@ GitHub Project를 만들 때 아래 카드를 추가하고, `Status` 필드를 `
 | BL-05 | 핵심 사용자 여정 수동 검증 보고서 작성 | P1 | done | `TD-04`, `FR-01`~`FR-07` | VF-01~VF-07 배포 환경 결과를 검증 보고서에 기록 | `docs/13-validation-report.md` |
 | BL-06 | 핵심 사용자 여정 E2E 테스트 도입 검토 | P1 | todo | `TD-04` | 도구 도입 여부 결정, 최소 대표 흐름 1개 자동화 또는 보류 사유 기록 | `docs/06-quality-plan.md`, `decision-log/` |
 | BL-07 | 성능·캐시·AI 성공률 릴리스별 측정 방식 확정 | P1 | todo | `TD-03`, `TD-06` | raw log 장기 저장 여부, 집계 지표, 보존 기간, 책임자 결정 | `docs/09-metrics.md`, `decision-log/` |
-| BL-08 | 외부 API 장애 시나리오별 smoke test 작성 | P2 | todo | `TD-08` | TourAPI, Open-Meteo, Nominatim, Gemini 실패 시 사용자 안내와 fallback 결과 기록 | `docs/13-validation-report.md` |
+| BL-08 | 외부 API 장애 시나리오별 smoke test 작성 | P2 | in_progress | `TD-08` | TourAPI 오류 응답, 날씨·위치 fallback, Gemini 오류 안내를 자동 검증하고 실제 네트워크 단절 시나리오를 추가 기록 | `docs/13-validation-report.md`, `functions/test/tourApiUpdates.test.js`, `src/utils/externalServiceErrors.test.js` |
 | BL-09 | 주요 의사결정 로그 3건 작성 | P2 | ready | `TD-07` | 애자일 문서 체계, AI 분석 규칙, 성능 측정 원칙 결정 기록 작성 | `docs/decision-log/` |
 | BL-10 | 스프린트 회고 첫 기록 작성 | P2 | todo | `TD-07` | 문서 체계화 작업의 목표, 잘된 점, 문제, 다음 액션 기록 | `docs/retrospectives/` |
 | BL-11 | 심사 시연 시나리오 작성 | P2 | done | WBS 6~8주차 | 탐색, 상세, 로그인, 찜, AI 일정, 마이페이지, 커뮤니티, 품질 설명 흐름 정의 | `docs/15-demo-scenario.md` |
