@@ -11,7 +11,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const WISHLIST_ITEMS_PER_PAGE = 9;
+const WISHLIST_ITEMS_PER_PAGE = 8;
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -400,7 +400,6 @@ const MyPage = () => {
     const safePage = Math.min(Math.max(1, nextPage), totalWishlistPages);
     if (safePage === currentWishlistPage) return;
     setWishlistPage(safePage);
-    wishlistSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const stats = useMemo(() => {
@@ -1575,7 +1574,7 @@ const MyPage = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 2xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 2xl:grid-cols-4">
               {paginatedWishList.map((item) => {
                 const itemId = item.contentid || item.content_id;
                 const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;

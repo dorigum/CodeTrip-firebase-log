@@ -624,6 +624,11 @@ const AiPlanner = () => {
     [wishlistItems, selectedContentIds]
   );
 
+  const selectedFolderPlaceCount = useMemo(
+    () => folderPlaces.filter((item) => selectedContentIds.has(String(item.contentid || item.contentId))).length,
+    [folderPlaces, selectedContentIds]
+  );
+
   const plannerBusy = generating || saving || folderHydrating;
   const plannerActionBusy = generating || saving;
   const maxTripStartDate = useMemo(
@@ -1248,7 +1253,7 @@ const AiPlanner = () => {
                   <div className="flex items-center justify-between mb-2">
                     <FieldLabel>Folder Places</FieldLabel>
                     <span className="text-[10px] font-mono font-bold text-primary">
-                      {selectedPlaces.length} / {folderPlaces.length}
+                      {selectedFolderPlaceCount} / {folderPlaces.length}
                     </span>
                   </div>
                   <div className="max-h-44 overflow-y-auto border border-outline-variant/30 rounded-lg divide-y divide-outline-variant/20 bg-white">
