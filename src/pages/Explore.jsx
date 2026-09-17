@@ -157,7 +157,7 @@ const Explore = () => {
       if (!initialized) applyFavoriteRegions(favCodes);
     };
     init();
-  }, []);
+  }, [applyFavoriteRegions, initialized, isLoggedIn, setFavoriteRegions]);
 
   // DOM 변경 이전에 실행되는 cleanup으로 정확한 scrollTop 저장
   useLayoutEffect(() => {
@@ -187,7 +187,7 @@ const Explore = () => {
     if (isLoggedIn && !wishlistInitialized) {
       initWishlist();
     }
-  }, [isLoggedIn, wishlistInitialized]);
+  }, [initWishlist, isLoggedIn, wishlistInitialized]);
 
   useEffect(() => {
     if (queryKeyword && queryKeyword !== keyword) {

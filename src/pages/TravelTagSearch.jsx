@@ -50,7 +50,10 @@ const TravelTagSearch = () => {
   }, []);
 
   useEffect(() => {
-    fetchItems(currentPage, keyword, selectedRegion, selectedTheme);
+    const timer = setTimeout(() => {
+      fetchItems(currentPage, keyword, selectedRegion, selectedTheme);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [currentPage, keyword, selectedRegion, selectedTheme, fetchItems]);
 
   const handleSearch = (e) => {

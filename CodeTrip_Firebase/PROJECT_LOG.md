@@ -15,6 +15,7 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 
 ## 📅 날짜별 개발 기록
 
+- [2026-09-17](project-log/2026-09-17.md): 공개·보호 경로 E2E 스모크 테스트 3건을 Playwright와 CI에 추가하고, 모바일 5G 지연 로딩 관찰·백로그 상태·React Hook lint 경고를 운영 기록에 정리했습니다.
 - [2026-09-17](project-log/2026-09-17.md): Axios·Firebase·React Router와 Vite·Firebase CLI를 보안 업데이트하고 비파괴 의존성 패치를 적용했습니다. 운영 의존성 감사 결과는 취약점 0건이며, 린트·빌드·Functions·Rules 테스트를 재검증했습니다.
 - [2026-09-17](project-log/2026-09-17.md): 모든 페이지를 라우트 단위 지연 로딩으로 분리하고 공통 로딩 UI를 추가해 첫 진입 JavaScript 번들 크기를 줄였으며, CI Fast Refresh 린트에 맞춰 지연 로딩 선언을 별도 모듈로 분리했습니다.
 - [2026-09-17](project-log/2026-09-17.md): 이메일·Google 재인증을 거친 회원 탈퇴 UI와 Firebase Authentication·개인 여행 데이터·작성 콘텐츠·업로드 이미지 정리 Callable Function을 추가했습니다.

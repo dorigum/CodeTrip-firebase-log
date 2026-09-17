@@ -84,12 +84,14 @@ const Festivals = () => {
 
   useEffect(() => {
     if (!regionCode) {
-      setSubRegions([]);
-      setSubRegionLoading(false);
-      if (subRegionCode) {
-        setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: '' }));
-      }
-      return;
+      const timer = setTimeout(() => {
+        setSubRegions([]);
+        setSubRegionLoading(false);
+        if (subRegionCode) {
+          setSearchParams(makeFestivalParams({ nextPage: 1, nextSubRegion: '' }));
+        }
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     let ignore = false;
@@ -179,7 +181,7 @@ const Festivals = () => {
     if (isLoggedIn && !wishlistInitialized) {
       initWishlist();
     }
-  }, [isLoggedIn, wishlistInitialized]);
+  }, [initWishlist, isLoggedIn, wishlistInitialized]);
 
   const handlePageChange = (newPage) => {
     setSearchParams(makeFestivalParams({ nextPage: newPage }));

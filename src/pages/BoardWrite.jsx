@@ -31,13 +31,13 @@ const BoardWrite = () => {
     if (!state?.fromTagSearch && !state?.edit) {
       resetForm();
     }
-  }, []);
+  }, [isLoggedIn, navigate, resetForm, state?.edit, state?.fromTagSearch]);
 
   // 작성 중 로그아웃 감지 → 게시글 목록으로 이동
   useEffect(() => {
     if (!isMounted.current) return;
     if (!isLoggedIn) navigate('/board');
-  }, [isLoggedIn]);
+  }, [isLoggedIn, navigate]);
 
   const validate = () => {
     const errs = {};

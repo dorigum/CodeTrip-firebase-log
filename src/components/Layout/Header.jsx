@@ -63,7 +63,10 @@ const Header = () => {
 
   useEffect(() => {
     if (!isLoggedIn || !user) return;
-    fetchNotifications();
+    const timer = setTimeout(() => {
+      fetchNotifications();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [isLoggedIn, user, fetchNotifications]);
 
   // 외부 클릭 시 닫기 (알림 + 검색창)
