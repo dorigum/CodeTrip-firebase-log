@@ -1,5 +1,7 @@
 const { initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const { getDatabase } = require('firebase-admin/database');
+const { getStorage } = require('firebase-admin/storage');
 const { onValueWritten } = require('firebase-functions/v2/database');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
@@ -10,6 +12,7 @@ const { applyCompanionConsistency, applyTransportationChecklist } = require('./t
 const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
 const { dedupeTourApiItems } = require('./tourApiUpdates');
 const { buildBoardPostNotification, getProfileDisplayName } = require('./boardPostNotifications');
+const { buildAccountDeletionUpdates } = require('./accountDeletion');
 
 initializeApp();
 
@@ -866,6 +869,49 @@ exports.generateTripPlan = onCall(
       leaveConcurrentRequest(uid);
     }
   }
+);
+
+exports.deleteAccount = onCall(
+  {
+    region: REGION,
+    timeoutSeconds: 120,
+    memory: '256MiB',
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
+    }
+
+    const userId = request.auth.uid;
+    const db = getDatabase();
+
+    try {
+      const [boardPostsSnap, boardCommentsSnap, travelCommentsSnap, likesSnap] = await Promise.all([
+        db.ref('boardPosts').once('value'),
+        db.ref('boardComments').once('value'),
+        db.ref('travelComments').once('value'),
+        db.ref('likes').once('value'),
+      ]);
+      const updates = buildAccountDeletionUpdates({
+        userId,
+        boardPosts: boardPostsSnap.val(),
+        boardComments: boardCommentsSnap.val(),
+        travelComments: travelCommentsSnap.val(),
+        likes: likesSnap.val(),
+      });
+
+      await getStorage().bucket().deleteFiles({ prefix: `users/${userId}/` });
+      await db.ref().update(updates);
+
+      await getAuth().deleteUser(userId);
+      logger.info('Account deleted', { userId });
+      return { success: true };
+    } catch (error) {
+      logger.error('Account deletion failed', { userId, code: error?.code, message: error?.message });
+      throw new HttpsError('internal', '회원 탈퇴를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  },
 );
 
 exports.syncTourApiUpdates = onSchedule(

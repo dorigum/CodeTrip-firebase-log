@@ -24,15 +24,15 @@
 
 ### Now
 
-- [ ] **STK-02 · 축제 전용 TourAPI 신규 정보 수집 설계 및 구현** — P1 / `in_progress`
-  - `searchFestival2` 수집과 일반 최신 목록 `contentId` 중복 제거를 1차 구현했습니다.
-  - 남은 완료 기준: 배포 환경의 Scheduler·RTDB 기록과 Header 노출 검증입니다.
-
-- [ ] **STK-03 · 알림 설정 UI 추가** — P1 / `in_progress`
-  - TourAPI 신규 정보 수신 여부 설정과 관심 지역 미설정 안내를 1차 구현했습니다.
-  - 남은 완료 기준: 수신 설정 켜기/끄기 수동 검증입니다.
+- 현재 기능 안정화와 배포 환경 수동 점검은 완료했으며, 다음 우선순위는 성능 측정과 제출 산출물 최종화입니다.
 
 ### Done
+
+- [x] **STK-02 · 축제 전용 TourAPI 신규 정보 수집 설계 및 구현** — 2026-09-17
+  - `searchFestival2` 수집, 일반 최신 목록과의 `contentId` 중복 제거, Scheduler·RTDB 기록과 Header 노출을 배포 환경에서 확인했습니다.
+
+- [x] **STK-03 · 알림 설정 UI 추가** — 2026-09-17
+  - 신규 여행지·축제 수신 설정과 관심 지역 미설정 안내를 구현하고, 수신 설정 켜기·끄기 흐름을 배포 환경에서 확인했습니다.
 
 - [x] **STK-01 · PR #34 관심 지역 기반 알림 운영 검증 및 머지 준비** — 2026-09-09
   - 지역 코드 백필, 연결 재시도, Cloud Scheduler 성공, RTDB 기록, 전남 관심 지역 Header 알림 노출을 검증했고 PR #34를 머지했습니다.
@@ -94,10 +94,10 @@ GitHub Project를 만들 때 아래 카드를 추가하고, `Status` 필드를 `
 | ID | 작업 | 우선순위 | 상태 | 연결 항목 | 완료 기준 | 증빙 위치 |
 |---|---|---|---|---|---|---|
 | BL-01 | Gemini API 호출을 Firebase Functions 프록시로 이전 | P0 | done | `TD-02`, `FR-05` | 클라이언트 번들에서 Gemini API 키 제거, Function 인증·입력 검증·오류 메시지 정제 확인 | `docs/10-ai-harness-engineering.md`, `docs/13-validation-report.md`, `CodeTrip_Firebase/project-log/2026-08-16.md` |
-| BL-02 | Firebase Rules 권한 시나리오 검증표 작성 | P0 | ready | `TD-05`, 비기능 요구사항 | 사용자 소유 데이터, 커뮤니티 수정·삭제, API cache 권한 시나리오 결과 기록 | `docs/13-validation-report.md`, `database.rules.json` |
+| BL-02 | Firebase Rules 권한 시나리오 검증표 작성 | P0 | done | `TD-05`, 비기능 요구사항 | Emulator 기반 15개 권한 테스트를 실행하고 CI에 포함 | `docs/13-validation-report.md`, `database.rules.json`, `test/database.rules.test.js` |
 | BL-03 | 라우트 단위 코드 스플리팅 적용 여부 결정 및 구현 | P1 | ready | `TD-01` | 적용 전후 `npm run build` 청크 크기 비교, 남은 500kB 초과 경고 원인 기록 | `docs/09-metrics.md`, 빌드 로그 |
 | BL-04 | 번들 크기 기준선 측정표 작성 | P1 | ready | `TD-01`, 성능 지표 | 현재 빌드의 주요 청크 크기와 경고 여부 기록 | `docs/13-validation-report.md` |
-| BL-05 | 핵심 사용자 여정 수동 검증 보고서 작성 | P1 | ready | `TD-04`, `FR-01`~`FR-07` | VF-01~VF-07 결과, 환경, 실패 지점 기록 | `docs/13-validation-report.md` |
+| BL-05 | 핵심 사용자 여정 수동 검증 보고서 작성 | P1 | done | `TD-04`, `FR-01`~`FR-07` | VF-01~VF-07 배포 환경 결과를 검증 보고서에 기록 | `docs/13-validation-report.md` |
 | BL-06 | 핵심 사용자 여정 E2E 테스트 도입 검토 | P1 | todo | `TD-04` | 도구 도입 여부 결정, 최소 대표 흐름 1개 자동화 또는 보류 사유 기록 | `docs/06-quality-plan.md`, `decision-log/` |
 | BL-07 | 성능·캐시·AI 성공률 릴리스별 측정 방식 확정 | P1 | todo | `TD-03`, `TD-06` | raw log 장기 저장 여부, 집계 지표, 보존 기간, 책임자 결정 | `docs/09-metrics.md`, `decision-log/` |
 | BL-08 | 외부 API 장애 시나리오별 smoke test 작성 | P2 | todo | `TD-08` | TourAPI, Open-Meteo, Nominatim, Gemini 실패 시 사용자 안내와 fallback 결과 기록 | `docs/13-validation-report.md` |

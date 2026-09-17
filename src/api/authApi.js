@@ -5,6 +5,7 @@ import {
   browserSessionPersistence,
   getAdditionalUserInfo,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -12,8 +13,9 @@ import {
   updatePassword as updateFirebasePassword,
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
 import { get, ref, set, update } from 'firebase/database';
-import { firebaseAuth, realtimeDb } from '../firebase';
+import { firebaseAuth, firebaseFunctions, realtimeDb } from '../firebase';
 import { getCurrentUser, nowIso } from './firebaseHelpers';
 import { uploadProfileImage } from './storageApi';
 
@@ -77,6 +79,8 @@ const authErrorMessage = (error, fallback) => {
 const isPermissionDeniedError = (error) => (
   error?.code === 'PERMISSION_DENIED' || /permission denied/i.test(error?.message || '')
 );
+
+const deleteAccountCallable = httpsCallable(firebaseFunctions, 'deleteAccount');
 
 const waitForDatabaseAuth = (delayMs) => new Promise((resolve) => {
   window.setTimeout(resolve, delayMs);
@@ -235,6 +239,33 @@ const authApi = {
     await reauthenticateWithCredential(authUser, credential);
     await updateFirebasePassword(authUser, newPassword);
     return { message: 'Password changed successfully' };
+  },
+
+  deleteAccount: async ({ currentPassword = '' } = {}) => {
+    const authUser = firebaseAuth.currentUser;
+    if (!authUser?.uid) throw { message: '로그인이 필요합니다.' };
+
+    try {
+      const hasPasswordProvider = authUser.providerData.some(({ providerId }) => providerId === 'password');
+      if (hasPasswordProvider) {
+        if (!currentPassword.trim()) throw { message: '회원 탈퇴를 위해 현재 비밀번호를 입력해 주세요.' };
+        const credential = EmailAuthProvider.credential(authUser.email, currentPassword);
+        await reauthenticateWithCredential(authUser, credential);
+      } else {
+        const googleProvider = new GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: 'select_account' });
+        await reauthenticateWithPopup(authUser, googleProvider);
+      }
+
+      await authUser.getIdToken(true);
+      const response = await deleteAccountCallable();
+      return response.data;
+    } catch (error) {
+      if (error?.code === 'functions/unauthenticated') {
+        throw { message: '세션이 만료되었습니다. 다시 로그인한 뒤 탈퇴해 주세요.' };
+      }
+      throw { message: authErrorMessage(error, '회원 탈퇴를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.') };
+    }
   },
 
   getFavoriteRegions: async () => {

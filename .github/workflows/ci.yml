@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  frontend:
-    name: Frontend Lint & Build
+  quality:
+    name: Quality checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,8 +16,27 @@ jobs:
           node-version: 20
           cache: npm
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Frontend utility tests
+        run: |
+          npm run test:date-key
+          npm run test:tourapi-area-code
+
+      - name: Functions tests
+        run: npm --prefix functions test
+
+      - name: Database Rules tests
+        run: npm run test:database-rules
 
       - name: Lint
         run: npm run lint
