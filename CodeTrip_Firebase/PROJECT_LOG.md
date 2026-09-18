@@ -91,7 +91,7 @@ CodeTrip의 Firebase 전환 과정과 주요 개발/수정 내역을 정리한 �
 
 ## ✍🏻 작성 기준
 
-- [2026-09-18](project-log/2026-09-18.md): CI E2E에서 Vite preview 기본 포트와 Playwright 대기 포트가 달라 시간 초과하던 문제를 분석하고, CI 미리보기 포트를 `5173`으로 고정했습니다.
+- [2026-09-18](project-log/2026-09-18.md): CI E2E에서 Vite preview 기본 포트와 Playwright 대기 포트가 달라 시간 초과하던 문제를 분석하고, CI 미리보기 포트를 `5173`으로 고정했습니다. GitHub Actions에는 운영 Firebase 설정 대신 공개 라우팅 렌더링용 CI 전용 더미 설정을 주입했습니다.
 
 1. 구현 및 수정 내역은 작업 날짜에 맞춰 `project-log/` 하위 파일에 기록합니다.
 2. 장애 오류 분석과 트러블슈팅 이력은 해당 일자 로그에 작성 후 `TROUBLESHOOTING.md`에 링크를 연결합니다.
