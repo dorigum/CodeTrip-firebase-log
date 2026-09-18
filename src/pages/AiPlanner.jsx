@@ -409,7 +409,7 @@ const hydratePlaceAddresses = async (places) => Promise.all(places.map(async (pl
   }
 }));
 
-const getFolderRegion = (folder, places) => {
+const getFolderRegion = (folder, places, generationContext = {}) => {
   const addressRegion = getAddressRegion(places);
   if (addressRegion) {
     const folderLocality = getFolderLocality(folder, places);
@@ -422,20 +422,46 @@ const getFolderRegion = (folder, places) => {
   const explicitRegion = folder?.region_name || folder?.regionName || folder?.region;
   if (explicitRegion) return getRegionFromText(explicitRegion) || explicitRegion;
 
+  const contextRegion = generationContext?.regionName || generationContext?.region;
+  if (contextRegion) return getRegionFromText(contextRegion) || contextRegion;
+
   return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
 };
+
+const getLatestFolderPlan = (folder, plans = []) => (
+  [...plans]
+    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
+    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0] || null
+);
 
 const getLatestFolderGenerationContext = (folder, plans = []) => {
   const folderContext = folder?.generation_context || folder?.generationContext;
   if (folderContext && typeof folderContext === 'object') return folderContext;
 
-  return [...plans]
-    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
-    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0]
-    ?.generation_context || [...plans]
-    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
-    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0]
-    ?.generationContext || {};
+  const latestPlan = getLatestFolderPlan(folder, plans);
+  return latestPlan?.generation_context || latestPlan?.generationContext || {};
+};
+
+const getPlaceSelectionId = (place, index = 0) => String(
+  place?.contentid
+  || place?.contentId
+  || place?.id
+  || `${place?.title || place?.placeName || 'saved-place'}-${place?.addr1 || place?.address || ''}-${index}`
+);
+
+const getSavedPlanPlaces = (folder, plans = []) => {
+  const latestPlan = getLatestFolderPlan(folder, plans);
+  if (!latestPlan) return [];
+
+  return (Array.isArray(latestPlan.days) ? latestPlan.days : [])
+    .flatMap((day) => (Array.isArray(day?.items) ? day.items : []))
+    .map((item, index) => ({
+      ...item,
+      id: getPlaceSelectionId(item, index),
+      contentid: item?.contentid || item?.contentId || item?.id || `saved-plan-${latestPlan.id || latestPlan.created_at || 'place'}-${index}`,
+      title: item?.title || item?.placeName || `저장 코스 장소 ${index + 1}`,
+      addr1: item?.addr1 || item?.address || '',
+    }));
 };
 
 const getFolderContextFormValues = (context = {}) => {
@@ -614,18 +640,31 @@ const AiPlanner = () => {
     initWishlist();
   }, [isLoggedIn, initWishlist, navigate, showToast]);
 
-  const folderPlaces = useMemo(
+  const savedFolderPlaces = useMemo(
     () => wishlistItems.filter((item) => selectedFolderId && String(item.folder_id) === String(selectedFolderId)),
     [wishlistItems, selectedFolderId]
   );
 
+  const selectedFolder = useMemo(
+    () => folders.find((folder) => String(folder.id) === String(selectedFolderId)) || null,
+    [folders, selectedFolderId]
+  );
+
+  const savedPlanPlaces = useMemo(
+    () => (savedFolderPlaces.length === 0 ? getSavedPlanPlaces(selectedFolder, aiTripPlans) : []),
+    [aiTripPlans, savedFolderPlaces.length, selectedFolder]
+  );
+
+  const folderPlaces = savedFolderPlaces.length > 0 ? savedFolderPlaces : savedPlanPlaces;
+  const usingSavedPlanPlaces = savedFolderPlaces.length === 0 && savedPlanPlaces.length > 0;
+
   const selectedPlaces = useMemo(
-    () => wishlistItems.filter((item) => selectedContentIds.has(String(item.contentid || item.contentId))),
-    [wishlistItems, selectedContentIds]
+    () => folderPlaces.filter((item, index) => selectedContentIds.has(getPlaceSelectionId(item, index))),
+    [folderPlaces, selectedContentIds]
   );
 
   const selectedFolderPlaceCount = useMemo(
-    () => folderPlaces.filter((item) => selectedContentIds.has(String(item.contentid || item.contentId))).length,
+    () => folderPlaces.filter((item, index) => selectedContentIds.has(getPlaceSelectionId(item, index))).length,
     [folderPlaces, selectedContentIds]
   );
 
@@ -853,12 +892,15 @@ const AiPlanner = () => {
     invalidateCurrentPlan();
     const folderSelectionRevision = plannerRevisionRef.current;
     setSelectedFolderId(folderId);
-    const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
+    const nextSavedFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
     const folderSchedule = getNormalizedFolderSchedule(selectedFolder);
     const folderContext = getLatestFolderGenerationContext(selectedFolder, aiTripPlans);
+    const nextFolderPlaces = nextSavedFolderPlaces.length > 0
+      ? nextSavedFolderPlaces
+      : getSavedPlanPlaces(selectedFolder, aiTripPlans);
 
-    setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
+    setSelectedContentIds(new Set(nextFolderPlaces.map((item, index) => getPlaceSelectionId(item, index))));
     setForm((prev) => ({
       ...prev,
       ...getFolderContextFormValues(folderContext),
@@ -891,7 +933,7 @@ const AiPlanner = () => {
         return;
       }
 
-      const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses);
+      const folderRegion = getFolderRegion(selectedFolder, placesWithAddresses, folderContext);
       if (folderRegion) {
         setForm((prev) => ({ ...prev, regionName: folderRegion }));
       }
@@ -1007,8 +1049,8 @@ const AiPlanner = () => {
       let preferredPlaces = selectedPlaces;
 
       if (planningMode === PLAN_MODE.FOLDER) {
-        const selectedFolder = folders.find((folder) => String(folder.id) === String(selectedFolderId));
-        const folderRegion = getFolderRegion(selectedFolder, folderPlaces);
+        const folderContext = getLatestFolderGenerationContext(selectedFolder, aiTripPlans);
+        const folderRegion = getFolderRegion(selectedFolder, folderPlaces, folderContext);
         if (folderRegion && !isPlaceInRepresentativeRegion({ addr1: form.regionName }, folderRegion)) {
           showToast('폴더의 저장 장소 지역과 다른 지역으로는 코스를 생성할 수 없습니다. 폴더 기준 지역으로 다시 불러왔습니다.');
           await handleFolderChange(String(selectedFolderId));
@@ -1016,7 +1058,6 @@ const AiPlanner = () => {
         }
 
         preferredPlaces = selectedPlaces
-          .filter((item) => String(item.folder_id) === String(selectedFolderId))
           .filter((item) => isPlaceInRepresentativeRegion(item, form.regionName))
           .filter((item) => isPlaceInRequiredArea(item, form.requiredAreas));
         if (preferredPlaces.length === 0) {
@@ -1236,9 +1277,10 @@ const AiPlanner = () => {
                   <option value="">폴더를 선택해주세요</option>
                   {folders.map((folder) => {
                     const count = wishlistItems.filter((item) => String(item.folder_id) === String(folder.id)).length;
+                    const savedPlanPlaceCount = count === 0 ? getSavedPlanPlaces(folder, aiTripPlans).length : 0;
                     return (
                       <option key={folder.id} value={folder.id}>
-                        {folder.name} ({count})
+                        {folder.name} ({count}{savedPlanPlaceCount > 0 ? ` · 저장 코스 ${savedPlanPlaceCount}` : ''})
                       </option>
                     );
                   })}
@@ -1251,7 +1293,7 @@ const AiPlanner = () => {
               {selectedFolderId && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <FieldLabel>Folder Places</FieldLabel>
+                    <FieldLabel>{usingSavedPlanPlaces ? 'Saved Course Places' : 'Folder Places'}</FieldLabel>
                     <span className="text-[10px] font-mono font-bold text-primary">
                       {selectedFolderPlaceCount} / {folderPlaces.length}
                     </span>
@@ -1260,8 +1302,8 @@ const AiPlanner = () => {
                     {folderPlaces.length === 0 ? (
                       <p className="text-xs text-slate-400 font-mono p-4">// empty_folder_places</p>
                     ) : (
-                      folderPlaces.map((item) => {
-                        const id = String(item.contentid || item.contentId);
+                      folderPlaces.map((item, index) => {
+                        const id = getPlaceSelectionId(item, index);
                         const selected = selectedContentIds.has(id);
                         return (
                           <button
@@ -1286,6 +1328,11 @@ const AiPlanner = () => {
                       })
                     )}
                   </div>
+                  {usingSavedPlanPlaces && (
+                    <p className="mt-1.5 text-[10px] leading-4 text-slate-400">
+                      폴더의 저장 여행지가 없어, 기존 AI 코스에 저장된 장소를 재생성 후보로 사용합니다.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -1302,7 +1349,7 @@ const AiPlanner = () => {
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm read-only:cursor-not-allowed read-only:bg-slate-50"
                 placeholder="서울"
               />
-              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{planningMode === PLAN_MODE.FOLDER && selectedFolderId ? '폴더에 저장된 장소 주소를 기준으로 지역이 자동 적용됩니다.' : REGION_HELP}</p>
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{planningMode === PLAN_MODE.FOLDER && selectedFolderId ? '폴더의 저장 장소 또는 기존 AI 코스 조건을 기준으로 지역이 자동 적용됩니다.' : REGION_HELP}</p>
             </div>
             <div>
               <FieldLabel>Days</FieldLabel>

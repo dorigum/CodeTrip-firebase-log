@@ -10,6 +10,10 @@ const Toast = ({ visible, text, type = 'error' }) => {
       className: 'bg-emerald-600 text-white',
       icon: 'check_circle',
     },
+    removed: {
+      className: 'bg-amber-600 text-white',
+      icon: 'delete',
+    },
     info: {
       className: 'bg-primary text-white',
       icon: 'info',

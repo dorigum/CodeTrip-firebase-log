@@ -196,7 +196,7 @@ const MyPage = () => {
 
     if (removedCount > 0) {
       setWishDeleteTarget(null);
-      showToast('위시리스트에서 삭제했습니다.', 'success');
+      showToast('위시리스트에서 삭제했습니다.', 'removed');
     } else {
       showToast('삭제할 위시리스트 항목을 찾지 못했습니다.');
     }
