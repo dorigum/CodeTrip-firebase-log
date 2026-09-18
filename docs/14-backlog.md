@@ -88,7 +88,7 @@ GitHub Project를 만들 때 아래 카드를 추가하고, `Status` 필드를 `
 | BL-07 | 성능·캐시·AI 성공률 릴리스별 측정 방식 확정 | P1 | todo | `TD-03`, `TD-06` | raw log 장기 저장 여부, 집계 지표, 보존 기간, 책임자 결정 | `docs/09-metrics.md`, `decision-log/` |
 | BL-08 | 외부 API 장애 시나리오별 smoke test 작성 | P2 | in_progress | `TD-08` | TourAPI 오류 응답, 날씨·위치 fallback, Gemini 오류 안내를 자동 검증하고 실제 네트워크 단절 시나리오를 추가 기록 | `docs/13-validation-report.md`, `functions/test/tourApiUpdates.test.js`, `src/utils/externalServiceErrors.test.js` |
 | BL-09 | 주요 의사결정 로그 3건 작성 | P2 | ready | `TD-07` | 애자일 문서 체계, AI 분석 규칙, 성능 측정 원칙 결정 기록 작성 | `docs/decision-log/` |
-| BL-10 | 스프린트 회고 첫 기록 작성 | P2 | todo | `TD-07` | 문서 체계화 작업의 목표, 잘된 점, 문제, 다음 액션 기록 | `docs/retrospectives/` |
+| BL-10 | 스프린트 회고 첫 기록 작성 | P2 | done | `TD-07` | MVP 안정화·심사 제출 준비 스프린트의 목표, 잘된 점, 문제, 다음 액션 기록 | `docs/retrospectives/2026-09-mvp-hardening-retrospective.md` |
 | BL-11 | 심사 시연 시나리오 작성 | P2 | done | WBS 6~8주차 | 탐색, 상세, 로그인, 찜, AI 일정, 마이페이지, 커뮤니티, 품질 설명 흐름 정의 | `docs/15-demo-scenario.md` |
 | BL-12 | 상용 예약·결제·관리자 기능 백로그 보관 | P3 | deferred | `FR-08` | MVP 범위 제외 사유와 상용화 단계 재검토 조건 기록 | `docs/02-product-requirements.md`, `decision-log/` |
 | BL-13 | 공모전 1차 심사 제출 항목 매핑 | P0 | done | 제출 안내, 기능설명서 양식 | 제출 항목, 기능설명서 슬라이드, OpenAPI 활용 목록, 제출 전 체크리스트 정리 | `docs/16-contest-submission-checklist.md` |

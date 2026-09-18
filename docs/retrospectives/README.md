@@ -2,6 +2,10 @@
 
 스프린트 종료 시 다음 형식으로 기록합니다.
 
+## 기록
+
+- [2026-09 MVP 안정화·심사 제출 준비 스프린트 회고](2026-09-mvp-hardening-retrospective.md)
+
 ```markdown
 # Sprint N / 기간
 ## 목표 달성
