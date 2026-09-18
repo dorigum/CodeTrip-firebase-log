@@ -5,9 +5,19 @@ on:
     branches: [main]
 
 jobs:
-  frontend:
-    name: Frontend Lint & Build
+  quality:
+    name: Quality checks
     runs-on: ubuntu-latest
+    # 공개 라우팅 E2E는 실제 Firebase에 연결하지 않는다. 초기화 시 필요한 형식상
+    # 유효한 값만 사용해, 운영 설정·자격 증명이 CI 번들에 포함되지 않게 한다.
+    env:
+      VITE_FIREBASE_API_KEY: AIzaSyCIOnlyPlaceholderKey000000000000000
+      VITE_FIREBASE_AUTH_DOMAIN: codetrip-ci.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: codetrip-ci
+      VITE_FIREBASE_STORAGE_BUCKET: codetrip-ci.appspot.com
+      VITE_FIREBASE_MESSAGING_SENDER_ID: '123456789012'
+      VITE_FIREBASE_APP_ID: '1:123456789012:web:ci000000000000000000000'
+      VITE_FIREBASE_DATABASE_URL: https://codetrip-ci-default-rtdb.firebaseio.com
     steps:
       - uses: actions/checkout@v4
 
@@ -16,11 +26,37 @@ jobs:
           node-version: 20
           cache: npm
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Frontend utility tests
+        run: |
+          npm run test:date-key
+          npm run test:tourapi-area-code
+          npm run test:external-service-errors
+
+      - name: Functions tests
+        run: npm --prefix functions test
+
+      - name: Database Rules tests
+        run: npm run test:database-rules
 
       - name: Lint
         run: npm run lint
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E routing smoke tests
+        run: npm run test:e2e

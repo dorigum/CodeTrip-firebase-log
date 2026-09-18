@@ -16,6 +16,14 @@ const SOLO_COMPANION_REPLACEMENTS = [
   [/친구(?:들)?와 여행/g, '혼자 여행'],
   [/친구(?:들)?랑 여행/g, '혼자 여행'],
 ];
+const GENERIC_FAMILY_REPLACEMENTS = [
+  [/부모님과 함께하는/g, '가족과 함께하는'],
+  [/부모님과 함께/g, '가족과 함께'],
+  [/부모님과의/g, '가족과의'],
+  [/부모님 동반/g, '가족 일행'],
+  [/부모님 여행/g, '가족 여행'],
+  [/부모님/g, '가족 일행'],
+];
 
 const normalizeChecklist = (checklist) => (
   Array.isArray(checklist)
@@ -25,13 +33,17 @@ const normalizeChecklist = (checklist) => (
     : []
 );
 
+const dedupeChecklist = (checklist) => Array.from(new Map(
+  normalizeChecklist(checklist).map((item) => [item.replace(/\s+/g, ' ').toLocaleLowerCase('ko-KR'), item])
+).values());
+
 const applyTransportationChecklist = (checklist, transportation) => {
   const transportationGuide = TRANSPORTATION_CHECKLIST[transportation]
     || TRANSPORTATION_CHECKLIST.대중교통;
   const nonTransportationItems = normalizeChecklist(checklist)
     .filter((item) => !TRANSPORTATION_KEYWORD_PATTERN.test(item));
 
-  return [transportationGuide, ...nonTransportationItems].slice(0, 5);
+  return dedupeChecklist([transportationGuide, ...nonTransportationItems]).slice(0, 5);
 };
 
 const replaceSoloCompanionText = (value) => SOLO_COMPANION_REPLACEMENTS.reduce(
@@ -39,10 +51,22 @@ const replaceSoloCompanionText = (value) => SOLO_COMPANION_REPLACEMENTS.reduce(
   String(value || '')
 );
 
-const applyCompanionConsistency = (plan, companionType) => {
-  if (companionType !== '혼자' || !plan || typeof plan !== 'object') return plan;
+const replaceGenericFamilyText = (value) => GENERIC_FAMILY_REPLACEMENTS.reduce(
+  (text, [pattern, replacement]) => text.replace(pattern, replacement),
+  String(value || '')
+);
 
-  const normalizeText = (value) => replaceSoloCompanionText(value);
+const applyCompanionConsistency = (plan, companionType, familyDetail = '') => {
+  if (!plan || typeof plan !== 'object') return plan;
+
+  const normalizeFamily = companionType === '가족' && familyDetail !== '부모님·자녀 동반';
+  if (companionType !== '혼자' && !normalizeFamily) return plan;
+
+  const normalizeText = (value) => (
+    companionType === '혼자'
+      ? replaceSoloCompanionText(value)
+      : replaceGenericFamilyText(value)
+  );
   const normalizeItem = (item) => ({
     ...item,
     reason: normalizeText(item?.reason),

@@ -1,30 +1,34 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App.jsx'
-import Home from './pages/Home.jsx'
-import Explore from './pages/Explore.jsx'
-import TravelDetail from './pages/TravelDetail.jsx'
-import Login from './pages/Login.jsx'
-import SignUp from './pages/SignUp.jsx'
-import MyPage from './pages/MyPage.jsx'
-import Settings from './pages/Settings.jsx'
-import ForgotPassword from './pages/ForgotPassword.jsx'
-import Festivals from './pages/Festivals.jsx'
-import Info from './pages/Info.jsx'
-import AiPlanner from './pages/AiPlanner.jsx'
-import Board from './pages/Board.jsx'
-import BoardDetail from './pages/BoardDetail.jsx'
-import BoardWrite from './pages/BoardWrite.jsx'
-import TravelTagSearch from './pages/TravelTagSearch.jsx'
-import MyActivity from './pages/MyActivity.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import RouteLoading from './components/RouteLoading.jsx'
+import {
+  AiPlanner,
+  Board,
+  BoardDetail,
+  BoardWrite,
+  Explore,
+  Festivals,
+  ForgotPassword,
+  Home,
+  Info,
+  Login,
+  MyActivity,
+  MyPage,
+  Settings,
+  SignUp,
+  TravelDetail,
+  TravelTagSearch,
+} from './routes/lazyPages.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={<RouteLoading />}>
+        <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<Home />} />
           <Route path="explore" element={<Explore />} />
@@ -43,7 +47,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="board/:id" element={<ProtectedRoute title="게시글 상세 접근 제한"><BoardDetail /></ProtectedRoute>} />
           <Route path="my-activity" element={<ProtectedRoute title="내 활동 접근 제한"><MyActivity /></ProtectedRoute>} />
         </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   </React.StrictMode>,
 )

@@ -1,5 +1,7 @@
 const { initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const { getDatabase } = require('firebase-admin/database');
+const { getStorage } = require('firebase-admin/storage');
 const { onValueWritten } = require('firebase-functions/v2/database');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
@@ -10,6 +12,7 @@ const { applyCompanionConsistency, applyTransportationChecklist } = require('./t
 const { isValidTripTime, isValidTripTimeRange } = require('./tripPlanTime');
 const { dedupeTourApiItems } = require('./tourApiUpdates');
 const { buildBoardPostNotification, getProfileDisplayName } = require('./boardPostNotifications');
+const { buildAccountDeletionUpdates } = require('./accountDeletion');
 
 initializeApp();
 
@@ -64,6 +67,24 @@ const sanitizeStringList = (value, limit = 10) => {
     .map((item) => sanitizeString(item, '', 40))
     .filter(Boolean)
     .slice(0, limit);
+};
+
+const sanitizeDayAreaPreferences = (value, durationDays, requiredAreas) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+  return Object.entries(value).reduce((preferences, [day, area]) => {
+    const normalizedDay = Number(day);
+    const normalizedArea = sanitizeString(area, '', 40);
+    if (
+      Number.isInteger(normalizedDay)
+      && normalizedDay >= 1
+      && normalizedDay <= durationDays
+      && requiredAreas.includes(normalizedArea)
+    ) {
+      preferences[normalizedDay] = normalizedArea;
+    }
+    return preferences;
+  }, {});
 };
 
 const sanitizeNumber = (value, fallback, min, max) => {
@@ -135,6 +156,41 @@ const normalizePlace = (place = {}) => ({
   contenttypeid: sanitizeString(place.contenttypeid || place.contentTypeId, '', 20) || null,
 });
 
+const isAddressInRequiredAreas = (address, requiredAreas = []) => {
+  if (requiredAreas.length === 0) return true;
+
+  const normalizedAddress = String(address || '').replace(/\s+/g, '').trim();
+  return requiredAreas.some((area) => {
+    const normalizedArea = String(area || '').replace(/\s+/g, '').trim();
+    return normalizedArea && normalizedAddress.includes(normalizedArea);
+  });
+};
+
+const REGION_ADDRESS_ALIASES = {
+  서울: '서울', 서울특별시: '서울', 부산: '부산', 부산광역시: '부산',
+  대구: '대구', 대구광역시: '대구', 인천: '인천', 인천광역시: '인천',
+  광주: '광주', 광주광역시: '광주', 대전: '대전', 대전광역시: '대전',
+  울산: '울산', 울산광역시: '울산', 경기: '경기', 경기도: '경기',
+  충북: '충북', 충청북도: '충북', 충남: '충남', 충청남도: '충남',
+  전북: '전북', 전라북도: '전북', 전남: '전남', 전라남도: '전남',
+  경북: '경북', 경상북도: '경북', 경남: '경남', 경상남도: '경남',
+  제주: '제주', 제주도: '제주', 제주특별자치도: '제주',
+  강원: '강원', 강원도: '강원', 강원특별자치도: '강원',
+  세종: '세종', 세종특별자치시: '세종',
+};
+
+const isAddressInRepresentativeRegion = (address, regionName) => {
+  const normalizedRegion = String(regionName || '').trim();
+  const regionKeywords = (REGION_ADDRESS_ALIASES[normalizedRegion]
+    ? [REGION_ADDRESS_ALIASES[normalizedRegion]]
+    : normalizedRegion.split(/\s+/).map((part) => (
+      REGION_ADDRESS_ALIASES[part] || part.replace(/(특별자치도|특별자치시|특별시|광역시|도|시|군|구)$/, '')
+    )).filter(Boolean)
+  ).map((keyword) => String(keyword).replace(/\s+/g, ''));
+  const normalizedAddress = String(address || '').replace(/\s+/g, '');
+  return regionKeywords.length === 0 || regionKeywords.every((keyword) => normalizedAddress.includes(keyword));
+};
+
 const sanitizeInput = (input = {}) => {
   const regionName = sanitizeString(input.regionName, '', 80);
   if (!regionName) {
@@ -157,12 +213,21 @@ const sanitizeInput = (input = {}) => {
   }
 
   const companionType = sanitizeString(input.companionType, '미정', 30);
+  const familyDetail = companionType === '가족'
+    ? sanitizeString(input.familyDetail, '', 40)
+    : '';
   const minimumPeopleCount = companionType === '혼자' ? 1 : 2;
   const startTime = sanitizeTripTime(input.startTime || '10:00', '일정 시작 시간');
   const endTime = sanitizeTripTime(input.endTime || '18:00', '일정 종료 시간');
   if (!isValidTripTimeRange(startTime, endTime)) {
     throw new HttpsError('invalid-argument', '일정 종료 시간은 시작 시간보다 늦어야 합니다.');
   }
+
+  const requiredAreas = sanitizeStringList(input.requiredAreas, 4);
+
+  const preferredPlaces = Array.isArray(input.preferredPlaces)
+    ? input.preferredPlaces.map(normalizePlace).slice(0, MAX_PREFERRED_PLACES)
+    : [];
 
   return {
     planningMode: sanitizeString(input.planningMode, 'custom', 20),
@@ -173,6 +238,7 @@ const sanitizeInput = (input = {}) => {
     travelEndDate,
     travelStyle: sanitizeStringList(input.travelStyle, 10),
     companionType,
+    familyDetail,
     peopleCount: sanitizeNumber(input.peopleCount, minimumPeopleCount, minimumPeopleCount, 10),
     transportation: sanitizeString(input.transportation, '대중교통', 30),
     priorities: sanitizeStringList(input.priorities, 5),
@@ -183,9 +249,16 @@ const sanitizeInput = (input = {}) => {
     startTime,
     endTime,
     avoidKeywords: sanitizeStringList(input.avoidKeywords, 10),
-    preferredPlaces: Array.isArray(input.preferredPlaces)
-      ? input.preferredPlaces.map(normalizePlace).slice(0, MAX_PREFERRED_PLACES)
-      : [],
+    requiredAreas,
+    dayAreaPreferences: sanitizeDayAreaPreferences(
+      input.dayAreaPreferences,
+      dateDurationDays || durationDays,
+      requiredAreas
+    ),
+    preferredPlaces: preferredPlaces.filter((place) => (
+      isAddressInRepresentativeRegion(place.addr1, regionName)
+      && isAddressInRequiredAreas(place.addr1, requiredAreas)
+    )),
   };
 };
 
@@ -203,6 +276,16 @@ Markdown, 코드블록, 설명 문장, 주석은 반환하지 않습니다.`;
 const toListText = (value) => {
   if (Array.isArray(value)) return value.filter(Boolean).join(', ') || '없음';
   return value || '없음';
+};
+
+const toDayAreaPreferenceText = (value) => {
+  const preferences = value && typeof value === 'object' ? value : {};
+  const entries = Object.entries(preferences)
+    .map(([day, area]) => [Number(day), String(area || '').trim()])
+    .filter(([day, area]) => Number.isInteger(day) && day > 0 && area)
+    .sort(([firstDay], [secondDay]) => firstDay - secondDay)
+    .map(([day, area]) => `${day}일차: ${area}`);
+  return entries.join(', ') || 'AI 자동 배분';
 };
 
 const getRegionDiversityGuide = (regionName = '') => {
@@ -229,12 +312,15 @@ const buildTripPrompt = (input) => `${SYSTEM_PROMPT}
 [사용자 조건]
 - 생성 방식: ${input.planningMode === 'folder' ? '위시리스트 폴더 기반' : '조건 기반 새 코스'}
 - 기준 폴더: ${input.sourceFolderName || '없음'}
-- 지역: ${input.regionName || '미정'}
+- 대표 지역: ${input.regionName || '미정'}
+- 반드시 방문할 권역: ${toListText(input.requiredAreas)}
+- 일차별 희망 권역: ${toDayAreaPreferenceText(input.dayAreaPreferences)}
 - 여행 일수: ${input.durationDays || 1}일
 - 여행 시작일: ${input.travelStartDate || '미정'}
 - 여행 종료일: ${input.travelEndDate || '미정'}
 - 여행 스타일: ${toListText(input.travelStyle)}
 - 동행 유형: ${input.companionType || '미정'}
+- 가족 세부 유형: ${input.familyDetail || '미지정'}
 - 인원 수: ${input.peopleCount || 1}명
 - 이동수단: ${input.transportation || '대중교통'}
 - 여행 우선순위: ${toListText(input.priorities)}
@@ -267,13 +353,15 @@ ${getRegionDiversityGuide(input.regionName)}
 11. 날씨 키워드가 있으면 실내/실외 비중에 반영하세요.
 12. 예산은 1일 1인 기준과 예상 총예산 범위를 함께 고려하여 식사, 카페, 유료 체험 수준을 조절하세요.
 13. 비·폭염·한파 등 날씨 키워드는 실내/실외 비중과 대체 장소에 반영하세요.
-14. 아이·부모님 동반은 이동 구간과 일정 수를 줄이고 휴식 시간을 포함하세요. 친구·연인은 선택한 여행 스타일과 체험·식사 비중을 우선하세요.
+14. 가족 세부 유형이 부모님·자녀 동반일 때만 이동 구간과 일정 수를 줄이고 휴식 시간을 포함하세요. 가족 세부 유형이 미지정·형제·자매·친척·혼합이면 부모님 또는 아이 동반으로 추정하거나 표현하지 말고 일반 가족 일행으로 작성하세요. 친구·연인은 선택한 여행 스타일과 체험·식사 비중을 우선하세요.
 15. 대중교통은 환승과 장거리 이동을 줄이고, 자차는 주차·접근성을 고려하세요. 도보는 가까운 권역에 집중하세요.
 16. 여행 우선순위(예산, 휴식, 맛집, 체험, 사진, 문화)는 장소 선정과 일정 배치의 충돌 시 우선 반영하세요.
 17. saveGuide에는 Firebase 위시리스트 폴더로 저장하기 좋은 folderName, memo, checklist를 포함하세요.
 18. checklist의 이동 준비 항목은 선택한 이동수단에 정확히 맞춰 작성하세요. 대중교통은 교통카드·환승 경로·배차 간격, 자차는 주차 가능 여부·주차 요금·도로 혼잡 구간, 도보는 이동 거리·경사·편한 신발을 확인합니다. 자차 또는 도보 코스에는 배차·환승·교통카드 항목을 넣지 마세요.
 19. 동행 유형은 제목, 요약, 태그, 일정 테마, 추천 이유와 팁에 일관되게 반영하세요. 동행 유형이 혼자이면 친구·연인·가족과 함께라는 표현을 절대 사용하지 말고 혼자 여행에 맞는 표현만 사용하세요.
 20. 동행 유형이 혼자가 아니면 인원 수는 본인을 포함해 최소 2명입니다. 인원 수와 동행 유형이 충돌하지 않게 일정 규모와 예산을 제안하세요.
+21. 반드시 방문할 권역이 있으면 모든 권역을 일정에 반영하세요. 일차별 희망 권역이 지정된 날은 해당 권역을 중심으로 일정을 구성하고, AI 자동 배분인 날은 이동 부담이 적도록 가까운 권역을 묶어 배정하세요.
+22. 반드시 방문할 권역이 하나 이상이면, 일정의 모든 방문 장소 주소는 그 권역 중 하나에 포함되어야 합니다. 예를 들어 “종로, 강남”이 입력되면 종로구 또는 강남구 안의 장소만 제안하고, 은평구·송파구 등 입력하지 않은 권역의 장소를 대체 후보로 넣지 마세요. contentId가 null인 새 장소도 같은 주소 규칙을 지켜야 합니다.
 
 [응답 JSON 스키마]
 {
@@ -330,7 +418,7 @@ const parseGeminiJson = (text) => {
   }
 };
 
-const validateTripPlan = (plan) => {
+const validateTripPlan = (plan, requiredAreas = [], regionName = '') => {
   if (!plan || typeof plan !== 'object') throw new HttpsError('internal', 'AI 코스 응답이 비어 있습니다.');
   if (!plan.title || typeof plan.title !== 'string') throw new HttpsError('internal', 'AI 코스 제목이 없습니다.');
   if (!Array.isArray(plan.days) || plan.days.length === 0) throw new HttpsError('internal', 'AI 코스 일정이 없습니다.');
@@ -338,6 +426,17 @@ const validateTripPlan = (plan) => {
 
   plan.days.forEach((day) => {
     if (!Array.isArray(day.items)) throw new HttpsError('internal', '일정 항목 구조가 올바르지 않습니다.');
+    day.items.forEach((item) => {
+      const address = item?.address || item?.addr1 || item?.location || '';
+      if (!isAddressInRepresentativeRegion(address, regionName)) {
+        throw new HttpsError('internal', 'AI 코스에 대표 여행 지역 밖 장소가 포함되었습니다. 다시 생성해주세요.');
+      }
+      if (requiredAreas.length > 0) {
+        if (!isAddressInRequiredAreas(address, requiredAreas)) {
+          throw new HttpsError('internal', 'AI 코스에 필수 방문 권역 밖 장소가 포함되었습니다. 다시 생성해주세요.');
+        }
+      }
+    });
   });
 
   return plan;
@@ -557,6 +656,7 @@ exports.notifyBoardPostComment = onValueWritten(
       actorId,
       actorNickname: comment.nickname,
       interaction: 'comment',
+      commentBody: comment.body,
       notificationId: `board-comment-${event.params.commentId}`,
     });
   },
@@ -752,12 +852,12 @@ exports.generateTripPlan = onCall(
 
       const data = await readResponseJson(response);
       const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
-      let plan = validateTripPlan(parseGeminiJson(text));
+      let plan = validateTripPlan(parseGeminiJson(text), input.requiredAreas, input.regionName);
       plan.saveGuide.checklist = applyTransportationChecklist(
         plan.saveGuide.checklist,
         input.transportation
       );
-      plan = applyCompanionConsistency(plan, input.companionType);
+      plan = applyCompanionConsistency(plan, input.companionType, input.familyDetail);
 
       logger.info('Gemini trip plan generated', {
         uid,
@@ -770,6 +870,51 @@ exports.generateTripPlan = onCall(
       leaveConcurrentRequest(uid);
     }
   }
+);
+
+exports.deleteAccount = onCall(
+  {
+    region: REGION,
+    timeoutSeconds: 120,
+    memory: '256MiB',
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
+    }
+
+    const userId = request.auth.uid;
+    const db = getDatabase();
+
+    try {
+      const [usersSnap, boardPostsSnap, boardCommentsSnap, travelCommentsSnap, likesSnap] = await Promise.all([
+        db.ref('users').once('value'),
+        db.ref('boardPosts').once('value'),
+        db.ref('boardComments').once('value'),
+        db.ref('travelComments').once('value'),
+        db.ref('likes').once('value'),
+      ]);
+      const updates = buildAccountDeletionUpdates({
+        userId,
+        users: usersSnap.val(),
+        boardPosts: boardPostsSnap.val(),
+        boardComments: boardCommentsSnap.val(),
+        travelComments: travelCommentsSnap.val(),
+        likes: likesSnap.val(),
+      });
+
+      await getStorage().bucket().deleteFiles({ prefix: `users/${userId}/` });
+      await db.ref().update(updates);
+
+      await getAuth().deleteUser(userId);
+      logger.info('Account deleted', { userId });
+      return { success: true };
+    } catch (error) {
+      logger.error('Account deletion failed', { userId, code: error?.code, message: error?.message });
+      throw new HttpsError('internal', '회원 탈퇴를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  },
 );
 
 exports.syncTourApiUpdates = onSchedule(

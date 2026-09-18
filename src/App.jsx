@@ -59,16 +59,16 @@ const App = () => {
 
   return (
     <ToastProvider>
-      <div className="flex min-h-screen bg-background text-on-surface font-body selection:bg-primary-fixed overflow-hidden">
+      <div className="flex h-[100dvh] bg-background text-on-surface font-body selection:bg-primary-fixed overflow-hidden">
         {/* Side Navigation */}
         <SideBar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
 
         {/* Main Wrapper */}
-        <main className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'md:ml-20' : 'md:ml-56'} h-screen`}>
+        <main className={`flex h-[100dvh] flex-1 flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'md:ml-20' : 'md:ml-56'} md:h-screen`}>
           <Header toggleSidebar={toggleSidebar} />
 
           {/* Dynamic Content Area */}
-          <div id="main-scroll" className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-16 md:pb-0" style={{ overflowAnchor: 'none' }}>
+          <div id="main-scroll" className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0" style={{ overflowAnchor: 'none' }}>
             <Outlet />
 
             {/* 푸터 복구 */}

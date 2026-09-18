@@ -23,7 +23,7 @@ const SignUp = () => {
   const [error, setError] = useState('');
   const [signupSuccessOpen, setSignupSuccessOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, prepareLogin, cancelLogin, isLoggedIn } = useAuthStore();
+  const { login, prepareLogin, cancelLogin, prepareSignup, finishSignup, isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
   const googleSignupInProgressRef = useRef(false);
 
@@ -47,13 +47,16 @@ const SignUp = () => {
 
     try {
       setIsLoading(true);
+      prepareSignup();
       await authApi.signup({
         email: formData.email.trim(),
         password: formData.password,
         name: formData.name.trim()
       });
+      finishSignup();
       setSignupSuccessOpen(true);
     } catch (err) {
+      finishSignup();
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
       setIsLoading(false);

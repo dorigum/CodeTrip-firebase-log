@@ -6,11 +6,12 @@ import { firebaseAuth } from '../firebase';
 import { DEFAULT_REGIONS } from '../constants/regions';
 import useToast from '../hooks/useToast';
 import PageHeader from '../components/PageHeader';
+import ConfirmModal from '../components/ConfirmModal';
 
 const SELECTABLE_REGIONS = DEFAULT_REGIONS.filter(r => r.code !== '');
 
 const Settings = () => {
-  const { user, updateUser, isLoggedIn } = useAuthStore();
+  const { user, updateUser, isLoggedIn, logout } = useAuthStore();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -96,6 +97,10 @@ const Settings = () => {
   const [pwdLoading, setPwdLoading] = useState(false);
   const [pwdMessage, setPwdMessage] = useState({ type: '', text: '' });
   const canChangePassword = firebaseAuth.currentUser?.providerData.some(({ providerId }) => providerId === 'password') ?? false;
+  const [accountDeleteOpen, setAccountDeleteOpen] = useState(false);
+  const [accountDeletePassword, setAccountDeletePassword] = useState('');
+  const [accountDeleteLoading, setAccountDeleteLoading] = useState(false);
+  const [accountDeleteError, setAccountDeleteError] = useState('');
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -157,6 +162,27 @@ const Settings = () => {
       setPwdMessage({ type: 'error', text: err.message || '현재 비밀번호가 틀렸거나 변경에 실패했습니다.' });
     } finally {
       setPwdLoading(false);
+    }
+  };
+
+  const openAccountDeleteModal = () => {
+    setAccountDeletePassword('');
+    setAccountDeleteError('');
+    setAccountDeleteOpen(true);
+  };
+
+  const handleDeleteAccount = async () => {
+    setAccountDeleteLoading(true);
+    setAccountDeleteError('');
+    try {
+      await authApi.deleteAccount({ currentPassword: accountDeletePassword });
+      logout();
+      navigate('/', { replace: true });
+      showToast('회원 탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.');
+    } catch (err) {
+      setAccountDeleteError(err.message || '회원 탈퇴를 처리하지 못했습니다.');
+    } finally {
+      setAccountDeleteLoading(false);
     }
   };
 
@@ -477,7 +503,57 @@ const Settings = () => {
           )}
         </section>
 
+        <section className="overflow-hidden rounded-2xl border border-red-200 bg-red-50/30 shadow-sm">
+          <div className="flex flex-col gap-2 border-b border-red-100 bg-red-50/50 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-red-600">person_remove</span>
+              <h2 className="font-headline font-bold text-red-950">회원 탈퇴</h2>
+            </div>
+            <span className="break-all font-mono text-[10px] uppercase tracking-widest text-red-400">// irreversible_action</span>
+          </div>
+          <div className="space-y-4 p-5 sm:p-8">
+            <p className="text-sm leading-6 text-red-900/75">프로필, 찜·폴더·AI 일정·알림, 작성한 게시글·댓글·좋아요와 업로드 이미지를 삭제합니다. 삭제된 데이터는 복구할 수 없습니다.</p>
+            <div className="flex justify-end border-t border-red-100 pt-4">
+              <button type="button" onClick={openAccountDeleteModal} className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-6 py-3 font-label text-xs font-bold tracking-widest text-red-600 transition hover:border-red-400 hover:bg-red-600 hover:text-white sm:w-auto">
+                <span className="material-symbols-outlined text-sm">delete_forever</span>
+                DELETE_ACCOUNT
+              </button>
+            </div>
+          </div>
+        </section>
+
       </div>
+      <ConfirmModal
+        open={accountDeleteOpen}
+        title="회원 탈퇴를 진행할까요?"
+        description="탈퇴 후 계정과 개인 여행 데이터는 복구할 수 없습니다."
+        confirmText={accountDeleteLoading ? '처리 중...' : '탈퇴하기'}
+        confirmDisabled={accountDeleteLoading || (canChangePassword && !accountDeletePassword.trim())}
+        icon="warning"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => !accountDeleteLoading && setAccountDeleteOpen(false)}
+        onClose={() => !accountDeleteLoading && setAccountDeleteOpen(false)}
+      >
+        {canChangePassword ? (
+          <label className="block space-y-2">
+            <span className="text-xs font-bold text-slate-700">현재 비밀번호를 입력해 본인 확인을 완료해 주세요.</span>
+            <input
+              type="password"
+              value={accountDeletePassword}
+              onChange={(event) => setAccountDeletePassword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && accountDeletePassword.trim() && !accountDeleteLoading) handleDeleteAccount();
+              }}
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-outline-variant/25 bg-white px-3 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200"
+              placeholder="현재 비밀번호"
+            />
+          </label>
+        ) : (
+          <p className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs leading-5 text-on-secondary-container">Google 로그인 팝업으로 본인 확인 후 CodeTrip 계정과 데이터만 삭제합니다. Google 계정 자체는 삭제되지 않습니다.</p>
+        )}
+        {accountDeleteError && <p role="alert" className="mt-3 text-xs font-bold text-red-600">{accountDeleteError}</p>}
+      </ConfirmModal>
     </div>
   );
 };

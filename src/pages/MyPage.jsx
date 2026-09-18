@@ -11,7 +11,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834
 const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const WISHLIST_ITEMS_PER_PAGE = 9;
+const WISHLIST_ITEMS_PER_PAGE = 8;
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +44,7 @@ const MyPage = () => {
   const [editFolderEnd, setEditFolderEnd] = useState('');
   const [movingItemId, setMovingItemId] = useState(null);
   const [selectedAiPlan, setSelectedAiPlan] = useState(null);
+  const [requestedAiPlanId, setRequestedAiPlanId] = useState(null);
   const [selectedAiPlanDayIndex, setSelectedAiPlanDayIndex] = useState(0);
   const [expandedAiPlanItems, setExpandedAiPlanItems] = useState({});
   const [editingAiPlan, setEditingAiPlan] = useState(false);
@@ -51,6 +52,8 @@ const MyPage = () => {
   const [editAiPlanSummary, setEditAiPlanSummary] = useState('');
   const [aiPlanPending, setAiPlanPending] = useState(false);
   const [planDeleteTarget, setPlanDeleteTarget] = useState(null);
+  const [folderDeleteTarget, setFolderDeleteTarget] = useState(null);
+  const [folderDeletePending, setFolderDeletePending] = useState(false);
   const [wishDeleteTarget, setWishDeleteTarget] = useState(null);
   const [wishDeletePending, setWishDeletePending] = useState(false);
   const [legacyMigrationOpen, setLegacyMigrationOpen] = useState(false);
@@ -114,6 +117,7 @@ const MyPage = () => {
 
   useEffect(() => {
     const requestedFolderId = location.state?.folderId;
+    const requestedAiPlanId = location.state?.aiPlanId;
     if (!requestedFolderId || folders.length === 0) return;
 
     const targetFolder = folders.find((folder) => String(folder.id) === String(requestedFolderId));
@@ -125,6 +129,7 @@ const MyPage = () => {
       setSelectedAiPlan(null);
       setEditingAiPlan(false);
       setSelectedFolderId(targetFolder.id);
+      setRequestedAiPlanId(requestedAiPlanId || null);
       setWishlistPage(1);
       setMobileFolderOpen(true);
       navigate('/mypage', { replace: true, state: null });
@@ -147,6 +152,17 @@ const MyPage = () => {
         if (!isMounted) return;
         setNotes(noteData);
         setAiTripPlans(planData);
+        if (requestedAiPlanId) {
+          const requestedPlan = planData.find((plan) => String(plan.id) === String(requestedAiPlanId));
+          if (requestedPlan) {
+            setEditingAiPlan(false);
+            setSelectedAiPlanDayIndex(0);
+            setExpandedAiPlanItems({});
+            setAiPlanMemoInput('');
+            setSelectedAiPlan(requestedPlan);
+          }
+          setRequestedAiPlanId(null);
+        }
         return;
       }
       if (!isMounted) return;
@@ -157,7 +173,7 @@ const MyPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedFolderId, fetchNotes, fetchAiTripPlans]);
+  }, [selectedFolderId, fetchNotes, fetchAiTripPlans, requestedAiPlanId]);
 
   const handleRemoveWish = (e, item) => {
     e.preventDefault();
@@ -184,6 +200,27 @@ const MyPage = () => {
     } else {
       showToast('삭제할 위시리스트 항목을 찾지 못했습니다.');
     }
+  };
+
+  const handleConfirmDeleteFolder = async () => {
+    if (!folderDeleteTarget || folderDeletePending) return;
+
+    setFolderDeletePending(true);
+    const deleted = await deleteFolder(folderDeleteTarget.id);
+    setFolderDeletePending(false);
+
+    if (!deleted) {
+      showToast('여행 폴더를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    if (String(selectedFolderId) === String(folderDeleteTarget.id)) {
+      setSelectedFolderId(null);
+      setSelectedAiPlan(null);
+      setEditingAiPlan(false);
+    }
+    setFolderDeleteTarget(null);
+    showToast('여행 폴더를 삭제했고, 안의 여행지는 미분류로 옮겼습니다.', 'success');
   };
 
   const handleAddNote = async (e) => {
@@ -363,7 +400,6 @@ const MyPage = () => {
     const safePage = Math.min(Math.max(1, nextPage), totalWishlistPages);
     if (safePage === currentWishlistPage) return;
     setWishlistPage(safePage);
-    wishlistSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const stats = useMemo(() => {
@@ -1096,6 +1132,21 @@ const MyPage = () => {
       />
 
       <ConfirmModal
+        open={Boolean(folderDeleteTarget)}
+        title="여행 폴더를 삭제할까요?"
+        description={`"${folderDeleteTarget?.name || '선택한 폴더'}" 폴더를 삭제합니다. 안의 여행지 카드는 미분류로 이동하고, 폴더에 연결된 AI 코스·체크리스트·메모는 함께 삭제됩니다.`}
+        confirmText={folderDeletePending ? '삭제 중...' : '폴더 삭제'}
+        cancelText="취소"
+        icon="folder_delete"
+        tone="danger"
+        confirmDisabled={folderDeletePending}
+        onConfirm={handleConfirmDeleteFolder}
+        onCancel={() => {
+          if (!folderDeletePending) setFolderDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmModal
         open={Boolean(wishDeleteTarget)}
         title="위시리스트에서 삭제할까요?"
         description={`"${wishDeleteTarget?.title || '선택한 여행지'}" 카드를 현재 위시리스트에서 삭제합니다. AI 코스 문서와 체크리스트는 유지됩니다.`}
@@ -1207,21 +1258,21 @@ const MyPage = () => {
               </button>
               <div className="h-2" />
               {folders.map(folder => (
-                <button key={folder.id} onClick={() => handleSelectFolder(folder.id)} className={`flex justify-between items-start px-3 py-3 rounded-lg text-[13px] font-body font-bold tracking-tight group transition-all ${selectedFolderId === folder.id ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
-                  <div className="flex-1 min-w-0 text-left">
+                <div key={folder.id} className={`flex items-start gap-2 rounded-lg px-3 py-3 text-[13px] font-body font-bold tracking-tight group transition-all ${selectedFolderId === folder.id ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <button type="button" onClick={() => handleSelectFolder(folder.id)} className="min-w-0 flex-1 text-left">
                     <span className="block truncate uppercase">{folder.name}</span>
                     {folder.start_date && (
                       <span className={`block text-[10px] font-mono font-normal mt-0.5 truncate ${selectedFolderId === folder.id ? 'text-white/70' : 'text-slate-400'}`}>
                         {formatScheduleShort(folder.start_date, folder.end_date)}
                       </span>
                     )}
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1 font-mono text-[11px] shrink-0 ml-2 mt-0.5">
                     <span className="opacity-60">{wishlistItems.filter(i => String(i.folder_id) === String(folder.id)).length}</span>
-                    <span onClick={(e) => { e.stopPropagation(); openEditModal(folder); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-white/80' : 'hover:text-primary'}`}>edit</span>
-                    <span onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }} className={`material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity ${selectedFolderId === folder.id ? 'hover:text-red-300' : 'hover:text-red-500'}`}>delete</span>
+                    <button type="button" onClick={() => openEditModal(folder)} className={`material-symbols-outlined rounded p-0.5 text-sm opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 ${selectedFolderId === folder.id ? 'hover:text-white/80' : 'hover:text-primary'}`} aria-label={`${folder.name} 폴더 편집`}>edit</button>
+                    <button type="button" onClick={() => setFolderDeleteTarget(folder)} className={`material-symbols-outlined rounded p-0.5 text-sm opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 ${selectedFolderId === folder.id ? 'hover:text-red-300' : 'hover:text-red-500'}`} aria-label={`${folder.name} 폴더 삭제`}>delete</button>
                   </div>
-                </button>
+                </div>
               ))}
             </nav>
           </section>
@@ -1523,7 +1574,7 @@ const MyPage = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 2xl:grid-cols-4">
               {paginatedWishList.map((item) => {
                 const itemId = item.contentid || item.content_id;
                 const itemKey = item.id || `${itemId}-${item.folder_id || 'UNCATEGORIZED'}`;
@@ -1531,7 +1582,7 @@ const MyPage = () => {
                 const itemImage = item.firstimage || item.image_url || FALLBACK_IMAGE;
 
                 return (
-                  <div key={itemKey} className="group bg-white rounded-xl overflow-hidden border border-outline-variant/10 hover:border-primary/30 transition-all shadow-sm relative">
+                  <div key={itemKey} className="group relative flex min-h-36 overflow-hidden rounded-xl border border-outline-variant/10 bg-white shadow-sm transition-all hover:border-primary/30">
                     {movingItemId === itemKey && (
                       <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 flex flex-col">
                         <div className="flex justify-between mb-4 border-b pb-2"><span className="text-[10px] font-bold font-mono text-primary">MOVE_TO_FOLDER</span><button onClick={() => setMovingItemId(null)} className="material-symbols-outlined text-xs">close</button></div>
@@ -1549,19 +1600,19 @@ const MyPage = () => {
                         </div>
                       </div>
                     )}
-                    <div className="relative h-48">
-                      <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
-                      <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <button onClick={(e) => handleRemoveWish(e, item)} className="w-8 h-8 bg-white/90 text-red-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg fill-1">favorite</span></button>
-                        <button onClick={() => setMovingItemId(itemKey)} className="w-8 h-8 bg-white/90 text-slate-500 rounded-lg flex items-center justify-center shadow-lg transition-all"><span className="material-symbols-outlined text-lg">folder_shared</span></button>
+                    <div className="relative w-28 shrink-0 overflow-hidden bg-slate-100 sm:w-32 md:w-28 lg:w-32">
+                      <img src={itemImage} alt={itemTitle} className="absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-105" />
+                      <div className="absolute left-2 top-2 flex gap-1.5">
+                        <button onClick={(e) => handleRemoveWish(e, item)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-red-500 shadow-lg transition-all"><span className="material-symbols-outlined text-base fill-1">favorite</span></button>
+                        <button onClick={() => setMovingItemId(itemKey)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-500 shadow-lg transition-all"><span className="material-symbols-outlined text-base">folder_shared</span></button>
                       </div>
                     </div>
-                    <div className="p-5">
-                      <h3 className="font-headline text-base font-bold truncate mb-1">{itemTitle}</h3>
-                      <p className="text-[10px] text-slate-400 font-mono mb-4 truncate">{item.addr1 || '주소 정보 없음'}</p>
-                      <div className="flex justify-between items-center mt-4">
-                        <span className="min-w-0 truncate text-[10px] font-mono text-slate-500 uppercase tracking-tighter">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
-                        <Link to={`/explore/${itemId}`} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-primary hover:text-white transition-all border border-slate-100">VIEW_DATA</Link>
+                    <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+                      <h3 className="mb-1 line-clamp-2 font-headline text-sm font-bold leading-5 text-slate-950">{itemTitle}</h3>
+                      <p className="truncate font-mono text-[10px] text-slate-400">{item.addr1 || '주소 정보 없음'}</p>
+                      <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+                        <span className="min-w-0 truncate font-mono text-[9px] uppercase tracking-tighter text-slate-500">FOLDER: {item.folder_id ? (folders.find(f => String(f.id) === String(item.folder_id))?.name || '...') : 'UNCATEGORIZED'}</span>
+                        <Link to={`/explore/${itemId}`} className="shrink-0 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-[9px] font-bold text-slate-600 transition-all hover:bg-primary hover:text-white">VIEW_DATA</Link>
                       </div>
                     </div>
                   </div>

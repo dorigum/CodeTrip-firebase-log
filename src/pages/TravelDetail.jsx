@@ -269,7 +269,7 @@ const TravelDetail = () => {
       firstimage: common.firstimage || '',
       addr1: common.addr1 || '',
     });
-  }, [common?.title]);
+  }, [addRecentlyViewed, common?.addr1, common?.firstimage, common?.title, contentId]);
 
   // 창 크기 변경 시 지도 중심 재조정
   useEffect(() => {
@@ -287,7 +287,7 @@ const TravelDetail = () => {
     if (isLoggedIn && !wishlistInitialized) {
       initWishlist();
     }
-  }, [isLoggedIn, wishlistInitialized]);
+  }, [initWishlist, isLoggedIn, wishlistInitialized]);
 
   const handleWishlistToggle = async () => {
     if (!isLoggedIn) {

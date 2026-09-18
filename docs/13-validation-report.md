@@ -14,6 +14,19 @@
 
 | 날짜 | 기준 커밋 | 검증 항목 | 결과 | 증빙 | 미해결 이슈 |
 |---|---|---|---|---|---|
+| 2026-09-18 | 게시글 댓글 알림 미리보기 | 새 댓글의 작성자·본문 일부 알림, 80자 말줄임 | 통과. 새 댓글 알림은 본문 공백을 정리해 80자까지만 표시하고, 길면 말줄임표를 붙입니다. 댓글 좋아요 알림의 기존 미리보기 동작은 유지했습니다. | `functions/boardPostNotifications.js`, `functions/index.js`, `functions/test/boardPostNotifications.test.js`, `npm --prefix functions test` | 기존 댓글 알림은 저장 시점에 본문을 보존하지 않아 소급 표시하지 않음. Functions 배포 후 새 댓글로 수동 확인 필요 |
+| 2026-09-17 | 공모전 기능설명서 최신 후보 | PPTX/PDF 5페이지 제출 후보 생성·렌더 검토 | 통과. 제공 양식 기반 5페이지 PPTX와 PDF를 생성했고, PPTX 구조·레이아웃·폰트 검사와 PDF 5페이지 렌더 검토를 완료했습니다. PDF는 385075 bytes입니다. 서비스 소개·기능 흐름·데이터 활용 문구는 현재 배포·검증 결과에 맞춰 갱신했습니다. | `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_최종_20260917.pptx`, `output/contest/CodeTrip_2026_관광데이터_공모전_기능설명서_최종_20260917.pdf`, `docs/17-submission-artifact-manifest.md` | 기존 공개 화면 캡처는 최신 로그인 후 AI·폴더·커뮤니티 화면으로 교체 필요. 제출 페이지 값과 OpenAPI 키는 사용자만 최종 확인 가능 |
+| 2026-09-17 | CI E2E·탈퇴 알림 정리 작업 트리 | preview 기반 E2E 기동, 탈퇴 작성자 알림 정리, 알림 시각 표시 | 구현 완료. CI는 빌드 산출물 preview와 120초 준비 제한을 사용하며, 새 게시글 상호작용 알림에는 작성자 UID를 저장한다. 탈퇴 시 UID가 일치하는 수신자 알림을 함께 제거하고, 화면은 한국 시간 시·분까지 표시한다. | `playwright.config.js`, `functions/accountDeletion.js`, `functions/boardPostNotifications.js`, `src/components/Layout/Header.jsx` | 기존 UID 없는 알림은 안전한 작성자 식별이 불가해 자동 삭제하지 않음. 다음 Functions·프런트 배포 후 실제 알림 생성·탈퇴 정리 점검 필요 |
+| 2026-09-17 | 회원 홈 폴더 페이지네이션 작업 트리 | 저장 폴더 6개 단위 표시와 페이지 이동 | 로컬 검증과 Hosting 재배포 확인을 통과했습니다. 저장 폴더를 최신순 6개씩 표시하며, 배포본 테스트 계정 화면에서 `1 - 6 / 27`과 5개 페이지 제어를 확인했습니다. 데스크톱에서는 페이지 번호, 모바일에서는 이전·다음과 현재 페이지 표시로 이동하도록 구성했습니다. | `src/pages/Home.jsx`, `npm run lint`, `npm run build`, Hosting `https://dorigum-codetrip.web.app` | 페이지 2 이동 후 폴더 연결은 제출 전 수동 재확인 권장 |
+| 2026-09-17 | Firebase Hosting 배포본 | 이메일 테스트 계정 인증·보호 경로 수동 E2E | 통과. 별도 개인 테스트 계정으로 로그인한 뒤 홈 대시보드, 위시리스트, AI 플래너를 순서대로 열어 인증 세션 유지와 기존 저장 여행지·폴더 데이터 로드를 확인했습니다. 생성·저장·삭제는 수행하지 않았습니다. | Hosting `https://dorigum-codetrip.web.app`, 브라우저 수동 검증, `docs/40-authenticated-e2e-runbook.md` | AI 생성·임시 폴더 저장·삭제까지의 쓰기 E2E는 전용 정리 절차가 준비된 뒤 확장 |
+| 2026-09-17 | 인증 E2E 작업 트리 | 테스트 계정 로그인 후 보호 경로 접근 | 준비 완료. `E2E_EMAIL`, `E2E_PASSWORD`가 있을 때만 인증 스모크를 실행하며, 현재 계정 정보가 없는 환경에서는 명시적으로 skip됩니다. | `e2e/authenticated.smoke.spec.js`, `docs/40-authenticated-e2e-runbook.md`, `npm run test:e2e:auth` | 테스트 계정 Secret 등록 후 실제 로그인 실행, AI 생성·폴더 저장은 격리된 데이터 정리 절차와 함께 확장 필요 |
+| 2026-09-17 | 외부 서비스 fallback 작업 트리 | Open-Meteo·Nominatim 실패 fallback, Gemini 오류 안내 | 통과. 날씨·위치명 조회 실패 시 기본값을 반환하고, Gemini 인증·요청 과다·응답 지연·서버 불안정 오류를 사용자 안내로 정규화하는 테스트를 CI에 추가했습니다. | `src/utils/externalServiceErrors.js`, `src/utils/externalServiceErrors.test.js`, `src/api/weatherApi.js`, `src/api/geminiApi.js`, `npm run test:external-service-errors`, `npm run lint`, `npm run build` | 실제 Firebase 인증·AI 생성·폴더 저장 E2E는 테스트 계정 또는 Emulator 전략을 별도 설계해야 합니다. |
+| 2026-09-17 | TourAPI 실패 응답 작업 트리 | API 오류 코드가 업데이트 저장으로 이어지지 않는지 | 통과. 오류 응답은 경고 로그와 예외로 차단되고, 성공한 빈 응답·비정상 항목 구조와 구분됨을 Functions 테스트로 확인했습니다. | `functions/tourApiUpdates.js`, `functions/test/tourApiUpdates.test.js`, `npm --prefix functions test` | 네트워크 단절과 각 외부 API의 사용자 UI 안내는 별도 스모크 테스트로 확장합니다. |
+| 2026-09-17 | E2E 스모크·Hook effect 보완 작업 트리 | 공개 로그인, 비로그인 보호 경로, 로그인 복귀, React Hook 경고 | 통과. Playwright Chromium으로 3개 시나리오를 실행했고 CI에서 빌드 뒤 동일 테스트를 실행하도록 구성했습니다. effect 의존성을 보완하고 데이터 요청·초기화를 취소 가능한 예약 실행으로 전환해 린트 경고 0건을 확인했습니다. | `e2e/routing.smoke.spec.js`, `playwright.config.js`, `.github/workflows/ci.yml`, `npm run test:e2e`, `npm run lint`, `npm run build` | 실제 Firebase 인증·AI 생성·폴더 저장은 테스트 계정 또는 Emulator 전략을 별도 설계해야 합니다. |
+| 2026-09-17 | 보안 업데이트 작업 트리 | Axios·Firebase·React Router·Vite·Firebase CLI 및 하위 패치 업데이트 | 통과. `npm audit fix`의 비파괴 변경만 적용해 운영 의존성 감사(`npm audit --omit=dev`)에서 취약점 0건을 확인했습니다. 전체 감사의 잔여 7건은 Firebase CLI 하위 의존성의 moderate 항목이며, 자동 해결에는 CLI를 과거 10.1.1로 내리는 파괴적 변경이 필요해 보류했습니다. | `package.json`, `package-lock.json`, `npm audit --omit=dev`, `npm run lint`, `npm run build`, Functions 테스트 18건, Database Rules 테스트 15건 | Firebase CLI가 상위 버전에서 해당 하위 의존성을 갱신하면 재감사합니다. 기존 React Hook lint 경고 11건은 별도 개선 대상으로 유지합니다. |
+| 2026-09-17 | `f56d040` 이후 코드 스플리팅 | 라우트 단위 지연 로딩과 번들 크기 비교 | 통과. 페이지를 `React.lazy`로 분리한 뒤 기존 단일 JavaScript 1,163.73kB가 공통 엔트리 246.52kB와 Firebase 283.99kB로 분리됐습니다. 홈 61.81kB, AI 플래너 42.88kB, 마이페이지 58.86kB 등은 해당 경로 진입 시 추가 로드되며 Vite 500kB 초과 경고가 사라졌습니다. | `src/main.jsx`, `npm run lint`, `npm run build` | 실제 저속 모바일 네트워크의 LCP·전송 크기는 별도 성능 측정표에 기록 필요 |
+| 2026-09-17 | `b2f532d` 이후 운영 보완 | AI 플래너·위시리스트 폴더·회원 홈·회원 탈퇴 배포 점검 | 통과. 필수 권역과 폴더 기반 AI 일정, 폴더·체크리스트·홈 캘린더 연동, 데스크톱·모바일 폴더 UI를 사용자 배포 환경에서 점검했습니다. 이메일 회원과 Google 회원 모두 현재 로그인 방식으로 재인증한 뒤 CodeTrip 계정과 개인 데이터를 정상 탈퇴하는 것을 확인했습니다. | 사용자 배포 환경 수동 점검, `src/pages/AiPlanner.jsx`, `src/pages/Home.jsx`, `src/pages/MyPage.jsx`, `src/pages/Settings.jsx`, `functions/index.js`, `npm run lint`, `npm run build`, `npm --prefix functions test`, `npm run test:database-rules` | 탈퇴 Function을 포함한 다음 배포 뒤에는 별도 테스트 계정으로 데이터 삭제 범위를 1회 재확인합니다. |
+| 2026-09-17 | `b2f532d` 이후 CI 보완 | PR 자동 검증 범위 확장 | 통과. GitHub Actions에 프런트 유틸 테스트, Functions 테스트, Firebase Database Emulator Rules 테스트를 추가했습니다. 이제 PR에서 AI 일정 보조 로직·알림 Functions·권한 규칙 회귀를 린트·빌드와 함께 확인합니다. | `.github/workflows/ci.yml`, `package.json`, `functions/test/`, `test/database.rules.test.js` | GitHub Actions의 실제 첫 실행 결과는 다음 PR에서 확인합니다. |
 | 2026-08-26 | `PR #29 / b4630ec` | 데스크톱 상단 공통 레이아웃 정리 | 부분 통과. `PageHeader`를 사용하는 주요 페이지의 외부 컨테이너 폭과 여백을 `max-w-[1600px]`, `px-4 sm:px-6 lg:px-8`, `py-8 lg:py-12` 기준으로 정리했습니다. 정적 검사와 프로덕션 빌드는 통과했습니다. | `src/pages/Explore.jsx`, `src/pages/Festivals.jsx`, `src/pages/AiPlanner.jsx`, `src/pages/Board.jsx`, `src/pages/BoardWrite.jsx`, `src/pages/MyActivity.jsx`, `src/pages/Settings.jsx`, `src/pages/TravelTagSearch.jsx`, `CodeTrip_Firebase/project-log/2026-08-26.md`, `npm run lint`, `npm run build` | 실제 데스크톱 1440px 이상 화면에서 제목 시작 위치와 본문 폭이 자연스러운지 육안 확인이 필요합니다. 기존 React Hook warning 11개, Vite 500kB 초과 청크 경고, plugin timing 경고는 유지됩니다. |
 | 2026-08-25 | `0ae2017` | AI Planner 폴더 주소 보강 busy-state와 Info·모바일 UI 정리 | 부분 통과. 폴더 장소 주소 보강 중 생성 요청이 실행되지 않도록 `folderHydrating`을 `plannerBusy`에 포함하고, 최신 요청일 때만 보강 결과를 반영하도록 했습니다. Info 화면은 `MVP 0.9.0-rc`로 표기했고, 모바일 하단 내비게이션에는 `Info`를 추가하되 `My Page`는 오른쪽 끝에 유지했습니다. 모바일 `Info`는 하위 메뉴 팝업을 띄워 외부 참고 링크와 About CodeTrip 화면으로 이동할 수 있게 했습니다. 개발용 API 캐시 패널은 `/info` 화면에서만 표시되며, 사이드바와 겹치지 않도록 오른쪽 하단으로 이동했습니다. `/info`에서는 캐시 카드 표시, `/explore`에서는 캐시 카드 미표시를 수동 확인했습니다. | `src/pages/AiPlanner.jsx`, `src/pages/Info.jsx`, `src/components/Layout/SideBar.jsx`, `src/components/ApiCacheStatus.jsx`, `CodeTrip_Firebase/project-log/2026-08-25.md`, `npm run lint`, `npm run build`, 사용자 수동 확인 | 모바일 실제 화면에서 하단 탭 7개 표시와 Info 하위 메뉴 팝업 위치를 추가 확인해야 합니다. 기존 React Hook warning 11개와 Vite 500kB 초과 청크 경고는 유지됩니다. |
 | 2026-08-11 | `6314e03` | 문서 체계 갱신 확인 | 통과 | `docs/README.md`, `docs/11-ai-document-analysis-rules.md`, `docs/12-technical-debt-register.md` | 로컬 브랜치명이 원격 브랜치명과 다를 수 있음 |
@@ -69,13 +82,13 @@
 
 | ID | 흐름 | 결과 | 증빙 | 비고 |
 |---|---|---|---|---|
-| VF-01 | 비로그인 여행지 탐색, 검색, 상세 조회 | 미실행 | 없음 | 탐색·상세·빈 결과 포함 |
-| VF-02 | 회원가입, 로그인, 로그아웃 | 미실행 | 없음 | 인증 상태별 보호 화면 포함 |
-| VF-03 | 찜, 폴더, 메모 생성·수정·삭제 | 미실행 | 없음 | 본인 데이터 접근만 허용되는지 확인 |
-| VF-04 | AI 일정 생성, 실패 안내, 저장 | 미실행 | 없음 | timeout, 429, JSON 실패는 별도 케이스 |
-| VF-05 | 게시글, 댓글, 좋아요 작성·수정·삭제 | 미실행 | 없음 | 작성자 권한 확인 |
-| VF-06 | 마이페이지 활동 내역 확인 | 미실행 | 없음 | AI 코스 문서 표시 포함 |
-| VF-07 | 모바일·데스크톱 반응형 확인 | 미실행 | 없음 | 주요 화면 최소 확인 |
+| VF-01 | 비로그인 여행지 탐색, 검색, 상세 조회 | 통과 | 사용자 배포 환경 수동 점검 | 탐색·상세·빈 결과 포함 |
+| VF-02 | 회원가입, 로그인, 로그아웃 | 통과 | 사용자 배포 환경 수동 점검, 이메일·Google 회원 탈퇴 재인증 확인 | 인증 상태별 보호 화면 포함 |
+| VF-03 | 찜, 폴더, 메모 생성·수정·삭제 | 통과 | 사용자 배포 환경 수동 점검 | 본인 데이터 접근만 허용되는지 확인 |
+| VF-04 | AI 일정 생성, 실패 안내, 저장 | 통과 | 사용자 배포 환경 수동 점검, Functions 테스트 | timeout, 429, JSON 실패는 별도 케이스 |
+| VF-05 | 게시글, 댓글, 좋아요 작성·수정·삭제 | 통과 | 사용자 배포 환경 수동 점검, Database Rules 테스트 | 작성자 권한 확인 |
+| VF-06 | 마이페이지 활동 내역 확인 | 통과 | 사용자 배포 환경 수동 점검 | AI 코스 문서·홈 캘린더 연동 포함 |
+| VF-07 | 모바일·데스크톱 반응형 확인 | 통과 | 사용자 배포 환경 수동 점검 | 주요 화면 최소 확인 |
 
 ## 성능 측정 기록 템플릿
 

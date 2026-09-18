@@ -13,6 +13,7 @@ const ConfirmModal = ({
   onConfirm,
   onCancel,
   onClose,
+  children,
 }) => {
   const titleId = useId();
   const descriptionId = useId();
@@ -106,6 +107,7 @@ const ConfirmModal = ({
 
         <div className="px-5 py-5">
           <p id={descriptionId} className="text-sm leading-6 text-slate-500">{description}</p>
+          {children && <div className="mt-4">{children}</div>}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-4">

@@ -34,6 +34,7 @@ let sessionCheckInterval = null;
 let sessionVisibilityHandler = null;
 let sessionFocusHandler = null;
 let loginInProgress = false;
+let signupInProgress = false;
 let authStateVersion = 0;
 
 const setSessionExpiry = () => {
@@ -128,12 +129,17 @@ const useAuthStore = create((set) => ({
     const stopAuthListener = onAuthStateChanged(firebaseAuth, async (authUser) => {
       const eventVersion = ++authStateVersion;
       if (!authUser) {
-        if (loginInProgress) {
+        if (loginInProgress || signupInProgress) {
           set({ user: null, isLoggedIn: false, isLoading: true });
           return;
         }
         clearSession();
         set({ user: null, isLoggedIn: false, isLoading: false });
+        return;
+      }
+
+      if (signupInProgress) {
+        set({ user: null, isLoggedIn: false, isLoading: true });
         return;
       }
 
@@ -181,9 +187,25 @@ const useAuthStore = create((set) => ({
     set({ user: null, isLoggedIn: false, isLoading: true });
   },
 
+  prepareSignup: () => {
+    authStateVersion += 1;
+    signupInProgress = true;
+    setSessionExpiry();
+    set({ user: null, isLoggedIn: false, isLoading: true });
+  },
+
+  finishSignup: () => {
+    authStateVersion += 1;
+    signupInProgress = false;
+    firebaseAuth.signOut().catch(() => {});
+    clearSession();
+    set({ user: null, isLoggedIn: false, isLoading: false });
+  },
+
   cancelLogin: () => {
     authStateVersion += 1;
     loginInProgress = false;
+    signupInProgress = false;
     firebaseAuth.signOut().catch(() => {});
     clearSession();
     set({ user: null, isLoggedIn: false, isLoading: false });
@@ -199,6 +221,7 @@ const useAuthStore = create((set) => ({
   logout: () => {
     authStateVersion += 1;
     loginInProgress = false;
+    signupInProgress = false;
     firebaseAuth.signOut().catch(() => {});
     clearSession();
     set({ user: null, isLoggedIn: false, isLoading: false });

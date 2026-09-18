@@ -61,7 +61,10 @@ const Board = () => {
 
   useEffect(() => {
     const cursor = !keyword && sort === 'created_at' ? pageCursors[currentPage - 1] : null;
-    fetchPosts(currentPage, cursor, keyword, sort);
+    const timer = setTimeout(() => {
+      fetchPosts(currentPage, cursor, keyword, sort);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [currentPage, keyword, sort, pageCursors, fetchPosts]);
 
   const handleSortChange = (newSort) => {

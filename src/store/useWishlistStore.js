@@ -20,6 +20,7 @@ const normalizeWishlistItem = (itemData = {}) => {
 const useWishlistStore = create((set, get) => ({
   wishlistItems: [],
   folders: [],
+  aiTripPlans: [],
   wishlistIds: new Set(),
   loading: false,
   initialized: false,
@@ -37,12 +38,13 @@ const useWishlistStore = create((set, get) => ({
   syncWithServer: async () => {
     set({ loading: true, syncError: null });
     try {
-      const [items, folders] = await Promise.all([
+      const [items, folders, aiTripPlans] = await Promise.all([
         wishlistApi.getWishlistDetails(),
-        wishlistApi.getFolders()
+        wishlistApi.getFolders(),
+        wishlistApi.getAllAiTripPlans(),
       ]);
       const ids = new Set(items.map(item => String(item.contentid || item.content_id)));
-      set({ wishlistItems: items, folders, wishlistIds: ids });
+      set({ wishlistItems: items, folders, aiTripPlans, wishlistIds: ids });
     } catch (err) {
       console.error('Wishlist sync failed:', err);
       set({ syncError: '위시리스트를 불러오는 데 실패했습니다.' });
@@ -52,7 +54,7 @@ const useWishlistStore = create((set, get) => ({
   },
 
   clearWishlist: () => {
-    set({ wishlistItems: [], folders: [], wishlistIds: new Set(), initialized: false });
+    set({ wishlistItems: [], folders: [], aiTripPlans: [], wishlistIds: new Set(), initialized: false });
   },
 
   toggleWishlist: async (itemData) => {
@@ -72,6 +74,20 @@ const useWishlistStore = create((set, get) => ({
     } catch (err) {
       console.error('Toggle wishlist failed:', err);
       return { success: false, wishlisted: false, error: err };
+    }
+  },
+
+  saveToFolder: async (itemData, folderId) => {
+    const { contentid, title, firstimage, addr1 } = normalizeWishlistItem(itemData);
+    if (!contentid) return { success: false, error: 'missing_content_id' };
+
+    try {
+      const savedItem = await wishlistApi.addWishlistToFolder({ contentid, title, firstimage, addr1 }, folderId);
+      await get().syncWithServer();
+      return { success: !!savedItem, item: savedItem || null };
+    } catch (err) {
+      console.error('Save wishlist to folder failed:', err);
+      return { success: false, error: err };
     }
   },
 
@@ -107,12 +123,22 @@ const useWishlistStore = create((set, get) => ({
   },
 
   deleteFolder: async (folderId) => {
-    if (!window.confirm('폴더를 삭제하시겠습니까? (안의 여행지들은 미분류로 이동됩니다)')) return;
     try {
       await wishlistApi.deleteFolder(folderId);
+      set((state) => ({
+        folders: state.folders.filter((folder) => String(folder.id) !== String(folderId)),
+        aiTripPlans: state.aiTripPlans.filter((plan) => String(plan.folder_id) !== String(folderId)),
+        wishlistItems: state.wishlistItems.map((item) => (
+          String(item.folder_id) === String(folderId)
+            ? { ...item, folder_id: null }
+            : item
+        )),
+      }));
       await get().syncWithServer();
+      return true;
     } catch (err) {
       console.error('Delete folder failed:', err);
+      return false;
     }
   },
 
@@ -156,6 +182,9 @@ const useWishlistStore = create((set, get) => ({
   deleteAiTripPlan: async (planId) => {
     try {
       await wishlistApi.deleteAiTripPlan(planId);
+      set((state) => ({
+        aiTripPlans: state.aiTripPlans.filter((plan) => String(plan.id) !== String(planId)),
+      }));
       return true;
     } catch (err) {
       console.error('Delete AI trip plan failed:', err);

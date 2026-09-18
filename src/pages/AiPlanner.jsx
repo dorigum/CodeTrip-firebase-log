@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generateTripPlan } from '../api/geminiApi';
-import { getDetailCommon, getTravelList } from '../api/travelInfoApi';
+import { getDetailCommon, getSubRegions, getTravelList } from '../api/travelInfoApi';
 import { saveAiTripToFolder } from '../api/wishlistApi';
 import useAuthStore from '../store/useAuthStore';
 import useWishlistStore from '../store/useWishlistStore';
@@ -16,6 +16,7 @@ const DATE_MIN = '1000-01-01';
 const DATE_MAX = '9999-12-31';
 const FOUR_DIGIT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DURATION_DAYS = 5;
+const MAX_REQUIRED_AREA_LENGTH = 40;
 
 const DEFAULT_FORM = {
   regionName: '서울',
@@ -23,6 +24,7 @@ const DEFAULT_FORM = {
   travelStartDate: '',
   travelEndDate: '',
   companionType: '친구',
+  familyDetail: '',
   peopleCount: 2,
   transportation: '대중교통',
   priorities: ['휴식'],
@@ -33,6 +35,8 @@ const DEFAULT_FORM = {
   endTime: '18:00',
   travelStyle: ['실내', '문화'],
   avoidKeywords: [],
+  requiredAreas: [],
+  dayAreaPreferences: {},
 };
 
 const createDefaultForm = () => ({
@@ -40,11 +44,14 @@ const createDefaultForm = () => ({
   priorities: [...DEFAULT_FORM.priorities],
   travelStyle: [...DEFAULT_FORM.travelStyle],
   avoidKeywords: [],
+  requiredAreas: [],
+  dayAreaPreferences: {},
 });
 
 const getMinimumPeopleCount = (companionType) => (companionType === '혼자' ? 1 : 2);
 
 const normalizePeopleCount = (companionType, value) => {
+  if (companionType === '혼자') return 1;
   const minimum = getMinimumPeopleCount(companionType);
   return Math.min(10, Math.max(minimum, Number(value) || minimum));
 };
@@ -108,6 +115,45 @@ const getBroadRegionTourCode = (regionName) => {
   return BROAD_REGION_TOUR_CODES[normalized] || '';
 };
 
+const REGION_ADDRESS_ALIASES = {
+  서울: '서울', 서울특별시: '서울', 부산: '부산', 부산광역시: '부산',
+  대구: '대구', 대구광역시: '대구', 인천: '인천', 인천광역시: '인천',
+  광주: '광주', 광주광역시: '광주', 대전: '대전', 대전광역시: '대전',
+  울산: '울산', 울산광역시: '울산', 경기: '경기', 경기도: '경기',
+  충북: '충북', 충청북도: '충북', 충남: '충남', 충청남도: '충남',
+  전북: '전북', 전라북도: '전북', 전남: '전남', 전라남도: '전남',
+  경북: '경북', 경상북도: '경북', 경남: '경남', 경상남도: '경남',
+  제주: '제주', 제주도: '제주', 제주특별자치도: '제주',
+  강원: '강원', 강원도: '강원', 강원특별자치도: '강원',
+  세종: '세종', 세종특별자치시: '세종',
+};
+
+const normalizeAddressText = (value) => String(value || '').replace(/\s+/g, '').trim();
+
+const getRegionAddressKeywords = (regionName) => {
+  const normalized = String(regionName || '').trim();
+  if (REGION_ADDRESS_ALIASES[normalized]) return [REGION_ADDRESS_ALIASES[normalized]];
+
+  return normalized
+    .split(/\s+/)
+    .map((part) => REGION_ADDRESS_ALIASES[part] || part.replace(/(특별자치도|특별자치시|특별시|광역시|도|시|군|구)$/, ''))
+    .filter(Boolean);
+};
+
+const isPlaceInRepresentativeRegion = (place, regionName) => {
+  const regionKeywords = getRegionAddressKeywords(regionName);
+  if (regionKeywords.length === 0) return true;
+
+  const placeText = [place?.addr1, place?.address, place?.addr2]
+    .map(normalizeAddressText)
+    .join(' ');
+  return regionKeywords.every((keyword) => placeText.includes(normalizeAddressText(keyword)));
+};
+
+const normalizeAdministrativeAreaName = (value) => String(value || '')
+  .replace(/\s+/g, '')
+  .replace(/(특별자치도|특별자치시|특별시|광역시|시|군|구)$/, '');
+
 const getPlaceAreaKey = (place = {}) => {
   const address = String(place.addr1 || place.address || '').trim();
   if (!address) return String(place.title || place.placeName || '').trim();
@@ -133,6 +179,19 @@ const diversifyPreferredPlaces = (places = [], limit = 12) => {
   }
 
   return result;
+};
+
+const isPlaceInRequiredArea = (place, requiredAreas = []) => {
+  if (requiredAreas.length === 0) return true;
+
+  const placeText = [place?.addr1, place?.address, place?.addr2]
+    .map((value) => String(value || '').replace(/\s+/g, '').trim())
+    .join(' ');
+
+  return requiredAreas.some((area) => {
+    const normalizedArea = String(area || '').replace(/\s+/g, '').trim();
+    return normalizedArea && placeText.includes(normalizedArea);
+  });
 };
 
 const BUDGET_HELP = {
@@ -176,6 +235,34 @@ const REGION_ALIASES = {
 
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+
+const normalizeRequiredAreas = (value) => Array.from(new Set(
+  (Array.isArray(value) ? value : [])
+    .map((area) => String(area || '').trim().slice(0, MAX_REQUIRED_AREA_LENGTH))
+    .filter(Boolean)
+)).slice(0, 4);
+
+const pruneDayAreaPreferences = (value, durationDays, requiredAreas) => {
+  const preferences = value && typeof value === 'object' ? value : {};
+  const maxDay = normalizeDurationDays(durationDays);
+  return Object.entries(preferences).reduce((result, [day, area]) => {
+    const normalizedDay = Number(day);
+    const normalizedArea = String(area || '').trim();
+    if (
+      Number.isInteger(normalizedDay)
+      && normalizedDay >= 1
+      && normalizedDay <= maxDay
+      && requiredAreas.includes(normalizedArea)
+    ) {
+      result[normalizedDay] = normalizedArea;
+    }
+    return result;
+  }, {});
+};
+
+const getCompanionDisplayLabel = (companionType, familyDetail) => (
+  companionType === '가족' && familyDetail ? familyDetail : companionType
+);
 
 const parseTripDateParts = (dateString) => {
   if (!FOUR_DIGIT_DATE_PATTERN.test(dateString)) return null;
@@ -338,6 +425,45 @@ const getFolderRegion = (folder, places) => {
   return getFolderLocality(folder, places) || getRegionFromText(folder?.name);
 };
 
+const getLatestFolderGenerationContext = (folder, plans = []) => {
+  const folderContext = folder?.generation_context || folder?.generationContext;
+  if (folderContext && typeof folderContext === 'object') return folderContext;
+
+  return [...plans]
+    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
+    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0]
+    ?.generation_context || [...plans]
+    .filter((plan) => String(plan?.folder_id || plan?.folderId || '') === String(folder?.id || ''))
+    .sort((a, b) => new Date(b?.created_at || b?.createdAt || 0) - new Date(a?.created_at || a?.createdAt || 0))[0]
+    ?.generationContext || {};
+};
+
+const getFolderContextFormValues = (context = {}) => {
+  const companionType = ['혼자', '연인', '가족', '친구'].includes(context.companionType)
+    ? context.companionType
+    : null;
+  if (!companionType) return {};
+
+  const requiredAreas = normalizeRequiredAreas(context.requiredAreas);
+  const durationDays = normalizeDurationDays(context.durationDays);
+  return {
+    companionType,
+    familyDetail: companionType === '가족' ? String(context.familyDetail || '') : '',
+    peopleCount: normalizePeopleCount(companionType, context.peopleCount),
+    transportation: context.transportation || DEFAULT_FORM.transportation,
+    priorities: Array.isArray(context.priorities) ? context.priorities : DEFAULT_FORM.priorities,
+    budgetLevel: context.budgetLevel || DEFAULT_FORM.budgetLevel,
+    pace: context.pace || DEFAULT_FORM.pace,
+    weatherKeyword: context.weatherKeyword || '',
+    startTime: context.startTime || DEFAULT_FORM.startTime,
+    endTime: context.endTime || DEFAULT_FORM.endTime,
+    travelStyle: Array.isArray(context.travelStyle) ? context.travelStyle : DEFAULT_FORM.travelStyle,
+    avoidKeywords: Array.isArray(context.avoidKeywords) ? context.avoidKeywords : [],
+    requiredAreas,
+    dayAreaPreferences: pruneDayAreaPreferences(context.dayAreaPreferences, durationDays, requiredAreas),
+  };
+};
+
 const getNormalizedFolderSchedule = (folder) => {
   const startDate = String(folder?.start_date || '').slice(0, 10);
   const endDate = String(folder?.end_date || '').slice(0, 10);
@@ -431,7 +557,7 @@ const AiPlanner = () => {
   const location = useLocation();
   const showToast = useToast();
   const { isLoggedIn } = useAuthStore();
-  const { wishlistItems, folders, initWishlist, syncWithServer } = useWishlistStore();
+  const { wishlistItems, folders, aiTripPlans, initWishlist, syncWithServer } = useWishlistStore();
   const regeneratePlan = location.state?.regeneratePlan || null;
   const regenerationContext = regeneratePlan?.generation_context || regeneratePlan?.generationContext || {};
   const regenerateFolderId = (
@@ -450,6 +576,13 @@ const AiPlanner = () => {
       durationDays: normalizeDurationDays(initialForm.durationDays),
       travelStartDate: initialForm.travelStartDate || '',
       travelEndDate: initialForm.travelEndDate || '',
+      familyDetail: initialForm.companionType === '가족' ? initialForm.familyDetail || '' : '',
+      requiredAreas: normalizeRequiredAreas(initialForm.requiredAreas),
+      dayAreaPreferences: pruneDayAreaPreferences(
+        initialForm.dayAreaPreferences,
+        initialForm.durationDays,
+        normalizeRequiredAreas(initialForm.requiredAreas)
+      ),
     };
   });
   const [planningMode, setPlanningMode] = useState(
@@ -459,12 +592,14 @@ const AiPlanner = () => {
     regenerateFolderId ? String(regenerateFolderId) : ''
   );
   const [selectedContentIds, setSelectedContentIds] = useState(new Set());
+  const [areaInput, setAreaInput] = useState('');
   const [plan, setPlan] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [folderHydrating, setFolderHydrating] = useState(false);
   const [isPlanSaved, setIsPlanSaved] = useState(false);
   const generationInFlightRef = useRef(false);
+  const areaValidationInFlightRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const plannerRevisionRef = useRef(0);
   const folderSelectionRequestRef = useRef(0);
@@ -487,6 +622,11 @@ const AiPlanner = () => {
   const selectedPlaces = useMemo(
     () => wishlistItems.filter((item) => selectedContentIds.has(String(item.contentid || item.contentId))),
     [wishlistItems, selectedContentIds]
+  );
+
+  const selectedFolderPlaceCount = useMemo(
+    () => folderPlaces.filter((item) => selectedContentIds.has(String(item.contentid || item.contentId))).length,
+    [folderPlaces, selectedContentIds]
   );
 
   const plannerBusy = generating || saving || folderHydrating;
@@ -516,6 +656,7 @@ const AiPlanner = () => {
     setForm((prev) => ({
       ...prev,
       companionType: value,
+      familyDetail: value === '가족' ? prev.familyDetail : '',
       peopleCount: normalizePeopleCount(value, prev.peopleCount),
     }));
 
@@ -559,7 +700,80 @@ const AiPlanner = () => {
       ...prev,
       durationDays: nextDays,
       travelEndDate: nextEndDate,
+      dayAreaPreferences: pruneDayAreaPreferences(prev.dayAreaPreferences, nextDays, prev.requiredAreas),
     }));
+  };
+
+  const handleAddRequiredArea = async () => {
+    if (plannerBusy) return;
+    const nextArea = areaInput.trim();
+    if (!nextArea) return;
+
+    const broadRegionCode = getBroadRegionTourCode(form.regionName);
+    if (broadRegionCode) {
+      if (areaValidationInFlightRef.current) return;
+      areaValidationInFlightRef.current = true;
+      try {
+        const subRegions = await getSubRegions(broadRegionCode);
+        const normalizedNextArea = normalizeAdministrativeAreaName(nextArea);
+        const matchesSubRegion = subRegions.some((subRegion) => (
+          normalizeAdministrativeAreaName(subRegion.name) === normalizedNextArea
+        ));
+        const isInRepresentativeRegion = matchesSubRegion || (await getTravelList({
+          keyword: `${form.regionName} ${nextArea}`.trim(),
+          regions: [broadRegionCode],
+          pageNo: 1,
+          numOfRows: 10,
+          sort: 'default',
+        })).items.some((item) => (
+          isPlaceInRepresentativeRegion(item, form.regionName)
+          && isPlaceInRequiredArea(item, [nextArea])
+        ));
+        if (!isInRepresentativeRegion) {
+          showToast(`${form.regionName}에서 확인할 수 있는 필수 방문 권역만 추가할 수 있습니다.`, 'info');
+          return;
+        }
+      } catch (error) {
+        console.error('CodeTrip required-area validation failed:', error);
+        showToast('필수 방문 권역의 지역 정보를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      } finally {
+        areaValidationInFlightRef.current = false;
+      }
+    }
+
+    const nextAreas = normalizeRequiredAreas([...form.requiredAreas, nextArea]);
+    if (nextAreas.length === form.requiredAreas.length) {
+      showToast('이미 추가했거나 최대 4개까지 등록할 수 있는 권역입니다.', 'info');
+      return;
+    }
+
+    updateForm('requiredAreas', nextAreas);
+    setAreaInput('');
+  };
+
+  const handleRemoveRequiredArea = (areaToRemove) => {
+    if (plannerBusy) return;
+    invalidateCurrentPlan();
+    setForm((prev) => {
+      const requiredAreas = prev.requiredAreas.filter((area) => area !== areaToRemove);
+      return {
+        ...prev,
+        requiredAreas,
+        dayAreaPreferences: pruneDayAreaPreferences(prev.dayAreaPreferences, prev.durationDays, requiredAreas),
+      };
+    });
+  };
+
+  const handleDayAreaPreferenceChange = (day, area) => {
+    if (plannerBusy) return;
+    invalidateCurrentPlan();
+    setForm((prev) => {
+      const nextPreferences = { ...prev.dayAreaPreferences };
+      if (area) nextPreferences[day] = area;
+      else delete nextPreferences[day];
+      return { ...prev, dayAreaPreferences: nextPreferences };
+    });
   };
 
   const handleTripStartDateChange = (value) => {
@@ -616,6 +830,7 @@ const AiPlanner = () => {
     setPlanningMode(mode);
     invalidateCurrentPlan();
     setForm(createDefaultForm());
+    setAreaInput('');
     setSelectedContentIds(new Set());
     setSelectedFolderId('');
   };
@@ -626,6 +841,7 @@ const AiPlanner = () => {
     setPlanningMode(PLAN_MODE.CUSTOM);
     invalidateCurrentPlan();
     setForm(createDefaultForm());
+    setAreaInput('');
     setSelectedFolderId('');
     setSelectedContentIds(new Set());
     showToast('입력 조건과 위시리스트 선택을 기본값으로 초기화했습니다.', 'info');
@@ -640,13 +856,20 @@ const AiPlanner = () => {
     const nextFolderPlaces = wishlistItems.filter((item) => folderId && String(item.folder_id) === String(folderId));
     const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
     const folderSchedule = getNormalizedFolderSchedule(selectedFolder);
+    const folderContext = getLatestFolderGenerationContext(selectedFolder, aiTripPlans);
 
     setSelectedContentIds(new Set(nextFolderPlaces.map((item) => String(item.contentid || item.contentId))));
     setForm((prev) => ({
       ...prev,
+      ...getFolderContextFormValues(folderContext),
       durationDays: folderSchedule.durationDays,
       travelStartDate: folderSchedule.travelStartDate,
       travelEndDate: folderSchedule.travelEndDate,
+      dayAreaPreferences: pruneDayAreaPreferences(
+        folderContext.dayAreaPreferences,
+        folderSchedule.durationDays,
+        normalizeRequiredAreas(folderContext.requiredAreas)
+      ),
     }));
     if (folderSchedule.adjusted) {
       showToast(`선택한 폴더 일정은 AI 코스 생성 기준에 맞춰 유효한 1~${MAX_DURATION_DAYS}일 범위로 조정했습니다.`, 'info');
@@ -680,7 +903,7 @@ const AiPlanner = () => {
         setFolderHydrating(false);
       }
     }
-  }, [folders, invalidateCurrentPlan, plannerActionBusy, showToast, wishlistItems]);
+  }, [aiTripPlans, folders, invalidateCurrentPlan, plannerActionBusy, showToast, wishlistItems]);
 
   useEffect(() => {
     if (!regeneratePlan || regenerationHydratedRef.current) return;
@@ -783,17 +1006,54 @@ const AiPlanner = () => {
     try {
       let preferredPlaces = selectedPlaces;
 
+      if (planningMode === PLAN_MODE.FOLDER) {
+        const selectedFolder = folders.find((folder) => String(folder.id) === String(selectedFolderId));
+        const folderRegion = getFolderRegion(selectedFolder, folderPlaces);
+        if (folderRegion && !isPlaceInRepresentativeRegion({ addr1: form.regionName }, folderRegion)) {
+          showToast('폴더의 저장 장소 지역과 다른 지역으로는 코스를 생성할 수 없습니다. 폴더 기준 지역으로 다시 불러왔습니다.');
+          await handleFolderChange(String(selectedFolderId));
+          return;
+        }
+
+        preferredPlaces = selectedPlaces
+          .filter((item) => String(item.folder_id) === String(selectedFolderId))
+          .filter((item) => isPlaceInRepresentativeRegion(item, form.regionName))
+          .filter((item) => isPlaceInRequiredArea(item, form.requiredAreas));
+        if (preferredPlaces.length === 0) {
+          showToast('선택한 폴더에 대표 지역과 필수 방문 권역을 모두 만족하는 장소가 없습니다. 조건을 조정해주세요.');
+          return;
+        }
+      }
+
       if (planningMode === PLAN_MODE.CUSTOM) {
         const broadRegionCode = getBroadRegionTourCode(form.regionName.trim());
-        const { items } = await getTravelList({
-          keyword: broadRegionCode ? '' : form.regionName.trim(),
-          regions: broadRegionCode ? [broadRegionCode] : [''],
-          pageNo: 1,
-          numOfRows: broadRegionCode ? 30 : 18,
-          sort: 'default',
-        });
+        const searchAreas = normalizeRequiredAreas(form.requiredAreas);
+        const requests = searchAreas.length > 0
+          ? searchAreas.map((area) => getTravelList({
+            keyword: `${form.regionName.trim()} ${area}`.trim(),
+            regions: broadRegionCode ? [broadRegionCode] : [''],
+            pageNo: 1,
+            numOfRows: 18,
+            sort: 'default',
+          }))
+          : [getTravelList({
+            keyword: broadRegionCode ? '' : form.regionName.trim(),
+            regions: broadRegionCode ? [broadRegionCode] : [''],
+            pageNo: 1,
+            numOfRows: broadRegionCode ? 30 : 18,
+            sort: 'default',
+          })];
+        const responses = await Promise.all(requests);
+        const candidates = responses
+          .flatMap(({ items }) => items)
+          .map(normalizeTourCandidate)
+          .filter((item) => item.contentid);
+        const regionCandidates = candidates.filter((item) => isPlaceInRepresentativeRegion(item, form.regionName));
+        const areaCandidates = searchAreas.length > 0
+          ? regionCandidates.filter((item) => isPlaceInRequiredArea(item, searchAreas))
+          : regionCandidates;
         preferredPlaces = diversifyPreferredPlaces(
-          items.map(normalizeTourCandidate).filter((item) => item.contentid),
+          areaCandidates,
           12
         );
       }
@@ -819,6 +1079,7 @@ const AiPlanner = () => {
           travelStartDate: form.travelStartDate || null,
           travelEndDate: form.travelEndDate || null,
           companionType: form.companionType,
+          familyDetail: form.companionType === '가족' ? form.familyDetail : '',
           peopleCount: Number(form.peopleCount) || 1,
           budgetLevel: form.budgetLevel,
           pace: form.pace,
@@ -829,6 +1090,12 @@ const AiPlanner = () => {
           transportation: form.transportation,
           priorities: form.priorities,
           avoidKeywords: form.avoidKeywords,
+          requiredAreas: form.requiredAreas,
+          dayAreaPreferences: pruneDayAreaPreferences(
+            form.dayAreaPreferences,
+            normalizedDurationDays,
+            form.requiredAreas
+          ),
         },
       });
       showToast(
@@ -898,7 +1165,7 @@ const AiPlanner = () => {
   };
 
   return (
-    <div className="ai-planner-page mx-auto w-full max-w-[1600px] space-y-8 px-4 py-8 pb-24 sm:px-6 md:pb-8 lg:px-8 lg:py-12">
+    <div className="ai-planner-page mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 pb-24 sm:space-y-8 sm:px-6 sm:py-8 md:pb-8 lg:px-8 lg:py-12">
       <PageHeader
         label="ai_trip.planner"
         title="AI 여행 플래너"
@@ -907,7 +1174,7 @@ const AiPlanner = () => {
           <button
             type="button"
             onClick={() => navigate('/mypage')}
-            className="inline-flex items-center justify-center gap-2 px-4 h-11 rounded-lg border border-outline-variant/50 text-slate-600 hover:text-primary hover:border-primary/40 transition-colors text-xs font-bold uppercase tracking-wider"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-outline-variant/50 px-4 text-xs font-bold uppercase tracking-wider text-slate-600 transition-colors hover:border-primary/40 hover:text-primary sm:w-auto"
           >
             <span className="material-symbols-outlined text-base">folder</span>
             My Folders
@@ -915,8 +1182,8 @@ const AiPlanner = () => {
         )}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[500px_minmax(0,1fr)] gap-6">
-        <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-5">
+      <div className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-[500px_minmax(0,1fr)]">
+        <section className="bg-white border border-outline-variant/30 rounded-xl shadow-sm p-4 space-y-5 sm:p-5">
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
               <FieldLabel>Plan Mode</FieldLabel>
@@ -986,7 +1253,7 @@ const AiPlanner = () => {
                   <div className="flex items-center justify-between mb-2">
                     <FieldLabel>Folder Places</FieldLabel>
                     <span className="text-[10px] font-mono font-bold text-primary">
-                      {selectedPlaces.length} / {folderPlaces.length}
+                      {selectedFolderPlaceCount} / {folderPlaces.length}
                     </span>
                   </div>
                   <div className="max-h-44 overflow-y-auto border border-outline-variant/30 rounded-lg divide-y divide-outline-variant/20 bg-white">
@@ -1024,17 +1291,18 @@ const AiPlanner = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel>Region</FieldLabel>
               <input
                 value={form.regionName}
                 onChange={(e) => updateForm('regionName', e.target.value)}
+                readOnly={planningMode === PLAN_MODE.FOLDER && Boolean(selectedFolderId)}
                 disabled={plannerBusy}
-                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
+                className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm read-only:cursor-not-allowed read-only:bg-slate-50"
                 placeholder="서울"
               />
-              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{REGION_HELP}</p>
+              <p className="mt-1.5 text-[10px] leading-4 text-slate-400">{planningMode === PLAN_MODE.FOLDER && selectedFolderId ? '폴더에 저장된 장소 주소를 기준으로 지역이 자동 적용됩니다.' : REGION_HELP}</p>
             </div>
             <div>
               <FieldLabel>Days</FieldLabel>
@@ -1051,7 +1319,57 @@ const AiPlanner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-outline-variant/30 bg-slate-50 p-4">
+            <FieldLabel>Must-visit Areas <span className="normal-case text-slate-400">(optional)</span></FieldLabel>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={areaInput}
+                maxLength={MAX_REQUIRED_AREA_LENGTH}
+                onChange={(e) => setAreaInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddRequiredArea();
+                  }
+                }}
+                disabled={plannerBusy}
+                className="min-w-0 flex-1 h-10 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white"
+                placeholder="예: 기장, 광안리"
+              />
+              <button type="button" onClick={handleAddRequiredArea} disabled={plannerBusy} className="h-10 shrink-0 rounded-lg bg-slate-900 px-3 text-xs font-bold text-white transition-colors hover:bg-primary disabled:opacity-60">
+                ADD
+              </button>
+            </div>
+            {form.requiredAreas.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.requiredAreas.map((area) => (
+                  <button key={area} type="button" onClick={() => handleRemoveRequiredArea(area)} disabled={plannerBusy} className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-white px-2.5 py-1 text-xs font-bold text-primary hover:border-primary">
+                    {area}<span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="mt-2 text-[10px] leading-4 text-slate-400">대표 지역이 부산이라면 기장·광안리처럼 반드시 들르고 싶은 권역을 추가하세요. 최대 4개까지 선택할 수 있습니다.</p>
+
+            {form.requiredAreas.length > 0 && normalizeDurationDays(form.durationDays) > 1 && (
+              <div className="mt-4 border-t border-outline-variant/20 pt-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Day-by-day area preference</p>
+                <div className="mt-2 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+                  {Array.from({ length: normalizeDurationDays(form.durationDays) }, (_, index) => index + 1).map((day) => (
+                    <label key={day} className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                      <span className="w-10 shrink-0 text-primary">DAY {day}</span>
+                      <select value={form.dayAreaPreferences?.[day] || ''} onChange={(e) => handleDayAreaPreferenceChange(day, e.target.value)} disabled={plannerBusy} className="h-9 min-w-0 flex-1 rounded-lg border border-outline-variant/40 bg-white px-2 text-xs focus:border-primary focus:outline-none">
+                        <option value="">AI 자동 배분</option>
+                        {form.requiredAreas.map((area) => <option key={area} value={area}>{area}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel htmlFor="ai-planner-travel-start-date">Travel Start</FieldLabel>
               <input
@@ -1078,7 +1396,7 @@ const AiPlanner = () => {
                 className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               />
             </div>
-            <p className="col-span-2 -mt-2 text-[10px] leading-4 text-slate-400">
+            <p className="-mt-2 text-[10px] leading-4 text-slate-400 min-[420px]:col-span-2">
               여행 날짜를 입력하면 저장 폴더의 일정에도 함께 반영됩니다.
               {form.travelStartDate && (
                 <span className="block text-primary font-bold">
@@ -1088,7 +1406,7 @@ const AiPlanner = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
             <div>
               <FieldLabel>Companion</FieldLabel>
               <select
@@ -1100,6 +1418,18 @@ const AiPlanner = () => {
                 {['혼자', '연인', '가족', '친구'].map((item) => <option key={item}>{item}</option>)}
               </select>
             </div>
+            {form.companionType === '가족' && (
+              <div>
+                <FieldLabel>Family Detail</FieldLabel>
+                <select value={form.familyDetail} onChange={(e) => updateForm('familyDetail', e.target.value)} disabled={plannerBusy} className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm bg-white">
+                  <option value="">상관없음</option>
+                  <option value="부모님·자녀 동반">부모님·자녀 동반</option>
+                  <option value="형제·자매">형제·자매</option>
+                  <option value="친척·혼합">친척·혼합</option>
+                </select>
+                <p className="mt-1.5 text-[10px] leading-4 text-slate-400">선택하지 않으면 부모님 동반으로 가정하지 않고 일반 가족 일행 기준으로 추천합니다.</p>
+              </div>
+            )}
             <div>
               <FieldLabel>People</FieldLabel>
               <input
@@ -1134,8 +1464,8 @@ const AiPlanner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="col-span-2 sm:col-span-1">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+            <div>
               <FieldLabel>Pace</FieldLabel>
               <select
                 value={form.pace}
@@ -1192,9 +1522,13 @@ const AiPlanner = () => {
               value={form.weatherKeyword}
               onChange={(e) => updateForm('weatherKeyword', e.target.value)}
               disabled={plannerBusy}
+              aria-describedby="ai-planner-weather-help"
               className="w-full h-11 px-3 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none text-sm"
               placeholder="비, 맑음, 더움"
             />
+            <p id="ai-planner-weather-help" className="mt-1.5 text-[10px] leading-4 text-slate-400">
+              예상 날씨 또는 선호 조건을 입력하세요. 예: 비, 맑음, 더움, 추움, 실내 위주
+            </p>
           </div>
 
           <div>
@@ -1262,14 +1596,14 @@ const AiPlanner = () => {
           </button>
         </section>
 
-        <section className="min-h-[360px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden md:min-h-[620px]">
+        <section className="min-h-[240px] bg-white border border-outline-variant/30 rounded-xl shadow-sm overflow-hidden sm:min-h-[360px] md:min-h-[620px]">
           {!plan ? (
-            <div className="flex h-full min-h-[360px] flex-col items-center justify-center px-6 text-center md:min-h-[620px]">
+            <div className="flex h-full min-h-[240px] flex-col items-center justify-center px-6 text-center sm:min-h-[360px] md:min-h-[620px]">
               <span className="material-symbols-outlined mb-3 text-5xl text-primary/30 md:mb-4 md:text-6xl">travel_explore</span>
               <p className="font-mono text-xs text-slate-400">// generated_course_preview</p>
             </div>
           ) : (
-            <div className="p-5 md:p-6 space-y-6">
+            <div className="space-y-5 p-4 sm:space-y-6 sm:p-5 md:p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -1297,7 +1631,7 @@ const AiPlanner = () => {
               <section className="rounded-xl border border-primary/15 bg-primary/5 p-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Why this course</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-slate-700">
-                  {[`${form.companionType} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...(form.priorities || [])].map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
+                  {[`${getCompanionDisplayLabel(form.companionType, form.familyDetail)} · ${form.peopleCount}명`, `${form.transportation}`, `${form.budgetLevel} 예산`, `${form.pace} 일정`, ...form.requiredAreas.map((area) => `방문: ${area}`), ...(form.priorities || [])].map((item, index) => <span key={`why-${index}-${item}`} className="rounded-full bg-white px-2.5 py-1 border border-primary/10">{item}</span>)}
                 </div>
                 <p className="mt-3 text-xs leading-5 text-slate-600">각 장소 카드의 추천 이유는 선택한 조건과 날씨·이동 부담을 반영해 생성됩니다.</p>
               </section>
@@ -1317,7 +1651,7 @@ const AiPlanner = () => {
                         const sourceBadge = getPlanSourceBadge(item);
 
                         return (
-                          <div key={`${day.day}-${item.order || index}`} className="p-4 grid grid-cols-[68px_1fr] gap-4">
+                          <div key={`${day.day}-${item.order || index}`} className="grid grid-cols-[54px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[68px_1fr] sm:gap-4 sm:p-4">
                             <div className="text-xs font-black text-primary font-mono">{item.time || '--:--'}</div>
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
