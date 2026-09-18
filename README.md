@@ -2,7 +2,7 @@
 
 CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·폴더로 저장하고, Gemini AI로 여행 일정 초안을 생성해 커뮤니티 공유까지 연결하는 여행 계획 웹 서비스 MVP입니다.
 
-이 저장소는 2026 관광데이터 활용 공모전 웹·앱 개발 부문 제출을 목표로, 기존 프론트엔드 기능을 Firebase 기반 인증·데이터·배포·AI 프록시 구조와 프로젝트 문서 체계로 정리한 버전입니다.
+이 저장소는 2026 관광데이터 활용 공모전 웹·앱 개발 부문 제출을 목표로, 여행지 탐색·위시리스트 폴더·AI 일정·커뮤니티를 Firebase 기반 인증·데이터·배포·AI 프록시 구조로 연결한 서비스 버전입니다.
 
 ## 🗂️ 프로젝트 문서
 
@@ -36,7 +36,7 @@ CodeTrip은 한국관광공사 OpenAPI 기반 여행지 탐색 결과를 찜·�
 | Backend/BaaS | Firebase Authentication, Realtime Database, Hosting, Cloud Functions v2, Storage |
 | AI | Gemini API, Firebase Callable Function, Functions Secret |
 | 외부 데이터 | 한국관광공사 TourAPI/KorService2, TourAPI 관광사진, Open-Meteo, Nominatim, Kakao Maps SDK |
-| 문서·검증 | Markdown docs, 프로젝트 로그, 검증 보고서, 기술 부채 등록부, 공모전 제출 체크리스트 |
+| 문서·검증 | Markdown docs, 프로젝트 로그, 트러블슈팅 색인, 검증 보고서, GitHub Actions CI, Playwright, Firebase Emulator Rules 테스트 |
 
 ## 🗺️ 현재 시스템 구조
 
@@ -63,7 +63,7 @@ CodeTrip은 여행지를 많이 나열하는 데서 그치지 않고, **어디�
 
 - 날씨·위치·관심 지역을 단서로 여행 후보 탐색을 시작합니다.
 - 발견한 후보는 위시리스트·폴더·메모·체크리스트로 비교하고 여행 계획으로 발전시킵니다.
-- AI 플래너는 조건 또는 저장한 후보를 바탕으로 일정 초안을 만들며, 향후 동행 관계·예산·이동 부담과 추천 근거까지 보여주는 방향으로 고도화합니다.
+- AI 플래너는 동행·인원·예산·이동수단·여행 속도·날씨·필수 권역 조건 또는 저장한 후보를 바탕으로 일정 초안을 만들고, 저장된 조건을 재생성에도 복원합니다.
 - 관심 지역의 신규 여행지·축제/행사 정보는 다시 알림으로 연결해 다음 탐색을 돕습니다.
 
 현재 구현 범위와 AI 플래너 고도화 로드맵은 [서비스 차별점 문서](docs/40-service-differentiation.md)에서 구분해 확인할 수 있습니다.
@@ -100,6 +100,8 @@ CodeTrip은 여행지를 많이 나열하는 데서 그치지 않고, **어디�
 - 폴더별 메모와 체크리스트 작성
 - 폴더 화면에서 탐색 화면으로 이동해 현재 폴더에 바로 추가
 - AI 코스 문서와 같은 폴더의 여행지·체크리스트·메모 연동
+- 폴더 기반 AI 생성은 폴더 지역·필수 권역·저장 장소를 서버에서 재검증해 다른 지역 코스 저장을 차단
+- 저장 폴더는 홈에서 6개 단위 페이지네이션으로 확인
 - 모바일에서는 폴더 목록과 위시리스트 목록을 접힘/펼침 구조로 제공해 과도한 스크롤을 줄입니다.
 
 ### 🤖 AI 여행 코스 생성
@@ -107,15 +109,18 @@ CodeTrip은 여행지를 많이 나열하는 데서 그치지 않고, **어디�
 - 설정 조건 기반 새 코스 생성
 - 위시리스트 폴더 기반 코스 생성
 - 여행 시작일·종료일 기반 일정 생성
+- 동행·인원·이동수단·예산·여행 속도·날씨·필수 방문 권역 조건 반영
 - Firebase Callable Function을 통한 Gemini 서버 프록시 호출
 - 관광공사 검증 장소와 AI 추천 장소 구분
-- 코스 저장, 상세 문서 보기, 수정, 재생성, 삭제
-- 생성·저장 중복 실행 방지와 저장 완료 상태 보호
+- 코스 저장, 상세 문서 보기, 수정, 재생성, 삭제 및 조건 복원
+- 생성·저장 중복 실행 방지, 체크리스트 중복 제거, 저장 완료 상태 보호
 
 ### 📝 커뮤니티
 
 - Markdown 기반 게시글 작성·수정·삭제
 - 게시글 댓글, 좋아요, 조회수
+- 다른 사용자의 게시글 댓글·좋아요와 댓글 좋아요를 Header 알림으로 제공
+- 새 게시글 댓글 알림에는 작성자와 80자 이내 본문 미리보기 제공
 - 게시글·게시글 댓글·여행지 댓글 좋아요는 사용자 UID별로 저장·토글
 - 여행지 태그 기반 상세 페이지 이동
 - 사용자 활동 내역 확인
@@ -130,6 +135,7 @@ CodeTrip은 여행지를 많이 나열하는 데서 그치지 않고, **어디�
 - 프로필 수정
 - 프로필 이미지는 Firebase Storage의 사용자별 고정 경로에 덮어쓰기 방식으로 저장
 - 선호 지역 설정
+- 이메일·Google 재인증을 거친 회원 탈퇴와 Auth·개인 데이터·작성 콘텐츠·업로드 이미지 정리
 - Google OAuth는 선택 로그인 수단으로 구현됐으며, 설정·검증 기준은 [Google OAuth 계획 및 검증 문서](docs/37-google-oauth-plan.md)에서 관리합니다.
 
 ### 🔔 TourAPI 신규 여행지 알림
@@ -137,7 +143,7 @@ CodeTrip은 여행지를 많이 나열하는 데서 그치지 않고, **어디�
 - Firebase Scheduled Function으로 한국관광공사 TourAPI 최신 여행지 데이터를 주기적으로 확인
 - 새 여행지 후보를 감지하면 Realtime Database의 공용 업데이트 피드에 기록
 - 관심 지역과 일치하는 신규 여행지·축제/행사 정보를 Header에서 확인
-- 축제 전용 수집, 수신 설정, 최근 탐색 지역·위시리스트 연계는 후속 고도화 범위
+- 축제 전용 수집과 수신 설정을 제공하며, 최근 탐색 지역·위시리스트 기반 알림 고도화는 후속 범위
 
 ## ⚡ API 호출과 캐시 정책
 
@@ -234,8 +240,10 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_DATABASE_URL=https://newagent-9c2a8.firebaseio.com
+VITE_API_BASE_URL=...
+VITE_TRAVEL_INFO_API_URL=KorService2
 VITE_TRAVEL_INFO_API_KEY=...
-VITE_TOUR_API_KEY=...
+VITE_GALLERY_API_KEY=...
 VITE_KAKAO_MAP_API_KEY=...
 ```
 
@@ -279,13 +287,21 @@ npm --prefix functions run lint
 ```bash
 npm run lint
 npm run build
+npm run test:date-key
+npm run test:tourapi-area-code
+npm run test:external-service-errors
+npm --prefix functions test
+npm run test:database-rules
+npm run test:e2e
 ```
 
 현재 기준:
 
-- `npm run lint`: error 0개, 기존 warning 11개 유지
+- `npm run lint`: error·warning 0개
 - `npm run build`: 성공
-- Vite 500kB 초과 청크 경고는 기술 부채로 관리 중
+- 공개 로그인·비로그인 보호 경로·로그인 복귀 Playwright E2E 3건을 CI에서 실행
+- 인증 계정 E2E는 `E2E_EMAIL`, `E2E_PASSWORD`가 제공될 때만 실행하며, 일반 CI에서는 안전하게 skip
+- 운영 의존성 감사(`npm audit --omit=dev`) 결과 취약점 0건
 
 빌드 중 Windows 환경에서 `node_modules/.vite-temp` 임시 파일 쓰기 `EPERM`이 발생할 수 있습니다. 이 경우 권한 문제를 해소한 뒤 다시 실행하면 빌드가 통과하는 것으로 확인했습니다.
 
@@ -298,11 +314,10 @@ npm run build
 firebase deploy --only hosting:codetrip
 ```
 
-Functions 배포:
+Functions 변경 배포:
 
 ```bash
-firebase deploy --only functions:generateTripPlan
-firebase deploy --only functions:syncTourApiUpdates
+firebase deploy --only functions
 ```
 
 Storage Rules 배포:
@@ -317,7 +332,7 @@ Realtime Database Rules 배포:
 firebase deploy --only database
 ```
 
-Firebase CLI가 없으면 `npx firebase-tools`를 사용할 수 있습니다. 배포 후에는 공개 URL에서 홈, 탐색, 축제, 상세, 로그인, AI Planner, 마이페이지, 커뮤니티 smoke test를 수행하고 결과를 [검증 보고서](docs/13-validation-report.md)에 기록합니다. Google OAuth를 배포한 경우에는 인증 복원 중 홈 깜빡임, 신규·기존 계정 분기, Google-only 비밀번호 안내, 게시글·댓글 좋아요 권한도 함께 확인합니다.
+Firebase CLI가 없으면 `npx firebase-tools`를 사용할 수 있습니다. 배포 후에는 공개 URL에서 홈, 탐색, 축제, 상세, 로그인, AI Planner, 마이페이지, 커뮤니티, 회원 탈퇴 흐름을 점검하고 결과를 [검증 보고서](docs/13-validation-report.md)에 기록합니다. Google OAuth를 배포한 경우에는 인증 복원, 신규·기존 계정 분기, Google-only 비밀번호 안내, 게시글·댓글 좋아요 권한도 함께 확인합니다.
 
 ## 🧭 주요 라우트
 
@@ -334,7 +349,7 @@ Firebase CLI가 없으면 `npx firebase-tools`를 사용할 수 있습니다. �
 | `/board/tag-search` | TravelTagSearch | 게시글 여행지 태그 검색 |
 | `/mypage` | MyPage | 위시리스트, 폴더, 메모, 체크리스트, AI 코스 문서 |
 | `/my-activity` | MyActivity | 사용자 활동 내역 |
-| `/settings` | Settings | 프로필·선호 지역 설정, 이메일/비밀번호 제공업체 계정의 비밀번호 변경 |
+| `/settings` | Settings | 프로필·선호 지역 설정, 비밀번호 변경, 재인증 기반 회원 탈퇴 |
 | `/login` | Login | 로그인 |
 | `/signup` | SignUp | 회원가입 |
 | `/forgot-password` | ForgotPassword | 비밀번호 재설정 |
@@ -382,24 +397,23 @@ CodeTrip-firebase-log-work/
 - 프로젝트 문서 체계화
 - 공모전 제출 체크리스트와 기능설명서 문구 정리
 - 테스트 계정 시연 데이터 준비 절차 문서화
-- Gemini Callable Function 프록시 전환
-- 신규 Gemini Secret version 2 smoke test
+- Gemini Callable Function 프록시 전환과 입력·지역 검증
+- 이메일·Google 회원 탈퇴 및 개인 데이터 정리 검증
 - TourAPI 신규 여행지 감지 알림 구조 추가
 - Firebase Storage 이미지 업로드 전환
-- API 호출 최적화와 캐시 측정표 작성
-- 지도 fallback, 축제 반응형 표시, AI Planner 중복 실행 방지 보강
-- 모바일 Home, MyPage, MyActivity UI 안정화
-- Google OAuth 로그인·회원가입, 인증 복원 화면 안정화, 사용자별 좋아요 권한 보강
+- API 호출 최적화, 외부 API 실패 fallback, 캐시 측정표 작성
+- 지도 fallback, 축제 반응형 표시, AI Planner 지역 무결성·체크리스트 중복 방지
+- 모바일·데스크톱 Home, MyPage, MyActivity UI 안정화와 폴더 페이지네이션
+- Google OAuth 로그인·회원가입, 인증 복원 화면 안정화, 사용자별 좋아요·댓글 알림 권한 보강
+- GitHub Actions CI, Functions·Rules·Playwright 공개 라우팅 E2E 통과
 
 남은 제출 전 확인 항목은 다음과 같습니다.
 
-- 최종 테스트 계정 데이터 검증
-- 서비스 URL smoke test
-- Firebase Rules·Storage Rules 권한 시나리오 검증표 작성
+- 최신 로그인 상태 화면 캡처 교체
 - 최종 PPTX/PDF 생성, 5페이지 이하·12pt 이상·10MB 미만·정상 열람 검증
 - OpenAPI 제출 정보와 기능설명서 API 목록 최종 대조
-- 성능·캐시 측정값 기록
+- 실제 사용량·성능·캐시 측정값 기록
 
 ---
 
-_Last Updated: 2026-09-04_
+_Last Updated: 2026-09-18_
